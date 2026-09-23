@@ -1,0 +1,39 @@
+//
+// _layouts.scss
+//
+// Admin shell: sidebar + main column (topbar, content, footer).
+// The Laravel template leftovers (boxed / horizontal / scrollable layouts)
+// are not used by the bundle layouts and were dropped.
+//
+
+.gm-shell {
+    min-height: 100vh;
+}
+
+.gm-main {
+    min-width: 0;
+}
+
+.ml-3 {
+    margin-left: 1rem !important;
+}
+
+.mr-3 {
+    margin-right: 1rem !important;
+}
+
+.pr-6 {
+    padding-right: 1rem !important;
+}
+
+.card:hover {
+    transform: none !important;
+}
+
+// Guest pages (login)
+.account-pages {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    background-color: var(--#{$prefix}tertiary-bg);
+}

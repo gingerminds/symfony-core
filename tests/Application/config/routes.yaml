@@ -1,0 +1,7 @@
+gingerminds_core:
+    resource: '@GingermindsCoreBundle/config/routes.php'
+
+api_platform:
+    resource: .
+    type: api_platform
+    prefix: /api

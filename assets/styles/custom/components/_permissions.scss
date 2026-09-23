@@ -1,0 +1,22 @@
+//
+// Role form: permissions grouped by resource.
+//
+
+.gm-permission-check {
+    min-width: 120px;
+    transition: all .2s ease-in-out;
+
+    &:hover {
+        background-color: var(--#{$prefix}light) !important;
+        border-color: var(--#{$prefix}primary) !important;
+    }
+
+    .form-check-input:checked + .form-check-label {
+        font-weight: 600;
+        color: var(--#{$prefix}primary);
+    }
+}
+
+.op-5 {
+    opacity: .5;
+}

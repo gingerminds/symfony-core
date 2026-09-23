@@ -1,0 +1,201 @@
+# Gingerminds core admin — English.
+# Port of the Laravel core resources/lang/en/translation.php.
+
+common:
+    actions: Actions
+    display: Display
+    none: None
+    settings: Settings
+    previous: Previous
+    next: Next
+    'yes': 'Yes'
+    'no': 'No'
+    from: From
+    to: To
+    number_from: From
+    number_to: To
+    here: here
+    all: All
+    value: Value
+    loading: Loading...
+
+menu:
+    dashboard: Dashboard
+    administration: Administration
+    general: General
+    configuration: Configuration
+    main: Main menu
+    toggle: Collapse / expand the menu
+
+dashboard:
+    welcome: 'Welcome, %name%!'
+    intro: 'Use the menu to manage the %app% contents.'
+
+crud:
+    title_list: '%resource% list'
+    title_new: 'Add: %resource%'
+    title_edit: 'Edit: %resource%'
+
+list:
+    no_result: No results found
+    no_more_results: No more results
+    nb_results: 'Results %first% to %last% of %total%'
+    items_per_page: Items per page
+    pagination: Pagination
+    first: First page
+    last: Last page
+
+flash:
+    created: '%resource% "%label%" successfully created.'
+    updated: '%resource% "%label%" successfully updated.'
+    deleted: '%resource% "%label%" successfully deleted.'
+    invalid_csrf: 'Invalid security token, please try again.'
+    profile_updated: Your profile has been updated.
+
+modal:
+    title_create: 'Add {model}'
+    title_edit: 'Edit {model}'
+    title_delete: Confirm deletion
+    title_default: Loading...
+
+confirm:
+    title: Confirmation
+    message: 'Some changes have not been saved. Do you really want to leave this page?'
+
+security:
+    login:
+        title: Log in
+        welcome_back: Welcome back!
+        sign_in_to_access: 'Sign in to access %app%.'
+        username: Login
+        username_placeholder: Enter your login
+        password: Password
+        password_placeholder: Enter your password
+        remember: Remember me
+        submit: Log in
+
+form:
+    name: Name
+    lastname: Lastname
+    firstname: Firstname
+    code: Code
+    email: Email
+    label: Label
+    title: Title
+    description: Description
+    is_active: Is active?
+    active: Active
+    inactive: Inactive
+    position: Position
+    placeholder:
+        search: Search...
+    helpers:
+        no_change_if_kept_empty: Leave blank to keep the current setting.
+
+action:
+    filter: Filter
+    filters: Filters
+    search: Search
+    clear_filters: Clear filters
+    select: Select
+    save: Save
+    cancel: Cancel
+    create: Add
+    edit: Edit
+    delete: Delete
+    remove: Remove
+    remove_confirm: 'Are you sure you want to remove "%label%"?'
+    remove_confirm_default: Are you sure you want to remove this item?
+    confirm: Confirm
+    close: Close
+    sign_out: Sign out
+    see: See
+    move_up: Move up
+    move_down: Move down
+    back: Back
+    show_password: Show password
+
+civility:
+    mr: Mr
+    mrs: Mrs
+
+profile:
+    name: Profile
+    settings: Profile settings
+
+user:
+    name_s: User
+    name_p: Users
+    manage: Manage users
+    title_new: Add a user
+    title_edit: Edit a user
+    field:
+        email: Email
+        password: Password
+        password_confirmation: Confirmation
+        roles: Roles
+        contributor: Contributor
+    contributor:
+        new: — New contributor —
+        none: — None —
+        info: Edit the associated contributor's information.
+    message:
+        no_items: No users
+
+contributor:
+    name_s: Contributor
+    name_p: Contributors
+    manage: Manage contributors
+    title_new: Add a contributor
+    title_edit: Edit a contributor
+    field:
+        civility: Civility
+        lastname: Lastname
+        firstname: Firstname
+        trigram: Trigram
+        user: Associated user
+    message:
+        no_items: No contributors
+
+role:
+    name_s: Role
+    name_p: Roles
+    manage: Manage roles
+    title_new: Add a role
+    title_edit: Edit a role
+    field:
+        name: Name
+        is_external: External?
+        is_default: Default?
+        permissions: Permissions
+    placeholder:
+        name: Please enter the role name
+    form:
+        resource: Resource
+        check_all: Check all
+    error:
+        super_admin_delete: The Super-Admin role cannot be deleted.
+    message:
+        no_items: No roles
+
+permission:
+    name_s: Permission
+    name_p: Permissions
+    manage: Manage permissions
+    title_new: Add a permission
+    title_edit: Edit a permission
+    field:
+        name: Name
+    placeholder:
+        name: Please enter the permission name
+    help:
+        name: '"action resource" convention, e.g. "edit users": permissions are grouped by resource on the role form.'
+    message:
+        no_items: No permissions
+
+api:
+    error:
+        invalid_json: The request JSON payload is invalid.
+
+admin:
+    title: Administration

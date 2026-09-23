@@ -1,0 +1,23 @@
+{#
+ # Breadcrumb trail. `items`: list of {label (already translated), url?};
+ # the last item is the current page. The dashboard is always first.
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb m-0">
+        <li class="breadcrumb-item{{ items is empty ? ' active' }}">
+            {% if items is empty %}
+                {{ 'menu.dashboard'|trans }}
+            {% else %}
+                <a href="{{ path('gingerminds_core_dashboard') }}">{{ 'menu.dashboard'|trans }}</a>
+            {% endif %}
+        </li>
+        {% for item in items %}
+            {% if loop.last or item.url is not defined or not item.url %}
+                <li class="breadcrumb-item{{ loop.last ? ' active' }}"{% if loop.last %} aria-current="page"{% endif %}>{{ item.label }}</li>
+            {% else %}
+                <li class="breadcrumb-item"><a href="{{ item.url }}">{{ item.label }}</a></li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>

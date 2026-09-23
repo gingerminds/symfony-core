@@ -1,0 +1,25 @@
+// Icon wrapper for the delete confirmation modal (modal-delete.blade.php).
+// Defined as its own class rather than reusing the theme's avatar-sm/avatar-title
+// utilities, since those render as a wide pill here instead of a circle.
+.modal-delete-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    font-size: 1.5rem;
+
+    // The icon glyph itself isn't always perfectly centered within its own
+    // box (same issue as the media-select thumbnail placeholders), so it
+    // needs its own nested flex centering rather than relying solely on the
+    // parent's centering.
+    i {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1em;
+        height: 1em;
+        line-height: 1;
+    }
+}

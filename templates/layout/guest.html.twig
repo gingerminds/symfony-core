@@ -1,0 +1,31 @@
+{#
+ # Guest shell (no sidebar/topbar), used by the login page.
+ # Port of the Laravel core `layouts/master-without-nav`.
+ #
+ # Blocks: title, stylesheets, javascripts, body_attributes, body, content.
+ #}
+<!DOCTYPE html>
+<html lang="{{ app.request.locale|default('fr')|replace({'_': '-'}) }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Gingerminds">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}{% endblock %} | {{ gm_admin_title() }}</title>
+    {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
+    {% endblock %}
+    {% block javascripts %}
+        {{ importmap('gingerminds-core-admin') }}
+    {% endblock %}
+</head>
+<body{% block body_attributes %}{% endblock %}>
+{% block body %}
+    <div class="account-pages py-5">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+{% endblock %}
+</body>
+</html>

@@ -1,0 +1,28 @@
+{#
+ # Admin sidebar: logo, menu from gm_admin_menu() (AdminMenuProviderInterface
+ # services), collapse-to-icons toggle (Stimulus `gm-sidebar`, remembered in
+ # localStorage).
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+<nav class="sidebar d-flex flex-column flex-shrink-0" id="gm-sidebar" data-controller="gm-sidebar" aria-label="{{ 'menu.main'|trans }}">
+    <button type="button" class="sidebar-toggle" data-action="gm-sidebar#toggle" aria-controls="gm-sidebar" title="{{ 'menu.toggle'|trans }}">
+        <span class="sidebar-toggle-icon"></span>
+        <span class="visually-hidden">{{ 'menu.toggle'|trans }}</span>
+    </button>
+
+    {% block sidebar_logo %}
+        <a href="{{ path('gingerminds_core_dashboard') }}" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+            <i class="bi bi-grid-1x2-fill fs-4 me-2"></i>
+            <span class="fs-4 logo-text">{{ gm_admin_title() }}</span>
+        </a>
+    {% endblock %}
+    <hr>
+
+    <div class="sidebar-menu">
+        <ul class="list-unstyled ps-0" id="gm-sidebar-menu">
+            {% for item in gm_admin_menu() %}
+                {% include '@GingermindsCore/layout/_menu_item.html.twig' with {item: item, index: loop.index} only %}
+            {% endfor %}
+        </ul>
+    </div>
+</nav>

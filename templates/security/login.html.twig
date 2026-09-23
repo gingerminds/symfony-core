@@ -1,0 +1,63 @@
+{#
+ # Admin login page. The POST is handled by the firewall `form_login`
+ # (check_path gingerminds_core_login): _username, _password, _remember_me,
+ # _csrf_token (csrf_token('authenticate')).
+ # Vars: last_username, error (AuthenticationException|null)
+ #}
+{% extends '@GingermindsCore/layout/guest.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+
+{% block title %}{{ 'security.login.title'|trans }}{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6 col-xl-5">
+            <div class="card overflow-hidden">
+                <div class="bg-primary-subtle">
+                    <div class="text-primary p-4">
+                        <h5 class="text-primary">{{ 'security.login.welcome_back'|trans }}</h5>
+                        <p class="mb-0">{{ 'security.login.sign_in_to_access'|trans({'%app%': gm_admin_title()}) }}</p>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" action="{{ path('gingerminds_core_login') }}" data-turbo="false">
+                        {% if error %}
+                            <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="username" class="form-label">{{ 'security.login.username'|trans }}</label>
+                            <input type="email" name="_username" id="username" class="form-control" value="{{ last_username }}"
+                                   placeholder="{{ 'security.login.username_placeholder'|trans }}" autocomplete="email" required autofocus>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">{{ 'security.login.password'|trans }}</label>
+                            <div class="input-group" data-controller="gm-password-toggle">
+                                <input type="password" name="_password" id="password" class="form-control"
+                                       placeholder="{{ 'security.login.password_placeholder'|trans }}" autocomplete="current-password" required
+                                       data-gm-password-toggle-target="input">
+                                <button class="btn btn-light border" type="button" data-action="gm-password-toggle#toggle"
+                                        title="{{ 'action.show_password'|trans }}">
+                                    <i class="bi bi-eye" data-gm-password-toggle-target="icon"></i>
+                                    <span class="visually-hidden">{{ 'action.show_password'|trans }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="remember_me" name="_remember_me">
+                            <label class="form-check-label" for="remember_me">{{ 'security.login.remember'|trans }}</label>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                        <div class="mt-3 d-grid">
+                            <button class="btn btn-primary" type="submit">{{ 'security.login.submit'|trans }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

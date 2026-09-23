@@ -1,0 +1,44 @@
+{% extends '@GingermindsCore/crud/list.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+
+{% set columns = [
+    {label: '#', align: 'center'},
+    {label: 'user.field.email', property: 'email', sortable: true},
+    {label: 'role.name_p'},
+    {label: 'contributor.name_s', property: 'contributor.lastname', sortable: true},
+    {label: 'common.actions', align: 'end'},
+] %}
+
+{% block table_empty_icon %}bi-person-search{% endblock %}
+
+{% block table_row %}
+    {% set item_label = item.email %}
+    <td class="text-center text-muted small">{{ row_number }}</td>
+    <td>
+        {% if is_granted('EDIT', item) %}
+            <a href="{{ path(resource.route('edit'), {id: item.id}) }}" class="text-body fw-medium">{{ item.email }}</a>
+        {% else %}
+            <span class="fw-medium">{{ item.email }}</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if item.roleEntities is not empty %}
+            <div class="d-flex flex-wrap gap-1">
+                {% for role in item.roleEntities %}
+                    <span class="badge bg-primary-subtle text-primary fs-11">{{ role.name }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <span class="text-muted small fs-12">{{ 'common.none'|trans }}</span>
+        {% endif %}
+    </td>
+    <td>
+        {% if item.contributor %}
+            <div class="fw-medium fs-13">{{ item.contributor.fullName }}</div>
+            {% if item.contributor.trigram %}<div class="text-muted small fs-12">{{ item.contributor.trigram }}</div>{% endif %}
+        {% else %}
+            <span class="text-muted small fs-12">{{ 'common.none'|trans }}</span>
+        {% endif %}
+    </td>
+    <td class="text-end">{{ block('row_actions') }}</td>
+{% endblock %}

@@ -1,0 +1,35 @@
+.tree-item-row {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.15s;
+
+    &:hover {
+        background-color: #f8f9fa;
+    }
+}
+
+.tree-connector {
+    color: #adb5bd;
+}
+
+.drag-handle {
+    cursor: grab;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: #e9f0fb;
+}
+
+.sortable-chosen {
+    background: #f0f5ff;
+}
+
+.sortable-level {
+    min-height: 10px;
+}

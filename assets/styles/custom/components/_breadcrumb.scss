@@ -1,0 +1,26 @@
+
+// 
+// breadcrumb.scss
+//
+
+
+.breadcrumb {
+    padding: 0.75rem 1rem;
+    background-color: var(--#{$prefix}tertiary-bg);
+    border-radius: $border-radius;
+}
+
+// Breadcrumb item arrow
+.breadcrumb-item {
+    font-size: 0.85rem;
+    font-weight: $font-weight-medium;
+    > a {
+        color: var(--#{$prefix}emphasis-color);
+    }
+    +.breadcrumb-item {
+        &::before {
+            font-family: "Material Design Icons";
+        }
+    }
+}
+  

@@ -1,0 +1,24 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    Gingerminds\CoreBundle\Tests\Application\:
+        resource: '../'
+        exclude:
+            - '../Kernel.php'
+            - '../importmap.php'
+            - '../var/'
+            - '../config/'
+            - '../public/'
+            - '../bin/'
+            - '../templates/'
+            - '../assets/'
+            - '../translations/'
+            - '../Entity/'
+            - '../Enum/'
+            - '../Override/'
+
+    # Keep PHPUnit output clean (the default logger writes errors to stderr).
+    logger:
+        class: Psr\Log\NullLogger

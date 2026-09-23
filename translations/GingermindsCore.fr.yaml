@@ -1,0 +1,202 @@
+# Gingerminds core admin — French (primary language).
+# Port of the Laravel core resources/lang/fr/translation.php.
+# Override any key from a project with translations/GingermindsCore.fr.yaml.
+
+common:
+    actions: Actions
+    display: Afficher
+    none: Aucun
+    settings: Paramètres
+    previous: Précédent
+    next: Suivant
+    'yes': Oui
+    'no': Non
+    from: Du
+    to: Au
+    number_from: De
+    number_to: À
+    here: ici
+    all: Tous
+    value: Valeur
+    loading: Chargement...
+
+menu:
+    dashboard: Tableau de bord
+    administration: Administration
+    general: Général
+    configuration: Configuration
+    main: Menu principal
+    toggle: Réduire / déplier le menu
+
+dashboard:
+    welcome: 'Bienvenue, %name% !'
+    intro: 'Utilisez le menu pour gérer les contenus de %app%.'
+
+crud:
+    title_list: 'Liste des %resource%'
+    title_new: 'Ajouter : %resource%'
+    title_edit: 'Modifier : %resource%'
+
+list:
+    no_result: Aucun résultat trouvé
+    no_more_results: Aucun autre résultat
+    nb_results: 'Résultats %first% à %last% sur %total%'
+    items_per_page: Nombre d'éléments par page
+    pagination: Pagination
+    first: Première page
+    last: Dernière page
+
+flash:
+    created: '%resource% « %label% » créé(e) avec succès.'
+    updated: '%resource% « %label% » mis(e) à jour avec succès.'
+    deleted: '%resource% « %label% » supprimé(e) avec succès.'
+    invalid_csrf: 'Jeton de sécurité invalide, veuillez réessayer.'
+    profile_updated: Votre profil a été mis à jour.
+
+modal:
+    title_create: 'Ajouter {model}'
+    title_edit: 'Modifier {model}'
+    title_delete: Confirmer la suppression
+    title_default: Chargement...
+
+confirm:
+    title: Confirmation
+    message: 'Des modifications n''ont pas été enregistrées. Voulez-vous vraiment quitter la page ?'
+
+security:
+    login:
+        title: Connexion
+        welcome_back: Bon retour !
+        sign_in_to_access: 'Connectez-vous pour accéder à %app%.'
+        username: Identifiant
+        username_placeholder: Entrez votre identifiant
+        password: Mot de passe
+        password_placeholder: Entrez votre mot de passe
+        remember: Se souvenir de moi
+        submit: Se connecter
+
+form:
+    name: Nom
+    lastname: Nom
+    firstname: Prénom
+    code: Code
+    email: Email
+    label: Libellé
+    title: Titre
+    description: Description
+    is_active: Actif ?
+    active: Actif
+    inactive: Inactif
+    position: Position
+    placeholder:
+        search: Rechercher...
+    helpers:
+        no_change_if_kept_empty: Laisser vide pour conserver le paramètre actuel.
+
+action:
+    filter: Filtrer
+    filters: Filtres
+    search: Rechercher
+    clear_filters: Effacer les filtres
+    select: Sélectionner
+    save: Enregistrer
+    cancel: Annuler
+    create: Ajouter
+    edit: Modifier
+    delete: Supprimer
+    remove: Supprimer
+    remove_confirm: 'Êtes-vous sûr de vouloir supprimer « %label% » ?'
+    remove_confirm_default: Êtes-vous sûr de vouloir supprimer cet élément ?
+    confirm: Confirmer
+    close: Fermer
+    sign_out: Se déconnecter
+    see: Voir
+    move_up: Monter
+    move_down: Descendre
+    back: Retour
+    show_password: Afficher le mot de passe
+
+civility:
+    mr: M.
+    mrs: Mme
+
+profile:
+    name: Profil
+    settings: Paramètres du profil
+
+user:
+    name_s: Utilisateur
+    name_p: Utilisateurs
+    manage: Gérer les utilisateurs
+    title_new: Ajouter un utilisateur
+    title_edit: Modifier un utilisateur
+    field:
+        email: Email
+        password: Mot de passe
+        password_confirmation: Confirmation
+        roles: Rôles
+        contributor: Collaborateur
+    contributor:
+        new: — Nouveau collaborateur —
+        none: — Aucun —
+        info: Modifier les informations du collaborateur associé.
+    message:
+        no_items: Aucun utilisateur
+
+contributor:
+    name_s: Collaborateur
+    name_p: Collaborateurs
+    manage: Gérer les collaborateurs
+    title_new: Ajouter un collaborateur
+    title_edit: Modifier un collaborateur
+    field:
+        civility: Civilité
+        lastname: Nom
+        firstname: Prénom
+        trigram: Trigramme
+        user: Utilisateur associé
+    message:
+        no_items: Aucun collaborateur
+
+role:
+    name_s: Rôle
+    name_p: Rôles
+    manage: Gérer les rôles
+    title_new: Ajouter un rôle
+    title_edit: Modifier un rôle
+    field:
+        name: Nom
+        is_external: Externe ?
+        is_default: Par défaut ?
+        permissions: Permissions
+    placeholder:
+        name: Veuillez saisir le nom du rôle
+    form:
+        resource: Ressource
+        check_all: Tout cocher
+    error:
+        super_admin_delete: Le rôle Super-Admin ne peut pas être supprimé.
+    message:
+        no_items: Aucun rôle
+
+permission:
+    name_s: Permission
+    name_p: Permissions
+    manage: Gérer les permissions
+    title_new: Ajouter une permission
+    title_edit: Modifier une permission
+    field:
+        name: Nom
+    placeholder:
+        name: Veuillez saisir le nom de la permission
+    help:
+        name: 'Convention « action ressource », par exemple « edit users » : la permission est regroupée par ressource sur le formulaire des rôles.'
+    message:
+        no_items: Aucune permission
+
+api:
+    error:
+        invalid_json: Le contenu JSON de la requête est invalide.
+
+admin:
+    title: Administration

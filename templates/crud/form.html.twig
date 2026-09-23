@@ -1,0 +1,84 @@
+{#
+ # Create / edit form of a resource. Port of the Laravel core `layouts/crud/form`.
+ #
+ # Receives the AbstractCrudController::new()/edit() variables: resource,
+ # entity, form (FormView), is_new (+ the common list variables). Also
+ # usable without resource (profile page): set page_title and index_url.
+ #
+ # The form is rendered with `@GingermindsCore/form/theme.html.twig`
+ # (12-column grid driven by the `size` field option).
+ #
+ # Variables (top of the child template, outside any block):
+ #   page_title     default: "<resource>.title_new|title_edit", else crud.title_new|edit
+ #   breadcrumb     default: [<resource>.name_p (link), page_title]
+ #   index_url      cancel link target (default: resource index), false/null hides it
+ #   form_id        default: "<resource>-form"
+ #   form_themes    extra form themes, applied after the admin one
+ #   form_attr      extra form_start() attributes
+ #   is_disabled    disables the submit button
+ #
+ # Blocks (besides the base.html.twig ones):
+ #   form_subheader     above the form
+ #   form_nav           tab headers (see form_tabs.html.twig)
+ #   form_body          fields; default: every field in a card. Override it to
+ #                      lay fields out yourself, e.g. with an included _form.html.twig
+ #   form_buttons       cancel + save
+ #   additional_infos   below the form
+ #}
+{% extends '@GingermindsCore/layout/base.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+{% import '@GingermindsCore/components/macros.html.twig' as gm %}
+
+{% set has_resource = resource is defined and resource is not null %}
+{% set is_new = is_new ?? false %}
+{% if has_resource %}
+    {% set domain = resource.translationDomain %}
+    {% set resource_label = resource.translationKey('name_s')|trans({}, domain) %}
+    {% set page_title = page_title ?? gm.trans(
+        resource.translationKey(is_new ? 'title_new' : 'title_edit'), domain, {},
+        (is_new ? 'crud.title_new' : 'crud.title_edit')|trans({'%resource%': resource_label})
+    ) %}
+    {% set index_url = index_url ?? path(resource.route('index'), route_parameters ?? {}) %}
+    {% set breadcrumb = breadcrumb ?? [
+        {label: resource.translationKey('name_p')|trans({}, domain), url: index_url},
+        {label: page_title},
+    ] %}
+    {% set form_id = form_id ?? resource.name ~ '-form' %}
+{% endif %}
+{% set page_title = page_title ?? '' %}
+{% set index_url = index_url ?? null %}
+{% set form_id = form_id ?? 'gm-form' %}
+{% set breadcrumb = breadcrumb ?? [{label: page_title}] %}
+
+{% form_theme form with ['@GingermindsCore/form/theme.html.twig']|merge(form_themes ?? []) %}
+
+{% block content %}
+    {% block form_subheader %}{% endblock %}
+
+    {{ form_start(form, {attr: {id: form_id, class: 'crud-form', novalidate: 'novalidate', autocomplete: 'off'}|merge(form_attr ?? {})}) }}
+        {% block form_nav %}{% endblock %}
+
+        {% block form_body %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    {{ form_widget(form) }}
+                </div>
+            </div>
+        {% endblock %}
+
+        {{ form_rest(form) }}
+
+        {% block form_buttons %}
+            <div class="text-end mb-4">
+                {% if index_url %}
+                    <a href="{{ index_url }}" class="btn btn-secondary me-2">{{ 'action.cancel'|trans }}</a>
+                {% endif %}
+                <button type="submit" class="btn btn-primary"{{ (is_disabled ?? false) ? ' disabled' }}>
+                    <i class="bi bi-check-lg me-1"></i>{{ 'action.save'|trans }}
+                </button>
+            </div>
+        {% endblock %}
+    {{ form_end(form, {render_rest: false}) }}
+
+    {% block additional_infos %}{% endblock %}
+{% endblock %}

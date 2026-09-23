@@ -1,0 +1,38 @@
+{#
+ # Delete confirmation modal, driven by the Stimulus `gm-delete-modal`
+ # controller: a trigger button (see the `delete_button` macro) carries
+ #   data-bs-toggle="modal" data-bs-target="#gm-delete-modal"
+ #   data-gm-delete-url="{{ path(resource.route('delete'), {id: item.id}) }}"
+ #   data-gm-delete-token="{{ csrf_token('delete-' ~ item.id) }}"
+ #   data-gm-delete-label="{{ item }}"
+ # and the controller copies them into the POST form when the modal opens.
+ # Vars: id? (default gm-delete-modal), title?
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% set id = id ?? 'gm-delete-modal' %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}-title" aria-hidden="true"
+     data-controller="gm-delete-modal"
+     data-gm-delete-modal-message-value="{{ 'action.remove_confirm'|trans({'%label%': '__label__'}) }}"
+     data-gm-delete-modal-default-message-value="{{ 'action.remove_confirm_default'|trans }}">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ id }}-title">{{ title ?? 'modal.title_delete'|trans }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'action.close'|trans }}"></button>
+            </div>
+            <div class="modal-body px-4 py-5 text-center">
+                <form method="post" action="#" data-gm-delete-modal-target="form">
+                    <input type="hidden" name="_token" value="" data-gm-delete-modal-target="token">
+                    <div class="modal-delete-icon bg-danger text-danger bg-opacity-10 mb-4 mx-auto">
+                        <i class="bi bi-trash"></i>
+                    </div>
+                    <p class="text-muted fs-16 mb-4" data-gm-delete-modal-target="message">{{ 'action.remove_confirm_default'|trans }}</p>
+                    <div class="hstack gap-2 justify-content-center mb-0">
+                        <button type="submit" class="btn btn-danger">{{ 'action.remove'|trans }}</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'action.cancel'|trans }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

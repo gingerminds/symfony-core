@@ -1,0 +1,35 @@
+{#
+ # Tabbed create / edit form: crud/form.html.twig with `tabs` (tab headers)
+ # and `tab_content` (tab panes) blocks. Port of `layouts/crud/form-tabs`.
+ #
+ #     {% extends '@GingermindsCore/crud/form_tabs.html.twig' %}
+ #     {% block tabs %}
+ #         <button type="button" class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general" role="tab">General</button>
+ #     {% endblock %}
+ #     {% block tab_content %}
+ #         <div class="tab-pane fade show active" id="tab-general" role="tabpanel">
+ #             <div class="row g-3">{{ form_row(form.name) }}</div>
+ #         </div>
+ #     {% endblock %}
+ #
+ # Fields left unrendered are output by form_rest() after the tabs.
+ #}
+{% extends '@GingermindsCore/crud/form.html.twig' %}
+
+{% block form_nav %}
+    <nav class="mb-3">
+        <div class="nav nav-tabs" role="tablist">
+            {% block tabs %}{% endblock %}
+        </div>
+    </nav>
+{% endblock %}
+
+{% block form_body %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="tab-content">
+                {% block tab_content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

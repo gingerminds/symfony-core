@@ -1,0 +1,33 @@
+{% extends '@GingermindsCore/crud/list.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+{% import '@GingermindsCore/components/macros.html.twig' as gm %}
+
+{% set columns = [
+    {label: '#', align: 'center'},
+    {label: 'role.field.name', property: 'name', sortable: true},
+    {label: 'role.field.is_external', align: 'center'},
+    {label: 'role.field.is_default', align: 'center'},
+    {label: 'permission.name_p', align: 'center'},
+    {label: 'common.actions', align: 'end'},
+] %}
+
+{% block table_empty_icon %}bi-shield-check{% endblock %}
+
+{% block table_row %}
+    <td class="text-center text-muted small">{{ row_number }}</td>
+    <td>
+        <div class="fs-13 mb-0">
+            {% if is_granted('EDIT', item) %}
+                <a href="{{ path(resource.route('edit'), {id: item.id}) }}" class="text-body fw-medium">{{ item.name }}</a>
+            {% else %}
+                <span class="fw-medium">{{ item.name }}</span>
+            {% endif %}
+        </div>
+    </td>
+    <td class="text-center">{{ gm.boolean_badge(item.external) }}</td>
+    <td class="text-center">{{ gm.boolean_badge(item.default) }}</td>
+    <td class="text-center">
+        <span class="badge bg-light text-body border fs-11">{{ item.permissionsCount }}</span>
+    </td>
+    <td class="text-end">{{ block('row_actions') }}</td>
+{% endblock %}

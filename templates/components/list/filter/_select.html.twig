@@ -1,0 +1,24 @@
+{#
+ # Select filter (`select`, `select-enum`, `select-state`): `config.choices`
+ # is value => label (translation key). Single: `all` clears the filter;
+ # multiple: `filters[property][]`, enhanced with Tom Select.
+ # Vars: property, config, value, label
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% set multiple = config.multiple ?? false %}
+{% set selected = (value is iterable ? value : (value is null ? [] : [value]))|map(v => v ~ '') %}
+{% set choice_domain = config.choice_translation_domain ?? config.translation_domain ?? null %}
+<div class="col-md-4">
+    <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
+    <select id="filter-{{ property }}" class="form-select" name="filters[{{ property }}]{{ multiple ? '[]' }}"
+            {% if multiple %}multiple data-controller="symfony--ux-autocomplete--autocomplete"{% endif %}>
+        {% if not multiple %}
+            <option value="all">{{ 'common.all'|trans }}</option>
+        {% endif %}
+        {% for choice_value, choice_label in config.choices ?? {} %}
+            <option value="{{ choice_value }}"{{ (choice_value ~ '') in selected ? ' selected' }}>
+                {{- choice_domain is same as(false) ? choice_label : choice_label|trans({}, choice_domain) -}}
+            </option>
+        {% endfor %}
+    </select>
+</div>

@@ -1,0 +1,120 @@
+// 
+// root.scss
+//
+
+//theme-light
+:root {
+    // Topbar - Default Light
+    --bs-header-bg:                              #{$header-bg}; 
+    --bs-header-item-color:                      #{$header-item-color}; 
+
+    // Topbar - Dark
+    --bs-header-dark-bg:                         #{$header-dark-bg}; 
+    --bs-header-dark-item-color:                 #{$header-dark-item-color}; 
+    
+    --bs-topbar-search-bg:                       #{$topbar-search-bg}; 
+
+    // Footer
+    --bs-footer-bg:                              #{$footer-bg}; 
+    --bs-footer-color:                           #{$footer-color}; 
+
+    // Horizontal nav
+    --bs-topnav-bg:                              #{$topnav-bg};
+    --bs-menu-item-color:                        #{$menu-item-color};
+    --bs-menu-item-active-color:                 #{$menu-item-active-color};
+
+    // Sidebar
+    --bs-sidebar-menu-primary-color:             #{$sidebar-menu-primary-color};
+    --bs-sidebar-menu-card-bg:                   #{$sidebar-menu-card-bg};
+
+    // Boxed layout width
+    --bs-boxed-body-bg:                          #{$boxed-body-bg};
+
+    --bs-display-none:                           #{$display-none};
+    --bs-display-block:                          #{$display-block};
+}
+
+//theme dark
+@if $enable-dark-mode {
+    @include color-mode(dark, true) { 
+        // Topbar - Default Light
+        --bs-header-bg:                              #{$header-bg-dark}; 
+        --bs-header-item-color:                      #{$header-item-color-dark}; 
+
+        // Topbar - Dark
+        --bs-header-dark-bg:                         #{$header-dark-bg-dark}; 
+        --bs-header-dark-item-color:                 #{$header-dark-item-color-dark}; 
+        --bs-topbar-search-bg:                       #{$topbar-search-bg-dark}; 
+
+        // Footer
+        --bs-footer-bg:                              #{$footer-bg-dark}; 
+        --bs-footer-color:                           #{$footer-color-dark}; 
+
+        // Horizontal nav
+        --bs-topnav-bg:                              #{$topnav-bg-dark};
+        --bs-menu-item-color:                        #{$menu-item-color-dark};
+        --bs-menu-item-active-color:                 #{$menu-item-active-color-dark};
+
+        // Boxed layout width
+        --bs-boxed-body-bg:                          #{$boxed-body-bg-dark};
+
+        // component variable
+        --bs-light:                                      #{$body-tertiary-bg-dark};
+        --bs-light-rgb:                                  #{to-rgb($body-tertiary-bg-dark)};
+        --bs-dark:                                       #{$body-tertiary-color-dark};
+        --bs-dark-rgb:                                   #{to-rgb($body-tertiary-color-dark)};
+
+        --bs-display-none:                           #{$display-none-dark};
+        --bs-display-block:                          #{$display-block-dark};
+
+        .btn-light {
+            --bs-btn-color:                                         #{$body-secondary-color-dark};
+            --bs-btn-bg:                                            #{$body-tertiary-bg-dark};
+            --bs-btn-border-color:                                  #{$body-tertiary-bg-dark};
+        }
+
+        .btn-outline-light {
+            --bs-btn-color:                                         #{$body-secondary-color-dark};
+            --bs-btn-border-color:                                  #{$body-tertiary-bg-dark};
+        }
+
+        .btn-light,
+        .btn-outline-light {
+            --bs-btn-hover-color:                        #{$body-secondary-color-dark};
+            --bs-btn-hover-bg:                           #{$body-tertiary-bg-dark};
+            --bs-btn-hover-border-color:                 #{$body-tertiary-bg-dark};
+            --bs-btn-active-color:                       #{$body-secondary-color-dark};
+            --bs-btn-active-bg:                          #{$body-tertiary-bg-dark};
+            --bs-btn-active-border-color:                #{$body-tertiary-bg-dark};
+            --bs-btn-focus-shadow-rgb:                   #{to-rgb($body-tertiary-bg-dark)};
+        }
+
+        .btn-dark {
+            --bs-btn-bg:                                 #{$body-color-dark};
+            --bs-btn-border-color:                       #{$body-color-dark};
+            --bs-btn-hover-bg:                           #{$body-color-dark};
+        }
+
+        .btn-outline-dark {
+            --bs-btn-color:                              #{$body-color-dark};
+            --bs-btn-border-color:                       #{$body-color-dark};
+        }
+
+        .dropdown-menu { 
+            --bs-dropdown-border-width:                  1px;
+        }
+
+        .table-light {
+            --bs-table-color:                                   #a6b0cf;
+            --bs-table-bg:                                      #32394e;
+            --bs-table-border-color:                            #32394e;
+        }
+
+        .table-dark {
+            --bs-table-color:                                   #a6b0cf;
+            --bs-table-bg:                                      #32394e;
+            --bs-table-border-color:                            #3a425a;
+        }
+
+    }
+}

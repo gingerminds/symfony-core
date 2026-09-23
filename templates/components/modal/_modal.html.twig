@@ -1,0 +1,28 @@
+{#
+ # Generic Bootstrap modal.
+ #
+ #     {% embed '@GingermindsCore/components/modal/_modal.html.twig' with {id: 'my-modal', title: 'My title', size: 'modal-lg'} %}
+ #         {% block modal_body %}...{% endblock %}
+ #         {% block modal_footer %}...{% endblock %}
+ #     {% endembed %}
+ #
+ # Open it with `data-bs-toggle="modal" data-bs-target="#my-modal"`.
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% set id = id ?? 'gm-modal' %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}-title" aria-hidden="true"{% block modal_attributes %}{% endblock %}>
+    <div class="modal-dialog modal-dialog-centered {{ size ?? 'modal-md' }}">
+        <div class="modal-content">
+            {% block modal_header %}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="{{ id }}-title">{% block modal_title %}{{ title ?? '' }}{% endblock %}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'action.close'|trans }}"></button>
+                </div>
+            {% endblock %}
+            <div class="modal-body">
+                {% block modal_body %}{% endblock %}
+            </div>
+            {% block modal_footer %}{% endblock %}
+        </div>
+    </div>
+</div>

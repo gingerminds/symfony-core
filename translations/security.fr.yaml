@@ -1,0 +1,9 @@
+security:
+    domain_not_authorized: Connexion refusée depuis ce domaine.
+    api:
+        credentials_required: Les champs « email » et « password » sont obligatoires.
+        too_many_attempts: Trop de tentatives de connexion. Réessayez dans quelques minutes.
+        invalid_credentials: Identifiants invalides.
+        invalid_token: Jeton d'API invalide ou expiré.
+        unauthenticated: Authentification requise.
+        logged_out: Vous êtes déconnecté.

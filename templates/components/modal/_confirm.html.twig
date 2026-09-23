@@ -1,0 +1,29 @@
+{#
+ # Confirmation modal before following a link, driven by the Stimulus
+ # `gm-confirm-modal` controller: a trigger (see the `confirm_link` macro)
+ # carries data-bs-toggle="modal" data-bs-target="#gm-confirm-modal"
+ # data-gm-confirm-url="..." and the confirm button then points to it.
+ # Vars: id? (default gm-confirm-modal), title?, message?
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% set id = id ?? 'gm-confirm-modal' %}
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}-title" aria-hidden="true" data-controller="gm-confirm-modal">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="{{ id }}-title">{{ title ?? 'confirm.title'|trans }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'action.close'|trans }}"></button>
+            </div>
+            <div class="modal-body px-4 py-5 text-center">
+                <div class="modal-delete-icon bg-primary text-primary bg-opacity-10 mb-4 mx-auto">
+                    <i class="bi bi-question-circle"></i>
+                </div>
+                <p class="text-muted fs-16 mb-4">{{ message ?? 'confirm.message'|trans }}</p>
+                <div class="hstack gap-2 justify-content-center mb-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'action.cancel'|trans }}</button>
+                    <a href="#" class="btn btn-primary" data-gm-confirm-modal-target="confirm">{{ 'action.confirm'|trans }}</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

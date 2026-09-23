@@ -1,0 +1,57 @@
+//
+// _topbar.scss
+//
+// Slim topbar of the admin shell (page title area + current user menu).
+// Replaces the Laravel template `#page-topbar` leftovers.
+//
+
+.gm-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    min-height: $header-height;
+    padding: 0 1.5rem;
+    background-color: var(--#{$prefix}header-bg);
+    border-bottom: 1px solid var(--#{$prefix}border-color);
+    color: var(--#{$prefix}header-item-color);
+
+    .gm-topbar-title {
+        margin-right: auto;
+        font-weight: $font-weight-semibold;
+        color: var(--#{$prefix}emphasis-color);
+    }
+
+    .gm-user-toggle {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding: .375rem .5rem;
+        border-radius: $border-radius;
+        color: var(--#{$prefix}header-item-color);
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+            background-color: var(--#{$prefix}tertiary-bg);
+            color: var(--#{$prefix}emphasis-color);
+        }
+    }
+
+    .gm-user-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+        background-color: var(--#{$prefix}sidebar-menu-primary-color);
+        color: $white;
+    }
+
+    .gm-user-info {
+        line-height: 1.2;
+        text-align: left;
+
+        small {
+            color: var(--#{$prefix}secondary-color);
+        }
+    }
+}

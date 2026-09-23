@@ -1,0 +1,9 @@
+{# Date range filter: filters[property][from] / filters[property][to]. Vars: property, config, value, label #}
+{% trans_default_domain 'GingermindsCore' %}
+{% for bound in ['from', 'to'] %}
+    <div class="col-md-2">
+        <label for="filter-{{ property }}-{{ bound }}" class="form-label">{{ label }} | {{ ('common.' ~ bound)|trans }}</label>
+        <input type="date" class="form-control" id="filter-{{ property }}-{{ bound }}"
+               name="filters[{{ property }}][{{ bound }}]" value="{{ value is iterable ? (value[bound] ?? '') : '' }}">
+    </div>
+{% endfor %}

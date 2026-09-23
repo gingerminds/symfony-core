@@ -1,0 +1,64 @@
+{#
+ # User fields (UserType): account card, roles card and contributor card.
+ # The contributor fields are shown once a contributor (or "new
+ # contributor") is selected (Stimulus `gm-contributor-fields`).
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex align-items-center py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'user.name_s'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {{ form_row(form.email, {size_columns: 12, attr: {placeholder: 'example@domain.com'}}) }}
+                    {{ form_row(form.password) }}
+                    {% if not is_new %}
+                        <div class="col-12"><div class="form-text mt-0">{{ 'form.helpers.no_change_if_kept_empty'|trans }}</div></div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        {% if form.roles is defined %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex align-items-center py-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-shield-check me-1 text-primary"></i> {{ 'user.field.roles'|trans }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">{{ form_row(form.roles, {size_columns: 12}) }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card shadow-sm mb-4" data-controller="gm-contributor-fields">
+            <div class="card-header bg-light d-flex align-items-center py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'user.field.contributor'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                {% if form.contributorId is defined %}
+                    <div class="row g-3 mb-3">
+                        {{ form_row(form.contributorId, {size_columns: 12, attr: {'data-gm-contributor-fields-target': 'select', 'data-action': 'change->gm-contributor-fields#toggle'}}) }}
+                    </div>
+                {% endif %}
+                <div class="border rounded p-3 bg-light-subtle" data-gm-contributor-fields-target="fields">
+                    {% if form.contributorId is defined %}
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-info-circle me-2 text-info fs-5"></i>
+                            <span class="text-muted small">{{ 'user.contributor.info'|trans }}</span>
+                        </div>
+                    {% endif %}
+                    <div class="row g-2">
+                        {{ form_row(form.contributorCivility, {size_columns: 12}) }}
+                        {{ form_row(form.contributorLastname, {size_columns: 12}) }}
+                        {{ form_row(form.contributorFirstname, {size_columns: 12}) }}
+                        {{ form_row(form.contributorTrigram, {size_columns: 12}) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

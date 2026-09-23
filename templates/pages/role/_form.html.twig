@@ -1,0 +1,85 @@
+{#
+ # Role fields (RoleType): name + flags card, then the `permissions`
+ # checkboxes grouped by resource (`permission_groups`: group => permission
+ # ids, from RoleController::getFormParameters()), with a "check all" switch
+ # per group and globally (Stimulus `gm-check-all`).
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex align-items-center justify-content-between py-3">
+        <h5 class="card-title mb-0"><i class="bi bi-shield-lock me-1 text-primary"></i> {{ 'role.name_s'|trans }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            {{ form_row(form.name, {attr: {placeholder: 'role.placeholder.name'|trans}}) }}
+            {{ form_row(form.isExternal, {size_columns: 3}) }}
+            {{ form_row(form.isDefault, {size_columns: 3}) }}
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4" data-controller="gm-check-all">
+    <div class="card-header bg-light d-flex align-items-center justify-content-between py-3">
+        <h5 class="card-title mb-0"><i class="bi bi-lock me-1 text-primary"></i> {{ 'role.field.permissions'|trans }}</h5>
+        <div class="form-check form-switch form-check-right mb-0">
+            <input class="form-check-input" type="checkbox" id="gm-check-all-permissions"
+                   data-gm-check-all-target="all" data-action="change->gm-check-all#toggleAll">
+            <label class="form-check-label fw-medium" for="gm-check-all-permissions">{{ 'role.form.check_all'|trans }}</label>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {{ form_errors(form.permissions) }}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th scope="col" style="width: 25%;">{{ 'role.form.resource'|trans }}</th>
+                        <th scope="col">{{ 'role.field.permissions'|trans }}</th>
+                        <th scope="col" class="text-end" style="width: 140px;">{{ 'role.form.check_all'|trans }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for group, ids in permission_groups ?? {} %}
+                        <tr>
+                            <td class="fw-bold text-uppercase text-primary small">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-folder2-open me-2 fs-5 op-5"></i>{{ group }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="row g-2">
+                                    {% for id in ids %}
+                                        {% set child = form.permissions.children[id] ?? null %}
+                                        {% if child %}
+                                            <div class="col-auto">
+                                                <div class="border rounded px-3 py-1 bg-light-subtle gm-permission-check">
+                                                    {{ form_widget(child, {
+                                                        attr: {'data-gm-check-all-target': 'item', 'data-group': group, 'data-action': 'change->gm-check-all#refresh'},
+                                                        label: child.vars.label|replace({(' ' ~ group): ''}),
+                                                        label_attr: {class: 'small text-capitalize mb-0'},
+                                                    }) }}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <div class="form-check form-switch form-check-right d-inline-block mb-0">
+                                    <input class="form-check-input" type="checkbox" id="gm-check-group-{{ loop.index }}"
+                                           data-gm-check-all-target="group" data-group="{{ group }}" data-action="change->gm-check-all#toggleGroup"
+                                           aria-label="{{ 'role.form.check_all'|trans }} {{ group }}">
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {# Permissions not listed in permission_groups (if any) #}
+        {% for child in form.permissions.children|filter(c => not c.rendered) %}
+            <div class="form-check form-check-inline m-3">{{ form_widget(child) }}</div>
+        {% endfor %}
+        {% do form.permissions.setRendered %}
+    </div>
+</div>

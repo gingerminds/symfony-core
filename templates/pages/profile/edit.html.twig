@@ -1,0 +1,45 @@
+{#
+ # Current user's profile (ProfileType): account (email, password) and own
+ # contributor. Vars: user, form.
+ #}
+{% extends '@GingermindsCore/crud/form.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+
+{% set page_title = 'profile.name'|trans %}
+{% set breadcrumb = [{label: page_title}] %}
+{% set index_url = false %}
+{% set form_id = 'gm-profile-form' %}
+
+{% block form_body %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex align-items-center py-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'profile.settings'|trans }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {{ form_row(form.email, {size_columns: 12, attr: {placeholder: 'example@domain.com'}}) }}
+                        {{ form_row(form.password) }}
+                        <div class="col-12"><div class="form-text mt-0">{{ 'form.helpers.no_change_if_kept_empty'|trans }}</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light d-flex align-items-center py-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'user.field.contributor'|trans }}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {{ form_row(form.contributorCivility, {size_columns: 12}) }}
+                        {{ form_row(form.contributorLastname, {size_columns: 12}) }}
+                        {{ form_row(form.contributorFirstname, {size_columns: 12}) }}
+                        {{ form_row(form.contributorTrigram, {size_columns: 12}) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

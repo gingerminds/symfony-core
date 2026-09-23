@@ -1,0 +1,281 @@
+
+.sidebar {
+  width: $sidebar-width;
+  flex-shrink: 0;
+  overflow: visible;
+  background-color: $sidebar-dark-bg;
+  position: relative;
+  padding: 1rem .75rem;
+  transition: width .25s ease, padding .25s ease;
+}
+
+.sidebar-menu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.dropdown-toggle { outline: 0; }
+
+.sidebar hr {
+  border-top-color: rgba($white, .15);
+  opacity: 1;
+  margin: .5rem 0 1rem;
+}
+
+// Collapse-to-icons rail toggle
+.sidebar-toggle {
+  position: absolute;
+  top: 1.25rem;
+  right: -13px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: $sidebar-dark-bg;
+  border: 1px solid rgba($white, .15);
+  color: $white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: .75rem;
+  z-index: 5;
+
+  &:hover {
+    background-color: var(--bs-sidebar-menu-primary-color);
+    border-color: var(--bs-sidebar-menu-primary-color);
+    color: $white;
+  }
+}
+
+// A CSS-mask chevron instead of the bi-chevron-left icon font glyph, which
+// isn't reliably centered within its own glyph box at small sizes.
+.sidebar-toggle-icon {
+  display: block;
+  width: .75em;
+  height: .75em;
+  background-color: $white;
+  -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M11 14L5 8l6-6'/%3e%3c/svg%3e");
+  mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M11 14L5 8l6-6'/%3e%3c/svg%3e");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: transform .25s ease;
+}
+
+// Logo mark shown only in collapsed (rail) mode; full logo hidden then
+.logo-mark { display: none; }
+
+// Groups of menu items (Produits / Contenu / Paramètres...) rendered as cards.
+// NB: deliberately not named .card-group — that's a built-in Bootstrap class
+// (display:flex; flex-flow:row wrap, for laying out .card elements side by side).
+.sidebar-card-group {
+  background-color: var(--bs-sidebar-menu-card-bg);
+  border-radius: $border-radius-lg;
+  padding: .375rem;
+  margin-bottom: .625rem;
+}
+
+.btn-toggle,
+.btn-single {
+  padding: .5rem .625rem;
+  border-radius: $border-radius;
+  font-weight: 600;
+  line-height: 1.25;
+  color: $sidebar-dark-menu-item-color;
+  background-color: transparent;
+  appearance: none;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  width: 100%;
+  text-align: left;
+
+  // Firefox's UA stylesheet pads/borders the focus ring inside <button>
+  // via a pseudo-element that author padding/border-0 can't reach, which
+  // otherwise makes .btn-toggle (a <button>) render taller than .btn-single
+  // (an <a>) even with identical padding.
+  &::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+  }
+
+  &:hover,
+  &:focus {
+    color: $white;
+    background-color: color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 15%, transparent);
+  }
+}
+
+// A toggle header whose children contain the active page: a soft tint (it isn't
+// itself "selected", it just contains the selection).
+// Explicit `color` is required here: Bootstrap's own `.btn.active` rule sets
+// `color: var(--bs-btn-active-color)` (a dark value) and would otherwise win.
+.btn-toggle.active {
+  color: $white;
+  background-color: color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 15%, transparent);
+}
+
+// Dashboard-style single items behave like a selected leaf: solid fill when active.
+.btn-single.active {
+  color: $white;
+  background-color: var(--bs-sidebar-menu-primary-color);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 35%, transparent);
+}
+
+.btn-toggle-nav {
+  li {
+    width: 100%;
+  }
+
+  li a {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: .5rem .625rem .5rem 2rem;
+    margin-top: .25rem;
+    border-radius: $border-radius;
+    color: $sidebar-dark-menu-sub-item-color;
+
+    &:hover,
+    &:focus {
+      color: $white;
+      background-color: color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 15%, transparent);
+    }
+  }
+}
+
+// Chevron, pushed to the end of the row (::after) and rotated when the group is open
+.btn-toggle::after {
+  display: inline-block;
+  width: 0.875em;
+  height: 0.875em;
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+  background-color: $white;
+  -webkit-mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 14l6-6-6-6'/%3e%3c/svg%3e");
+  mask-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23000' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M5 14l6-6-6-6'/%3e%3c/svg%3e");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  content: "";
+  transition: transform .35s ease;
+  transform-origin: center;
+}
+
+.btn-toggle[aria-expanded="true"]::after {
+  transform: rotate(90deg);
+}
+
+.bi::before {
+  vertical-align: 0!important;
+}
+
+ul .bi::before {
+  vertical-align: .125em!important;
+}
+
+.sidebar .btn-toggle-nav li a.active {
+  color: $white;
+  background-color: var(--bs-sidebar-menu-primary-color);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 35%, transparent);
+
+  i { color: $white; }
+}
+
+// Profile block
+.sidebar-avatar {
+  background-color: var(--bs-sidebar-menu-primary-color);
+}
+
+.sidebar-profile-toggle {
+  padding: .5rem .625rem;
+  border-radius: $border-radius;
+  color: $white;
+
+  &:hover,
+  &:focus {
+    color: $white;
+    background-color: color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 15%, transparent);
+  }
+}
+
+.profile-info {
+  overflow: hidden;
+  line-height: 1.25;
+}
+
+.profile-role {
+  color: rgba($white, .65);
+  font-weight: 400;
+}
+
+.sidebar .dropdown-menu {
+  --bs-dropdown-bg: var(--bs-sidebar-menu-card-bg);
+  --bs-dropdown-border-width: 0;
+  --bs-dropdown-link-color: #{$white};
+  --bs-dropdown-link-hover-color: #{$white};
+  --bs-dropdown-link-hover-bg: color-mix(in srgb, var(--bs-sidebar-menu-primary-color) 15%, transparent);
+  --bs-dropdown-divider-bg: rgba(255, 255, 255, .1);
+  border-radius: $border-radius-lg;
+  padding: .5rem;
+}
+
+.sidebar .dropdown-menu .dropdown-item {
+  border-radius: $border-radius;
+  padding: .5rem .75rem;
+}
+
+// Collapsed rail mode (icons only)
+.sidebar.collapsed {
+  width: $sidebar-collapsed-width;
+  padding: 1rem .5rem;
+
+  .logo-text { display: none; }
+
+  .sidebar-card-group { padding: .375rem .25rem; }
+
+  .btn-toggle,
+  .btn-single,
+  .sidebar-profile-toggle {
+    justify-content: center;
+    padding: .5rem 0;
+  }
+
+  .btn-toggle .label-text,
+  .btn-single .label-text,
+  .btn-toggle::after { display: none; }
+
+  // Bootstrap's collapse data-api listener is registered on `document` with
+  // useCapture:true, so it always runs before any bubble-phase JS guard on an
+  // ancestor — stopPropagation() from a descendant can't intercept it in time.
+  // Blocking the click at the CSS layer sidesteps that entirely.
+  .btn-toggle {
+    pointer-events: none;
+  }
+
+  .btn-toggle i,
+  .btn-single i,
+  .sidebar-avatar,
+  .sidebar-profile-toggle img { margin-right: 0 !important; }
+
+  // The logo link isn't a .btn-toggle/.btn-single — center it explicitly too.
+  .logo-mark {
+    display: block;
+    margin: 0 auto;
+  }
+
+  // Bootstrap's collapse plugin sets an inline height while animating; force it shut in rail mode
+  .collapse { display: none !important; }
+
+  .sidebar-profile-toggle .profile-info { display: none; }
+
+  .sidebar-toggle-icon { transform: rotate(180deg); }
+}

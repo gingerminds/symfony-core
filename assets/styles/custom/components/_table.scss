@@ -1,0 +1,41 @@
+//
+// _table.scss
+//
+
+.table {
+  th {
+      font-weight: $font-weight-semibold;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.025em;
+      color: $gray-600;
+      border-top: none;
+  }
+  
+  td {
+      vertical-align: middle;
+  }
+}
+
+.table-dark>:not(:last-child)>:last-child>*{
+  border-bottom-color:  $table-dark-border-color;
+}
+
+
+.table-bordered {
+  border: $table-border-width solid $table-border-color;
+}
+
+.table-nowrap {
+  th, td {
+    white-space: nowrap;
+  }
+}
+
+.table>:not(:first-child) {
+    border-top: 0;
+}
+
+.sortable {
+    cursor: pointer;
+}

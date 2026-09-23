@@ -1,0 +1,108 @@
+{#
+ # Hierarchical / manually ordered list with drag & drop reordering.
+ # Port of the Laravel core `layouts/crud/list-tree`: same filters and card
+ # chrome as crud/list.html.twig, with a `tree` block instead of a table.
+ #
+ # Variables (top of the child template): page_title, list_title, breadcrumb,
+ # route / route_parameters (as crud/list.html.twig) and
+ #   tree_reorder_url      URL receiving the new order (drag & drop disabled when null)
+ #   tree_csrf_token_id    optional CSRF token id, sent as the `X-CSRF-Token` header
+ #
+ # Drag & drop (Stimulus `gm-sortable-tree`, Sortable.js): one Sortable per
+ # `.sortable-level` element (holding `data-parent-id`, empty for the root),
+ # its direct children being `.sortable-item` elements (holding
+ # `data-item-id`), dragged by their `.drag-handle`. On drop, the controller
+ # POSTs JSON to tree_reorder_url:
+ #     {"ids": [3, 1, 2], "parent_id": 5}
+ # the ordered ids of that level (parent_id null for the root level); one
+ # level is reordered at a time. The endpoint should check the CSRF token
+ # (`X-CSRF-Token` header) and answer 2xx; on error the page is reloaded.
+ #
+ # Recursive tree partial example (templates/admin/category/_tree.html.twig):
+ #
+ #     <div class="sortable-level" data-parent-id="{{ parent_id ?? '' }}">
+ #         {% for item in tree_items %}
+ #             <div class="sortable-item" data-item-id="{{ item.id }}">
+ #                 <div class="tree-item-row d-flex align-items-center p-2" style="padding-left: {{ depth * 1.5 + .5 }}rem !important">
+ #                     <i class="bi bi-grip-vertical drag-handle me-2"></i> {{ item.name }}
+ #                 </div>
+ #                 {% if item.children is not empty %}
+ #                     {% include 'admin/category/_tree.html.twig' with {tree_items: item.children, parent_id: item.id, depth: depth + 1} %}
+ #                 {% endif %}
+ #             </div>
+ #         {% endfor %}
+ #     </div>
+ #
+ # and in the index template:
+ #
+ #     {% extends '@GingermindsCore/crud/list_tree.html.twig' %}
+ #     {% set tree_reorder_url = path('admin_category_reorder') %}
+ #     {% set tree_csrf_token_id = 'reorder-category' %}
+ #     {% block tree %}{% include 'admin/category/_tree.html.twig' with {tree_items: roots, depth: 0} %}{% endblock %}
+ #}
+{% extends '@GingermindsCore/layout/base.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+{% import '@GingermindsCore/components/macros.html.twig' as gm %}
+
+{% set domain = resource.translationDomain %}
+{% set route = route ?? resource.route('index') %}
+{% set route_parameters = route_parameters ?? {} %}
+{% set page_title = page_title ?? resource.translationKey('name_p')|trans({}, domain) %}
+{% set list_title = list_title ?? gm.trans(resource.translationKey('manage'), domain, {}, page_title) %}
+{% set breadcrumb = breadcrumb ?? [{label: resource.translationKey('name_p')|trans({}, domain)}] %}
+{% set tree_reorder_url = tree_reorder_url ?? null %}
+{% set tree_csrf_token_id = tree_csrf_token_id ?? null %}
+
+{% block content %}
+    {% block list_before %}{% endblock %}
+
+    {% block list_filters %}
+        {% if (is_searchable ?? false) or ((is_filterable ?? false) and (filter_configs ?? []) is not empty) %}
+            {% include '@GingermindsCore/components/list/_filters.html.twig' %}
+        {% endif %}
+    {% endblock %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light py-3">
+            <div class="d-flex align-items-center gap-3">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-diagram-3 me-1 text-primary"></i>
+                    {% block list_title %}{{ list_title }}{% endblock %}
+                </h5>
+                {% block list_actions %}
+                    {% if is_granted('CREATE', resource.name) %}
+                        <a href="{{ path(resource.route('new'), route_parameters) }}" class="btn btn-sm btn-success">
+                            <i class="bi bi-plus-lg me-1"></i> {{ 'action.create'|trans }}
+                        </a>
+                    {% endif %}
+                {% endblock %}
+            </div>
+        </div>
+        <div class="card-body p-0"
+             {% if tree_reorder_url %}
+                 data-controller="gm-sortable-tree"
+                 data-gm-sortable-tree-url-value="{{ tree_reorder_url }}"
+                 {% if tree_csrf_token_id %}data-gm-sortable-tree-csrf-token-value="{{ csrf_token(tree_csrf_token_id) }}"{% endif %}
+             {% endif %}>
+            {% block tree %}{% endblock %}
+        </div>
+    </div>
+
+    {% block list_after %}{% endblock %}
+{% endblock %}
+
+{% block row_actions %}
+    <div class="btn-group">
+        {% if is_granted('EDIT', item) %}
+            {{ gm.edit_button(path(resource.route('edit'), route_parameters|merge({id: item.id}))) }}
+        {% endif %}
+        {% if is_granted('DELETE', item) %}
+            {{ gm.delete_button(path(resource.route('delete'), route_parameters|merge({id: item.id})), csrf_token('delete-' ~ item.id), item_label ?? (item ~ '')) }}
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block modals %}
+    {{ parent() }}
+    {% include '@GingermindsCore/components/modal/_delete.html.twig' %}
+{% endblock %}

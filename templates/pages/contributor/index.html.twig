@@ -1,0 +1,36 @@
+{% extends '@GingermindsCore/crud/list.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+
+{% set columns = [
+    {label: '#', align: 'center'},
+    {label: 'form.name', property: 'lastname', sortable: true},
+    {label: 'contributor.field.user'},
+    {label: 'common.actions', align: 'end'},
+] %}
+
+{% block table_empty_icon %}bi-people{% endblock %}
+
+{% block table_row %}
+    <td class="text-center text-muted small">{{ row_number }}</td>
+    <td>
+        <div class="fs-13 mb-0">
+            {% if is_granted('EDIT', item) %}
+                <a href="{{ path(resource.route('edit'), {id: item.id}) }}" class="text-body fw-medium">{{ item.fullName }}</a>
+            {% else %}
+                <span class="fw-medium">{{ item.fullName }}</span>
+            {% endif %}
+        </div>
+        {% if item.trigram %}<span class="text-muted small fs-12">{{ item.trigram }}</span>{% endif %}
+    </td>
+    <td>
+        {% if item.user %}
+            <div class="d-flex align-items-center">
+                <i class="bi bi-person-check me-1 text-success"></i>
+                <span class="text-muted">{{ item.user.email }}</span>
+            </div>
+        {% else %}
+            <span class="badge bg-warning-subtle text-warning fs-11">{{ 'common.none'|trans }}</span>
+        {% endif %}
+    </td>
+    <td class="text-end">{{ block('row_actions') }}</td>
+{% endblock %}

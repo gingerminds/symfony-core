@@ -1,0 +1,91 @@
+{#
+ # Reusable admin macros:
+ #     {% import '@GingermindsCore/components/macros.html.twig' as gm %}
+ #}
+
+{#
+ # Translates `key` in `domain`, falling back to the bundle domain, then to
+ # `fallback` (or the key itself). Lets project templates mix their own keys
+ # (`product.field.name`) with the core ones (`common.actions`).
+ #}
+{% macro trans(key, domain = null, parameters = {}, fallback = null) -%}
+    {%- set domain = domain ?? 'GingermindsCore' -%}
+    {%- set translated = key|trans(parameters, domain) -%}
+    {%- if translated == key and domain != 'GingermindsCore' -%}
+        {%- set translated = key|trans(parameters, 'GingermindsCore') -%}
+    {%- endif -%}
+    {{- translated == key and fallback is not null ? fallback : translated -}}
+{%- endmacro %}
+
+{#
+ # Table header cell of a list column:
+ # {label, property?, sortable?, align?, class?, translation_domain?}.
+ # Sortable columns link to gm_sort_path() when the entity is sortable.
+ #}
+{% macro sort_header(column, list_query, route, route_parameters = {}, is_sortable = true, domain = null) -%}
+    {%- set direction = column.property is defined and column.property ? gm_sort_direction(list_query, column.property) : null -%}
+    {%- set sortable = is_sortable and (column.sortable ?? false) and (column.property ?? null) -%}
+    {%- set label = column.label is defined and column.label is not same as(false) ? _self.trans(column.label, column.translation_domain ?? domain) : '' -%}
+    {%- set classes = [column.class ?? null, column.align is defined ? 'text-' ~ column.align : null, sortable ? 'sortable' : null, direction]|filter(c => c) -%}
+    <th scope="col"{% if classes is not empty %} class="{{ classes|join(' ') }}"{% endif %}{% if column.property is defined and column.property %} data-sort="{{ column.property }}"{% endif %}>
+        {%- if sortable -%}
+            <a href="{{ gm_sort_path(route, list_query, column.property, route_parameters) }}" class="text-reset text-decoration-none">
+                {{- label -}}
+                {%- if 'desc' == direction -%}
+                    <i class="bi bi-chevron-down ms-1"></i>
+                {%- elseif 'asc' == direction -%}
+                    <i class="bi bi-chevron-up ms-1"></i>
+                {%- else -%}
+                    <i class="bi bi-arrow-down-up ms-1 opacity-50 fs-11"></i>
+                {%- endif -%}
+            </a>
+        {%- else -%}
+            {{- label -}}
+        {%- endif -%}
+    </th>
+{%- endmacro %}
+
+{# Yes/No badge (port of components/field/display/boolean). #}
+{% macro boolean_badge(value) -%}
+    {%- if value -%}
+        <span class="badge bg-success">{{ 'common.yes'|trans({}, 'GingermindsCore') }}</span>
+    {%- else -%}
+        <span class="badge bg-danger">{{ 'common.no'|trans({}, 'GingermindsCore') }}</span>
+    {%- endif -%}
+{%- endmacro %}
+
+{# Edit link of a list row. #}
+{% macro edit_button(url) -%}
+    <a href="{{ url }}" class="btn btn-sm btn-outline-primary fs-12" title="{{ 'action.edit'|trans({}, 'GingermindsCore') }}">
+        <i class="bi bi-pencil-square"></i>
+        <span class="visually-hidden">{{ 'action.edit'|trans({}, 'GingermindsCore') }}</span>
+    </a>
+{%- endmacro %}
+
+{#
+ # Delete button opening the delete modal (`gm-delete-modal`, see
+ # components/modal/_delete.html.twig): POSTs `_token` to `url`.
+ #}
+{% macro delete_button(url, token, label = '', modal_id = 'gm-delete-modal') -%}
+    <button type="button"
+            class="btn btn-sm btn-outline-danger fs-12"
+            data-bs-toggle="modal"
+            data-bs-target="#{{ modal_id }}"
+            data-gm-delete-url="{{ url }}"
+            data-gm-delete-token="{{ token }}"
+            data-gm-delete-label="{{ label }}"
+            title="{{ 'action.delete'|trans({}, 'GingermindsCore') }}">
+        <i class="bi bi-trash"></i>
+        <span class="visually-hidden">{{ 'action.delete'|trans({}, 'GingermindsCore') }}</span>
+    </button>
+{%- endmacro %}
+
+{#
+ # Button asking confirmation before following `url` (see
+ # components/modal/_confirm.html.twig).
+ #}
+{% macro confirm_link(url, label, class = 'btn btn-sm btn-outline-secondary', modal_id = 'gm-confirm-modal') -%}
+    <button type="button" class="{{ class }}" data-bs-toggle="modal" data-bs-target="#{{ modal_id }}" data-gm-confirm-url="{{ url }}">
+        {{- label -}}
+    </button>
+{%- endmacro %}

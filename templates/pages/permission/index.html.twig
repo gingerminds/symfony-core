@@ -1,0 +1,21 @@
+{% extends '@GingermindsCore/crud/list.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+
+{% set columns = [
+    {label: '#', align: 'center'},
+    {label: 'permission.field.name', property: 'name', sortable: true},
+    {label: 'common.actions', align: 'end'},
+] %}
+
+{% block table_empty_icon %}bi-lock{% endblock %}
+
+{% block table_row %}
+    <td class="text-center text-muted small">{{ row_number }}</td>
+    <td>
+        <div class="d-flex align-items-center">
+            <i class="bi bi-key me-2 text-primary fs-13"></i>
+            <span class="fw-medium fs-13">{{ item.name }}</span>
+        </div>
+    </td>
+    <td class="text-end">{{ block('row_actions') }}</td>
+{% endblock %}

@@ -1,0 +1,19 @@
+{#
+ # Admin home. Override with templates/bundles/GingermindsCoreBundle/pages/dashboard.html.twig
+ #}
+{% extends '@GingermindsCore/layout/base.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+
+{% set page_title = 'menu.dashboard'|trans %}
+
+{% block content %}
+    {% set contributor = app.user.contributor ?? null %}
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h5 class="card-title">
+                {{ 'dashboard.welcome'|trans({'%name%': contributor and contributor.fullName ? contributor.fullName : app.user.userIdentifier}) }}
+            </h5>
+            <p class="text-muted mb-0">{{ 'dashboard.intro'|trans({'%app%': gm_admin_title()}) }}</p>
+        </div>
+    </div>
+{% endblock %}

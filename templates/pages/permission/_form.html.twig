@@ -1,0 +1,12 @@
+{# Permission fields (PermissionType). #}
+{% trans_default_domain 'GingermindsCore' %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light d-flex align-items-center py-3">
+        <h5 class="card-title mb-0"><i class="bi bi-key me-1 text-primary"></i> {{ 'permission.name_s'|trans }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            {{ form_row(form.name, {size_columns: 12, attr: {placeholder: 'permission.placeholder.name'|trans}}) }}
+        </div>
+    </div>
+</div>

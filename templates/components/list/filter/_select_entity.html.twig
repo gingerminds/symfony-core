@@ -1,0 +1,35 @@
+{#
+ # Entity filter (`select-entity`, alias `select-model`): `config.entity` is
+ # the entity class, `config.resource` an optional resource name.
+ #
+ # - Known resource (config.resource, or the resource registered for the
+ #   entity): remote Tom Select through the UX Autocomplete controller,
+ #   searching `gingerminds_core_autocomplete`; the selected values are
+ #   preloaded with their labels (gm_entity_choices(entity, value)).
+ # - Otherwise: local select of gm_entity_choices(entity).
+ #
+ # Vars: property, config, value, label
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% set multiple = config.multiple ?? false %}
+{% set entity = config.entity ?? config.model ?? '' %}
+{% set resource_name = config.resource ?? (gm_resource_for(entity).name ?? null) %}
+{% set selected = (value is iterable ? value : (value is null or value == 'all' ? [] : [value]))|map(v => v ~ '') %}
+{% set choices = resource_name ? gm_entity_choices(entity, selected) : gm_entity_choices(entity) %}
+<div class="col-md-4">
+    <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
+    <select id="filter-{{ property }}" class="form-select" name="filters[{{ property }}]{{ multiple ? '[]' }}"
+            {% if multiple %}multiple{% endif %}
+            data-controller="symfony--ux-autocomplete--autocomplete"
+            {% if resource_name %}data-symfony--ux-autocomplete--autocomplete-url-value="{{ path('gingerminds_core_autocomplete', {resource: resource_name}) }}"{% endif %}
+            data-symfony--ux-autocomplete--autocomplete-no-results-found-text-value="{{ 'list.no_result'|trans }}"
+            data-symfony--ux-autocomplete--autocomplete-loading-more-text-value="{{ 'common.loading'|trans }}"
+            data-symfony--ux-autocomplete--autocomplete-no-more-results-text-value="{{ 'list.no_more_results'|trans }}">
+        {% if not multiple %}
+            <option value="">{{ 'common.all'|trans }}</option>
+        {% endif %}
+        {% for choice in choices %}
+            <option value="{{ choice.value }}"{{ choice.value in selected ? ' selected' }}>{{ choice.text }}</option>
+        {% endfor %}
+    </select>
+</div>

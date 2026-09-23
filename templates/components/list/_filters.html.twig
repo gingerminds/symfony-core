@@ -1,0 +1,89 @@
+{#
+ # Collapsible filters panel of a list (search + FilterableInterface filters).
+ #
+ # Expects the CRUD index variables: resource, list_query, filters,
+ # is_searchable, is_filterable, filter_configs; optional route /
+ # route_parameters (defaults to the resource index).
+ #
+ # Filter inputs are named `filters[<property>]` (`[from]`/`[to]` for date and
+ # number ranges); the current sort and page size are kept, the page is reset.
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% set route = route ?? resource.route('index') %}
+{% set route_parameters = route_parameters ?? {} %}
+{% set filters = filters ?? list_query.filters %}
+{% set is_filtered = filters is not empty %}
+{% set domain = resource.translationDomain %}
+<div class="card shadow-sm mb-4">
+    <div class="card-body p-0">
+        <div class="accordion accordion-flush" id="gm-filters-accordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button fw-medium{{ is_filtered ? '' : ' collapsed' }}"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#gm-filters"
+                            aria-expanded="{{ is_filtered ? 'true' : 'false' }}" aria-controls="gm-filters">
+                        <i class="bi bi-funnel me-2 text-primary"></i>
+                        {{ 'action.filters'|trans }}
+                    </button>
+                </h2>
+                <div id="gm-filters" class="accordion-collapse collapse{{ is_filtered ? ' show' }}" data-bs-parent="#gm-filters-accordion">
+                    <div class="p-4 border-top">
+                        <form method="get" action="{{ path(route, route_parameters) }}" class="row g-3 align-items-end">
+                            {% if list_query.itemsPerPage %}<input type="hidden" name="itemsPerPage" value="{{ list_query.itemsPerPage }}">{% endif %}
+                            {% if list_query.sortBy %}
+                                <input type="hidden" name="sortBy" value="{{ list_query.sortBy }}">
+                                <input type="hidden" name="sort" value="{{ list_query.sort }}">
+                            {% endif %}
+
+                            {% if is_searchable %}
+                                {% include '@GingermindsCore/components/list/filter/_text.html.twig' with {
+                                    property: 'search',
+                                    label: 'action.search'|trans,
+                                    placeholder: 'form.placeholder.search'|trans,
+                                    value: filters.search ?? null,
+                                } only %}
+                            {% endif %}
+
+                            {% if is_filterable %}
+                                {% set templates = {
+                                    date: 'date',
+                                    number: 'number',
+                                    boolean: 'boolean',
+                                    select: 'select',
+                                    'select-enum': 'select',
+                                    'select-state': 'select',
+                                    'select-entity': 'select_entity',
+                                    'select-model': 'select_entity',
+                                } %}
+                                {% for property, config in filter_configs %}
+                                    {# `disabled_for_back: true` = API-only filter, hidden from the admin (Laravel filters_collection). #}
+                                    {% if not (config.disabled_for_back ?? false) %}
+                                        {% set template = config.template ?? (templates[config.type] is defined ? '@GingermindsCore/components/list/filter/_' ~ templates[config.type] ~ '.html.twig' : null) %}
+                                        {% if template %}
+                                            {% include template with {
+                                                property: property,
+                                                config: config,
+                                                value: filters[property] ?? null,
+                                                label: config.label is defined ? config.label|trans({}, config.translation_domain ?? domain) : property|humanize,
+                                            } only %}
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+
+                            <div class="col-md-12 d-flex justify-content-end gap-2 mt-4">
+                                <a href="{{ gm_list_path(route, list_query, {filters: null, page: null}, route_parameters) }}" class="btn btn-light px-4">
+                                    {{- 'action.clear_filters'|trans -}}
+                                </a>
+                                <button class="btn btn-primary px-4" type="submit">
+                                    <i class="bi bi-search me-1"></i>
+                                    {{ 'action.filter'|trans }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

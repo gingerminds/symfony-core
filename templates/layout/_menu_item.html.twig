@@ -1,0 +1,47 @@
+{#
+ # One top-level sidebar entry (MenuItem): a link, or a collapsible section
+ # when it has children (expanded when one of them is active).
+ #}
+{% set active = gm_is_menu_active(item) %}
+{% set label = item.label|trans({}, item.translationDomain) %}
+{% if item.children is not empty %}
+    {% set collapse_id = 'gm-menu-' ~ index %}
+    <li class="sidebar-card-group">
+        <button type="button"
+                class="btn btn-toggle d-flex align-items-center rounded border-0{{ active ? ' active' : ' collapsed' }}"
+                data-bs-toggle="collapse"
+                data-bs-target="#{{ collapse_id }}"
+                aria-expanded="{{ active ? 'true' : 'false' }}"
+                title="{{ label }}">
+            {% if item.icon %}<i class="bi {{ item.icon }} me-2"></i>{% endif %}
+            <span class="label-text">{{ label }}</span>
+        </button>
+        <div class="collapse{{ active ? ' show' }}" id="{{ collapse_id }}" data-bs-parent="#gm-sidebar-menu">
+            <ul class="btn-toggle-nav list-unstyled fw-normal pb-1">
+                {% for child in item.children %}
+                    {% set child_label = child.label|trans({}, child.translationDomain) %}
+                    <li>
+                        {% if child.route %}
+                            <a href="{{ path(child.route, child.routeParameters) }}"
+                               class="d-flex text-decoration-none rounded align-items-center{{ gm_is_menu_active(child) ? ' active' }}"
+                               {% if gm_is_menu_active(child) %}aria-current="page"{% endif %}>
+                                {% if child.icon %}<i class="bi {{ child.icon }} me-2"></i>{% endif %}
+                                {{ child_label }}
+                            </a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </li>
+{% elseif item.route %}
+    <li class="sidebar-card-group">
+        <a href="{{ path(item.route, item.routeParameters) }}"
+           class="btn btn-single rounded border-0 d-flex align-items-center{{ active ? ' active' }}"
+           {% if active %}aria-current="page"{% endif %}
+           title="{{ label }}">
+            {% if item.icon %}<i class="bi {{ item.icon }} me-2"></i>{% endif %}
+            <span class="label-text">{{ label }}</span>
+        </a>
+    </li>
+{% endif %}

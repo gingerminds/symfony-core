@@ -1,0 +1,9 @@
+security:
+    domain_not_authorized: Login is not allowed from this domain.
+    api:
+        credentials_required: The "email" and "password" fields are required.
+        too_many_attempts: Too many login attempts, please try again in a few minutes.
+        invalid_credentials: Invalid credentials.
+        invalid_token: Invalid or expired API token.
+        unauthenticated: Authentication required.
+        logged_out: Logged out.

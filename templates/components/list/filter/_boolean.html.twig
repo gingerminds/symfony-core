@@ -1,0 +1,10 @@
+{# Boolean filter: all | yes | no. Vars: property, config, value, label #}
+{% trans_default_domain 'GingermindsCore' %}
+<div class="col-md-2">
+    <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
+    <select id="filter-{{ property }}" class="form-select" name="filters[{{ property }}]">
+        <option value="all">{{ 'common.all'|trans }}</option>
+        <option value="yes"{{ value == 'yes' ? ' selected' }}>{{ 'common.yes'|trans }}</option>
+        <option value="no"{{ value == 'no' ? ' selected' }}>{{ 'common.no'|trans }}</option>
+    </select>
+</div>

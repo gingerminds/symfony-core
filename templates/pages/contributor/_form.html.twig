@@ -1,0 +1,31 @@
+{# Contributor fields (ContributorType): identity card and associated user card. #}
+{% trans_default_domain 'GingermindsCore' %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex align-items-center py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'contributor.name_s'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {{ form_row(form.civility) }}
+                    <div class="w-100 m-0"></div>
+                    {{ form_row(form.lastname) }}
+                    {{ form_row(form.firstname) }}
+                    {{ form_row(form.trigram) }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light d-flex align-items-center py-3">
+                <h5 class="card-title mb-0"><i class="bi bi-person-check me-1 text-primary"></i> {{ 'contributor.field.user'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">{{ form_row(form.user, {size_columns: 12}) }}</div>
+            </div>
+        </div>
+    </div>
+</div>

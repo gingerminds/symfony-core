@@ -1,0 +1,164 @@
+{#
+ # Paginated / searchable / filterable / sortable list of a resource.
+ # Port of the Laravel core `layouts/crud/list`.
+ #
+ # Receives the AbstractCrudController::index() variables: resource, items
+ # (Paginator), list_query, filters, filter_configs, is_searchable,
+ # is_filterable, is_sortable.
+ #
+ # Configuration variables, set at the TOP of the child template (outside any
+ # block): Twig runs a child template's top-level `{% set %}` before
+ # rendering its parent, so they are visible here.
+ #   columns           list of {label, property?, sortable?, align?, class?, translation_domain?}
+ #                     (label: translation key, resource domain then GingermindsCore)
+ #   page_title        default: <resource>.name_p
+ #   list_title        card title, default: <resource>.manage (fallback page_title)
+ #   breadcrumb        default: [<resource>.name_p]
+ #   route / route_parameters   list route (default: resource index), for nested resources
+ #   show_pagination   default true
+ #   items_per_page_options     default [10, 25, 50, 100]
+ #
+ # Blocks (besides the base.html.twig ones):
+ #   list_before / list_after   around the list card (e.g. a back button)
+ #   list_filters               filters panel
+ #   list_title / list_actions  card header (list_actions: create button, guarded by is_granted('CREATE', resource.name))
+ #   table                      whole <table>; or only:
+ #   table_head / table_body / table_row (the <td>s of one `item`, `row_number` = its position)
+ #   table_row_attributes       extra attributes of the row <tr>
+ #   table_empty                empty state row
+ #   row_actions                edit/delete buttons of `item` (is_granted EDIT / DELETE),
+ #                              use it in table_row: <td class="text-end">{{ block('row_actions') }}</td>
+ #   list_footer                results count + pagination
+ #
+ # Example (templates/admin/product/index.html.twig):
+ #
+ #     {% extends '@GingermindsCore/crud/list.html.twig' %}
+ #     {% set columns = [
+ #         {label: 'product.field.name', property: 'name', sortable: true},
+ #         {label: 'common.actions', align: 'end'},
+ #     ] %}
+ #     {% block table_row %}
+ #         <td>{{ item.name }}</td>
+ #         <td class="text-end">{{ block('row_actions') }}</td>
+ #     {% endblock %}
+ #}
+{% extends '@GingermindsCore/layout/base.html.twig' %}
+{% trans_default_domain 'GingermindsCore' %}
+{% import '@GingermindsCore/components/macros.html.twig' as gm %}
+
+{% set domain = resource.translationDomain %}
+{% set columns = columns ?? [] %}
+{% set route = route ?? resource.route('index') %}
+{% set route_parameters = route_parameters ?? {} %}
+{% set page_title = page_title ?? resource.translationKey('name_p')|trans({}, domain) %}
+{% set list_title = list_title ?? gm.trans(resource.translationKey('manage'), domain, {}, page_title) %}
+{% set breadcrumb = breadcrumb ?? [{label: resource.translationKey('name_p')|trans({}, domain)}] %}
+{% set show_pagination = show_pagination ?? true %}
+
+{% block content %}
+    {% block list_before %}{% endblock %}
+
+    {% block list_filters %}
+        {% if is_searchable or (is_filterable and filter_configs is not empty) %}
+            {% include '@GingermindsCore/components/list/_filters.html.twig' %}
+        {% endif %}
+    {% endblock %}
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi {% block list_icon %}bi-list-check{% endblock %} me-1 text-primary"></i>
+                        {% block list_title %}{{ list_title }}{% endblock %}
+                    </h5>
+                    {% block list_actions %}
+                        {% if is_granted('CREATE', resource.name) %}
+                            <a href="{{ path(resource.route('new'), route_parameters) }}" class="btn btn-sm btn-success">
+                                <i class="bi bi-plus-lg me-1"></i> {{ 'action.create'|trans }}
+                            </a>
+                        {% endif %}
+                    {% endblock %}
+                </div>
+                {% if show_pagination %}
+                    <div>
+                        {% include '@GingermindsCore/components/list/_items_per_page.html.twig' with {items: items, options: items_per_page_options ?? null} only %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                {% block table %}
+                    <table class="table align-middle table-hover mb-0 fs-13" id="gm-list-table">
+                        <thead class="table-light text-muted fs-11">
+                            {% block table_head %}
+                                <tr>
+                                    {% for column in columns %}
+                                        {{ gm.sort_header(column, list_query, route, route_parameters, is_sortable, domain) }}
+                                    {% endfor %}
+                                </tr>
+                            {% endblock %}
+                        </thead>
+                        <tbody>
+                            {% block table_body %}
+                                {% for item in items %}
+                                    {% set row_number = items.getFirstItemNumber + loop.index0 %}
+                                    <tr{% block table_row_attributes %}{% endblock %}>
+                                        {% block table_row %}{% endblock %}
+                                    </tr>
+                                {% else %}
+                                    {% block table_empty %}
+                                        <tr>
+                                            <td colspan="{{ max(columns|length, 1) }}" class="text-center py-5">
+                                                <div class="fs-1 text-primary mb-3"><i class="bi {% block table_empty_icon %}bi-search{% endblock %}"></i></div>
+                                                <div class="fs-14 fw-semibold mt-2">{{ gm.trans(resource.translationKey('message.no_items'), domain, {}, 'list.no_result'|trans) }}</div>
+                                                <p class="text-muted mb-4">{{ 'list.no_result'|trans }}</p>
+                                                {% if is_granted('CREATE', resource.name) and filters is empty %}
+                                                    <a href="{{ path(resource.route('new'), route_parameters) }}" class="btn btn-success">
+                                                        <i class="bi bi-plus-lg me-1"></i> {{ 'action.create'|trans }}
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endblock %}
+                                {% endfor %}
+                            {% endblock %}
+                        </tbody>
+                    </table>
+                {% endblock %}
+            </div>
+
+            {% block list_footer %}
+                <div class="row mt-3 mx-0">
+                    <div class="col-md-12 d-flex justify-content-end">
+                        <p class="list-results text-muted">
+                            {{ 'list.nb_results'|trans({'%first%': items.getFirstItemNumber, '%last%': items.getLastItemNumber, '%total%': items.getTotalItems}) }}
+                        </p>
+                    </div>
+                    {% if show_pagination %}
+                        {% include '@GingermindsCore/components/list/_pagination.html.twig' with {items: items, list_query: list_query, route: route, route_parameters: route_parameters} only %}
+                    {% endif %}
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+
+    {% block list_after %}{% endblock %}
+{% endblock %}
+
+{% block row_actions %}
+    <div class="btn-group">
+        {% if is_granted('EDIT', item) %}
+            {{ gm.edit_button(path(resource.route('edit'), route_parameters|merge({id: item.id}))) }}
+        {% endif %}
+        {% if is_granted('DELETE', item) %}
+            {{ gm.delete_button(path(resource.route('delete'), route_parameters|merge({id: item.id})), csrf_token('delete-' ~ item.id), item_label ?? (item ~ '')) }}
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block modals %}
+    {{ parent() }}
+    {% include '@GingermindsCore/components/modal/_delete.html.twig' %}
+{% endblock %}

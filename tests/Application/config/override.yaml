@@ -1,0 +1,18 @@
+# `override` environment: the project overrides the bundle User entity.
+doctrine:
+    orm:
+        mappings:
+            TestOverride:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/Override'
+                prefix: 'Gingerminds\CoreBundle\Tests\Application\Override'
+
+api_platform:
+    mapping:
+        paths: ['%kernel.project_dir%/Override']
+
+gingerminds_core:
+    resources:
+        user:
+            entity: Gingerminds\CoreBundle\Tests\Application\Override\User

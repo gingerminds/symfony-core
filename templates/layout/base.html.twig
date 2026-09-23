@@ -1,0 +1,89 @@
+{#
+ # Authenticated admin shell: sidebar (gm_admin_menu()), topbar (current
+ # user menu), page header (title, breadcrumb, actions), flashes, content,
+ # footer. Port of the Laravel core `layouts/master`.
+ #
+ # Variables (set them at the top of a child template, outside any block —
+ # top-level `{% set %}` of a child template run before its parent renders):
+ #   page_title  string, heading of the page (default: the `title` block)
+ #   breadcrumb  list of {label (translated), url?}; the dashboard is prepended
+ #
+ # Blocks:
+ #   title          <title> content (the admin title is appended)
+ #   stylesheets    <link> tags (admin.scss compiled by sass-bundle)
+ #   javascripts    importmap() call; importmap() can only be called once,
+ #                  override the whole block to add entrypoints:
+ #                  {{ importmap(['gingerminds-core-admin', 'app']) }}
+ #   body_attributes / body            <body> attributes / whole body
+ #   sidebar / topbar / footer          shell parts
+ #   page_header    title + breadcrumb + page_actions row
+ #   page_title     heading (default: page_title variable or `title` block)
+ #   breadcrumb     breadcrumb trail
+ #   page_actions   buttons displayed on the right of the page header
+ #   flashes        app.flashes alerts
+ #   content        page content
+ #   modals         modals rendered at the end of <body>
+ #
+ # Override from a project with templates/bundles/GingermindsCoreBundle/layout/base.html.twig
+ # (or extend it and redefine blocks).
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+<!DOCTYPE html>
+<html lang="{{ app.request.locale|default('fr')|replace({'_': '-'}) }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Gingerminds">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}{{ page_title ?? '' }}{% endblock %} | {{ gm_admin_title() }}</title>
+    {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
+    {% endblock %}
+    {% block javascripts %}
+        {{ importmap('gingerminds-core-admin') }}
+    {% endblock %}
+</head>
+<body{% block body_attributes %}{% endblock %}>
+{% block body %}
+    <div class="gm-shell d-flex">
+        {% block sidebar %}
+            {% include '@GingermindsCore/layout/_sidebar.html.twig' %}
+        {% endblock %}
+
+        <main class="gm-main flex-grow-1 d-flex flex-column">
+            {% block topbar %}
+                {% include '@GingermindsCore/layout/_topbar.html.twig' %}
+            {% endblock %}
+
+            <div class="flex-grow-1 p-4">
+                {% block page_header %}
+                    <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-4 gap-3">
+                        <div>
+                            <h4 class="mb-1 fs-18">{% block page_title %}{{ page_title ?? block('title') }}{% endblock %}</h4>
+                            {% block breadcrumb %}
+                                {% include '@GingermindsCore/components/_breadcrumb.html.twig' with {items: breadcrumb ?? []} only %}
+                            {% endblock %}
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% block page_actions %}{% endblock %}
+                        </div>
+                    </div>
+                {% endblock %}
+
+                {% block flashes %}
+                    {% include '@GingermindsCore/components/_flashes.html.twig' %}
+                {% endblock %}
+
+                {% block content %}{% endblock %}
+            </div>
+
+            {% block footer %}
+                {% include '@GingermindsCore/layout/_footer.html.twig' %}
+            {% endblock %}
+        </main>
+    </div>
+
+    {% block modals %}{% endblock %}
+{% endblock %}
+</body>
+</html>

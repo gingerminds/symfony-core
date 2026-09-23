@@ -1,0 +1,46 @@
+{#
+ # Admin form theme (Bootstrap 5, 12-column grid).
+ #
+ # - Every compound widget (the root form included) is a `.row.g-3` grid.
+ # - A row whose field has a `size` option (SizeTypeExtension: tiny=2, sm=4,
+ #   md=6 (default for simple fields), lg=8, xl=12) is wrapped in a
+ #   `.col-md-{size_columns}` column; nested compound fields without size
+ #   (RepeatedType, embedded forms) take the full width.
+ # - Checkboxes with `label_attr: {class: 'checkbox-switch'}` render as a
+ #   Bootstrap switch (native bootstrap_5_layout feature).
+ #
+ # Applied by `@GingermindsCore/crud/form.html.twig`; elsewhere:
+ #     {% form_theme form '@GingermindsCore/form/theme.html.twig' %}
+ # When rendering rows one by one, wrap them in `<div class="row g-3">`.
+ #}
+{% extends 'bootstrap_5_layout.html.twig' %}
+
+{%- block form_row -%}
+    {%- set row_attr = row_attr|merge({class: (row_attr.class|default('') ~ ' mb-0')|trim}) -%}
+    {%- if size_columns is defined and size_columns is not null -%}
+        <div class="col-md-{{ size_columns }}">{{- parent() -}}</div>
+    {%- elseif compound and form.parent is not null -%}
+        <div class="col-12">{{- parent() -}}</div>
+    {%- else -%}
+        {{- parent() -}}
+    {%- endif -%}
+{%- endblock form_row %}
+
+{%- block form_widget_compound -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' row g-3')|trim}) -%}
+    <div {{ block('widget_container_attributes') }}>
+        {%- if form is rootform and errors|length > 0 -%}
+            <div class="col-12">{{ form_errors(form) }}</div>
+        {%- endif -%}
+        {{- block('form_rows') -}}
+        {{- form_rest(form) -}}
+    </div>
+{%- endblock form_widget_compound %}
+
+{# Password + confirmation side by side, without the humanized "Password" legend. #}
+{%- block repeated_row -%}
+    <div class="col-12">
+        {{- form_widget(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock repeated_row %}

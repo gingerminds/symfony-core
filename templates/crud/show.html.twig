@@ -1,0 +1,10 @@
+{#
+ # Bare authenticated page for custom detail pages (port of `layouts/crud/show`):
+ # base.html.twig chrome, content in the `sub_content` block. Set page_title /
+ # breadcrumb at the top of the child template like the other layouts.
+ #}
+{% extends '@GingermindsCore/layout/base.html.twig' %}
+
+{% block content %}
+    {% block sub_content %}{% endblock %}
+{% endblock %}
