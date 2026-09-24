@@ -1,5 +1,5 @@
 {
-    "name": "gingerminds/core-bundle",
+    "name": "gingerminds/symfony-core",
     "description": "Core CRUD, security and API functionalities for Gingerminds Symfony projects",
     "type": "symfony-bundle",
     "license": "MIT",
