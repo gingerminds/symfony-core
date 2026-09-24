@@ -8,3 +8,4 @@
 /tests/Application/public/assets/
 .DS_Store
 /tests/Application/config/reference.php
+/.idea/

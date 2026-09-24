@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Entity\User;
 
 use ApiPlatform\Metadata\ApiProperty;
-use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -15,17 +14,14 @@ use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
-use Stringable;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\SerializedName;
 use Symfony\Component\Validator\Constraints as Assert;
 
-use function in_array;
-
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['email'])]
-abstract class BaseUser implements UserInterface, TimestampableInterface, SortableInterface, SearchableInterface, Stringable
+abstract class BaseUser implements UserInterface, TimestampableInterface, SortableInterface, SearchableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -65,7 +61,7 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
     protected ?string $plainPassword = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    protected ?DateTimeImmutable $emailVerifiedAt = null;
+    protected ?\DateTimeImmutable $emailVerifiedAt = null;
 
     /**
      * @var Collection<int, RoleInterface>
@@ -131,12 +127,12 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
         $this->plainPassword = $plainPassword;
     }
 
-    public function getEmailVerifiedAt(): ?DateTimeImmutable
+    public function getEmailVerifiedAt(): ?\DateTimeImmutable
     {
         return $this->emailVerifiedAt;
     }
 
-    public function setEmailVerifiedAt(?DateTimeImmutable $emailVerifiedAt): void
+    public function setEmailVerifiedAt(?\DateTimeImmutable $emailVerifiedAt): void
     {
         $this->emailVerifiedAt = $emailVerifiedAt;
     }
@@ -209,7 +205,7 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
 
     public function hasPermission(string $permission): bool
     {
-        return in_array($permission, $this->getPermissionNames(), true);
+        return \in_array($permission, $this->getPermissionNames(), true);
     }
 
     public function getContributor(): ?ContributorInterface

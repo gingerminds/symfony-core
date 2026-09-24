@@ -18,11 +18,6 @@ use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\Service\Attribute\Required;
 
-use function array_key_exists;
-use function is_scalar;
-use function is_string;
-use function sprintf;
-
 /**
  * @template T of object
  *
@@ -181,19 +176,20 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
      */
     protected function applyItem(QueryBuilderHelper $helper, array $filters): void
     {
-        if (!array_key_exists(ListQuery::ID_FILTER, $filters) || !is_scalar($filters[ListQuery::ID_FILTER])) {
+        if (!\array_key_exists(ListQuery::ID_FILTER, $filters) || !\is_scalar($filters[ListQuery::ID_FILTER])) {
             return;
         }
 
         $identifier = $this->getClassMetadata()->getSingleIdentifierFieldName();
 
         $helper->getQueryBuilder()->andWhere(
-            sprintf(
-            '%s.%s = %s',
-            self::ALIAS,
-            $identifier,
-            $helper->parameter($filters[ListQuery::ID_FILTER]),
-        ));
+            \sprintf(
+                '%s.%s = %s',
+                self::ALIAS,
+                $identifier,
+                $helper->parameter($filters[ListQuery::ID_FILTER]),
+            ),
+        );
     }
 
     /**
@@ -204,7 +200,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         $entityClass = $this->getEntityClass();
         $search = $filters[ListQuery::SEARCH_FILTER] ?? null;
 
-        if (!is_subclass_of($entityClass, SearchableInterface::class) || !is_string($search) || '' === trim($search)) {
+        if (!is_subclass_of($entityClass, SearchableInterface::class) || !\is_string($search) || '' === trim($search)) {
             return;
         }
 
@@ -221,7 +217,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
             }
 
             $placeholder ??= $helper->parameter($pattern);
-            $conditions[] = sprintf('LOWER(%s) LIKE %s', $field, $placeholder);
+            $conditions[] = \sprintf('LOWER(%s) LIKE %s', $field, $placeholder);
         }
 
         if ([] !== $conditions) {

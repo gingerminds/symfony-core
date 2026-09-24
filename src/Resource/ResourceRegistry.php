@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Resource;
 
-use function is_object;
-
 final class ResourceRegistry
 {
     /** @var array<string, ResourceDefinition> */
@@ -46,7 +44,7 @@ final class ResourceRegistry
 
     public function findByEntity(object|string $entity): ?ResourceDefinition
     {
-        $class = is_object($entity) ? $entity::class : $entity;
+        $class = \is_object($entity) ? $entity::class : $entity;
         $match = null;
 
         foreach ($this->definitions as $definition) {

@@ -9,9 +9,6 @@ use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Repository\ListQuery;
 use Symfony\Contracts\Service\Attribute\Required;
 
-use function in_array;
-use function is_array;
-
 /**
  * @template T of FilterableInterface
  */
@@ -82,7 +79,7 @@ abstract class AbstractFilterComputeService
             return [];
         }
 
-        $values = is_array($raw) ? $raw : [$raw];
+        $values = \is_array($raw) ? $raw : [$raw];
 
         return array_values(array_map(intval(...), array_filter($values, is_numeric(...))));
     }
@@ -125,7 +122,7 @@ abstract class AbstractFilterComputeService
             $id = (int) $category->getId();
             $total = $counts[$id] ?? 0;
 
-            if (0 === $total && !in_array($id, $selectedIds, true)) {
+            if (0 === $total && !\in_array($id, $selectedIds, true)) {
                 continue;
             }
 

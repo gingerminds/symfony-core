@@ -9,8 +9,6 @@ use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
 
-use function sprintf;
-
 /**
  * @template T of FilterableInterface
  *
@@ -60,7 +58,7 @@ abstract class AbstractFacetRepository extends AbstractRepository
 
         /** @var list<array{id: int|string, total: int|string}> $rows */
         $rows = $qb
-            ->select(sprintf('%s.id AS id', $alias), sprintf(self::COUNT_TOTAL, self::ALIAS . '.id'))
+            ->select(\sprintf('%s.id AS id', $alias), \sprintf(self::COUNT_TOTAL, self::ALIAS . '.id'))
             ->andWhere($qb->expr()->isNotNull($alias . '.id'))
             ->groupBy($alias . '.id')
             ->getQuery()

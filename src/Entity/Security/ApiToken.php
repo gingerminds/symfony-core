@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Entity\Security;
 
-use DateTimeImmutable;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
@@ -25,19 +24,19 @@ class ApiToken
     private string $tokenHash;
 
     #[ORM\Column]
-    private DateTimeImmutable $createdAt;
+    private \DateTimeImmutable $createdAt;
 
     #[ORM\Column(nullable: true)]
-    private ?DateTimeImmutable $lastUsedAt = null;
+    private ?\DateTimeImmutable $lastUsedAt = null;
 
     public function __construct(#[ORM\ManyToOne(targetEntity: UserInterface::class)]
         #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
         private UserInterface $user, #[ORM\Column(length: 255)]
         private string $name, string $plainToken, #[ORM\Column(nullable: true)]
-        private ?DateTimeImmutable $expiresAt = null)
+        private ?\DateTimeImmutable $expiresAt = null)
     {
         $this->tokenHash = self::hash($plainToken);
-        $this->createdAt = new DateTimeImmutable();
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     public static function generatePlainToken(): string
@@ -65,28 +64,28 @@ class ApiToken
         return $this->name;
     }
 
-    public function getCreatedAt(): DateTimeImmutable
+    public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getLastUsedAt(): ?DateTimeImmutable
+    public function getLastUsedAt(): ?\DateTimeImmutable
     {
         return $this->lastUsedAt;
     }
 
-    public function markUsed(DateTimeImmutable $at): void
+    public function markUsed(\DateTimeImmutable $at): void
     {
         $this->lastUsedAt = $at;
     }
 
-    public function getExpiresAt(): ?DateTimeImmutable
+    public function getExpiresAt(): ?\DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
-    public function isExpired(DateTimeImmutable $now): bool
+    public function isExpired(\DateTimeImmutable $now): bool
     {
-        return $this->expiresAt instanceof DateTimeImmutable && $this->expiresAt <= $now;
+        return $this->expiresAt instanceof \DateTimeImmutable && $this->expiresAt <= $now;
     }
 }

@@ -9,10 +9,6 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\Vote;
 use Symfony\Component\Security\Core\Authorization\Voter\Voter;
 
-use function in_array;
-use function is_object;
-use function is_string;
-
 /**
  * @extends Voter<string, mixed>
  */
@@ -36,15 +32,15 @@ abstract class AbstractResourceVoter extends Voter
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        if (!in_array($attribute, self::ATTRIBUTES, true)) {
+        if (!\in_array($attribute, self::ATTRIBUTES, true)) {
             return false;
         }
 
-        if (is_object($subject)) {
+        if (\is_object($subject)) {
             return $subject instanceof ($this->getSubjectClass());
         }
 
-        return is_string($subject)
+        return \is_string($subject)
             && ($subject === $this->getResourceName() || is_a($subject, $this->getSubjectClass(), true));
     }
 
@@ -56,7 +52,7 @@ abstract class AbstractResourceVoter extends Voter
             return false;
         }
 
-        $object = is_object($subject) ? $subject : null;
+        $object = \is_object($subject) ? $subject : null;
 
         return match ($attribute) {
             self::VIEW => $this->canView($user, $object),

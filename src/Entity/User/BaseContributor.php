@@ -12,14 +12,11 @@ use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
-use Stringable;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
-use function sprintf;
-
 #[ORM\MappedSuperclass]
-abstract class BaseContributor implements ContributorInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, Stringable
+abstract class BaseContributor implements ContributorInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -139,7 +136,7 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
 
     public function getFullName(): string
     {
-        return trim(sprintf('%s %s', $this->firstname, $this->lastname));
+        return trim(\sprintf('%s %s', $this->firstname, $this->lastname));
     }
 
     public static function getEagerLoads(): array

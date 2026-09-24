@@ -9,11 +9,6 @@ use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationExc
 use Symfony\Component\Security\Http\Authenticator\FormLoginAuthenticator;
 use Symfony\Component\Security\Http\Event\CheckPassportEvent;
 
-use function in_array;
-use function is_string;
-
-use const PHP_URL_HOST;
-
 final readonly class AuthorizedDomainListener
 {
     /**
@@ -32,9 +27,9 @@ final readonly class AuthorizedDomainListener
         }
 
         $origin = $this->requestStack->getCurrentRequest()?->headers->get('origin');
-        $host = null !== $origin ? parse_url($origin, PHP_URL_HOST) : null;
+        $host = null !== $origin ? parse_url($origin, \PHP_URL_HOST) : null;
 
-        if (!is_string($host) || !in_array($host, $this->authorizedDomains, true)) {
+        if (!\is_string($host) || !\in_array($host, $this->authorizedDomains, true)) {
             throw new CustomUserMessageAuthenticationException('security.domain_not_authorized');
         }
     }

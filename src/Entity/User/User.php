@@ -24,8 +24,8 @@ use Gingerminds\CoreBundle\Repository\User\UserRepository;
         ),
         new Get(security: "is_granted('VIEW', object)"),
         new Post(
-            security: "is_granted('CREATE', 'user')",
             denormalizationContext: ['groups' => [BaseUser::GROUP_CREATE]],
+            security: "is_granted('CREATE', 'user')",
             deserialize: false,
         ),
         new Patch(security: "is_granted('EDIT', object)", deserialize: false),

@@ -6,8 +6,6 @@ namespace Gingerminds\CoreBundle\Repository;
 
 use Symfony\Component\HttpFoundation\Request;
 
-use function array_key_exists;
-
 final readonly class ListQuery
 {
     public const string SORT_ASC = 'asc';
@@ -56,7 +54,7 @@ final readonly class ListQuery
 
     public function hasFilter(string $key): bool
     {
-        return array_key_exists($key, $this->filters);
+        return \array_key_exists($key, $this->filters);
     }
 
     public function getFilter(string $key, mixed $default = null): mixed
