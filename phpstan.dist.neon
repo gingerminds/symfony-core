@@ -16,7 +16,7 @@ parameters:
         - tests/Application/assets/*
         - tests/Application/public/*
         - tests/Application/bin/*
-        - tests/Application/config/reference.php
+        - tests/Application/config/reference.php (?)
     tmpDir: var/phpstan
     treatPhpDocTypesAsCertain: false
     doctrine:
