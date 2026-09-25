@@ -16,3 +16,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   forms, context header documentation, API response cache,
   timestamps, Twig/Symfony UX admin theme, `make:gm:*` makers,
   `gingerminds:permissions:sync` and `gingerminds:create:user` commands.
+- Admin theme override: `assets/styles/gingerminds-core/_theme.scss` in the project sets any
+  (now `!default`) admin SCSS variable, e.g. `$primary`.

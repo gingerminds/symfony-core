@@ -1,4 +1,7 @@
-.bi {
+// Inline SVG icons (<svg class="bi">). Font icons (<i class="bi bi-*">) are
+// already offset by bootstrap-icons on `.bi::before`: offsetting the <i> too
+// pushed them down twice, which grew the line box and lifted button labels.
+svg.bi {
   vertical-align: -.125em;
   fill: currentColor;
 }

@@ -7,7 +7,7 @@
 {% set current = items.getItemsPerPage %}
 {% set options = (options ?? [10, 25, 50, 100]) %}
 {% if current not in options %}{% set options = (options|merge([current]))|sort %}{% endif %}
-<select class="form-select form-select-sm w-auto" aria-label="{{ 'list.items_per_page'|trans }}"
+<select class="form-select w-auto" aria-label="{{ 'list.items_per_page'|trans }}"
         data-controller="gm-items-per-page" data-action="gm-items-per-page#change">
     {% for option in options %}
         <option value="{{ option }}"{{ option == current ? ' selected' }}>{{ 'common.display'|trans }}&nbsp;{{ option }}</option>

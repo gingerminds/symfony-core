@@ -4,7 +4,11 @@
   flex-shrink: 0;
   overflow: visible;
   background-color: $sidebar-dark-bg;
-  position: relative;
+  // Sticky full-height column: the user menu stays pinned at the bottom of the
+  // viewport however long the page is (also the containing block of the toggle).
+  position: sticky;
+  top: 0;
+  height: 100vh;
   padding: 1rem .75rem;
   transition: width .25s ease, padding .25s ease;
 }
@@ -174,12 +178,11 @@
   transform: rotate(90deg);
 }
 
-.bi::before {
-  vertical-align: 0!important;
-}
-
-ul .bi::before {
-  vertical-align: .125em!important;
+// Menu icons: raised back to the baseline (bootstrap-icons offsets them by
+// -.125em), scoped to the sidebar menus so buttons elsewhere keep the native,
+// centered alignment.
+.sidebar ul .bi::before {
+  vertical-align: 0 !important;
 }
 
 .sidebar .btn-toggle-nav li a.active {
@@ -192,6 +195,9 @@ ul .bi::before {
 
 // Profile block
 .sidebar-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
   background-color: var(--bs-sidebar-menu-primary-color);
 }
 
@@ -208,6 +214,7 @@ ul .bi::before {
 }
 
 .profile-info {
+  min-width: 0;
   overflow: hidden;
   line-height: 1.25;
 }

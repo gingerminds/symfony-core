@@ -5,7 +5,7 @@ Each layout documents its full variable/block API in its header comment.
 
 ```
 layout/guest.html.twig            guest pages (login)
-layout/base.html.twig             authenticated shell: sidebar, topbar, flashes, breadcrumb
+layout/base.html.twig             authenticated shell: sidebar (menu + user menu), flashes, breadcrumb
  ├── crud/list.html.twig          paginated list with search/filters/sort
  ├── crud/list_tree.html.twig     hierarchical list with drag & drop
  ├── crud/form.html.twig          create/edit form
@@ -24,9 +24,11 @@ Override any bundle template the Symfony way:
 Variables: `page_title`, `breadcrumb` (list of `{label, url?}`; the dashboard is prepended).
 
 Blocks: `title`, `stylesheets`, `javascripts` (override the whole block to add entrypoints —
-`importmap()` can only be called once per page), `body_attributes`, `sidebar`, `topbar`,
+`importmap()` can only be called once per page), `body_attributes`, `sidebar`,
 `footer`, `page_header`, `page_title`, `breadcrumb`, `page_actions`, `flashes`, `content`,
-`modals`.
+`modals`. Inside the sidebar (`layout/_sidebar.html.twig`): `sidebar_logo` (dashboard link
+with the admin title, override it to put the project logo) and `sidebar_profile` (current
+user menu: profile, sign out, pinned at the bottom).
 
 The sidebar comes from `gm_admin_menu()`: add entries by implementing
 `Gingerminds\CoreBundle\Menu\AdminMenuProviderInterface` (autoconfigured, the Laravel

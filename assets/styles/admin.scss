@@ -2,16 +2,22 @@
 // Gingerminds core admin stylesheet.
 //
 // Compiled by symfonycasts/sass-bundle: the bundle registers this file as a
-// root_sass and `vendor/twbs` as load path, so Bootstrap sources resolve as
-// `bootstrap/scss/...`. Projects override the look by adding their own
-// `assets/styles/app.scss` (also registered automatically when present).
+// root_sass and, as load paths, the project's `assets/styles/gingerminds-core`,
+// this bundle's `assets/styles/defaults` and `vendor/twbs` (Bootstrap sources
+// resolve as `bootstrap/scss/...`).
+//
+// Theming: a project overrides any variable of `_variables.scss` (all
+// `!default`), e.g. `$primary`, in `assets/styles/gingerminds-core/_theme.scss`,
+// found before the empty `defaults/_theme.scss` of the bundle.
 //
 
-// Variables
+// Variables: project theme first, then the core defaults, then Bootstrap's
+// (all `!default`, each file only fills what is still undefined).
 @import "bootstrap/scss/functions";
-@import "bootstrap/scss/variables";
+@import "theme";
 @import "variables";
 @import "variables-dark";
+@import "bootstrap/scss/variables";
 
 // Bootstrap
 @import "bootstrap/scss/bootstrap";
@@ -39,7 +45,6 @@
 // Structure
 @import "custom/structure/general";
 @import "custom/structure/sidebar";
-@import "custom/structure/topbar";
 @import "custom/structure/page-head";
 @import "custom/structure/footer";
 @import "custom/structure/layouts";

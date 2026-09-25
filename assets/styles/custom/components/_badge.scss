@@ -4,7 +4,9 @@
 
 
 .badge {
-  padding: 0.45em 0.7em;
+  // Slightly more room on top than at the bottom: with `line-height: 1` the
+  // glyphs sit high in the em box, so equal padding looks off-center.
+  padding: 0.52em 0.7em 0.38em;
   font-weight: $font-weight-medium;
   
   &[href] {

@@ -161,6 +161,22 @@ bin/console sass:build          # or sass:build --watch in development
 bin/console asset-map:compile   # production
 ```
 
+### Theme (primary color...)
+
+Every variable of the admin stylesheet (`assets/styles/_variables.scss` of the bundle, a
+Bootstrap 5 variables file) is `!default`. Override them in
+`assets/styles/gingerminds-core/_theme.scss`: this file is looked up before the bundle's empty
+default one, and imported before the core and Bootstrap variables, so every derived value
+(tints, badges, Tom Select tags, sidebar accent, focus rings) follows.
+
+```scss
+// assets/styles/gingerminds-core/_theme.scss
+$primary: #d32f2f;
+$sage: #fdf1f1;   // light background of table heads / tertiary-bg (not derived from $primary)
+```
+
+Then run `bin/console sass:build` again. No bundle file is copied into the project.
+
 ## Next steps
 
 - [Configuration](Configuration.md)

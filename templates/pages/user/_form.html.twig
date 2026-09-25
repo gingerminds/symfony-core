@@ -7,7 +7,7 @@
 <div class="row">
     <div class="col-lg-8">
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-light d-flex align-items-center py-3">
+            <div class="card-header d-flex align-items-center py-3">
                 <h5 class="card-title mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'user.name_s'|trans }}</h5>
             </div>
             <div class="card-body">
@@ -25,7 +25,7 @@
     <div class="col-lg-4">
         {% if form.roles is defined %}
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light d-flex align-items-center py-3">
+                <div class="card-header d-flex align-items-center py-3">
                     <h5 class="card-title mb-0"><i class="bi bi-shield-check me-1 text-primary"></i> {{ 'user.field.roles'|trans }}</h5>
                 </div>
                 <div class="card-body">
@@ -35,7 +35,7 @@
         {% endif %}
 
         <div class="card shadow-sm mb-4" data-controller="gm-contributor-fields">
-            <div class="card-header bg-light d-flex align-items-center py-3">
+            <div class="card-header d-flex align-items-center py-3">
                 <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'user.field.contributor'|trans }}</h5>
             </div>
             <div class="card-body">

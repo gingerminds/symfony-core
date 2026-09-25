@@ -1,5 +1,5 @@
 {#
- # Guest shell (no sidebar/topbar), used by the login page.
+ # Guest shell (no sidebar), used by the login page.
  # Port of the Laravel core `layouts/master-without-nav`.
  #
  # Blocks: title, stylesheets, javascripts, body_attributes, body, content.
@@ -12,11 +12,13 @@
     <meta name="author" content="Gingerminds">
     <meta name="robots" content="noindex, nofollow">
     <title>{% block title %}{% endblock %} | {{ gm_admin_title() }}</title>
-    {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
-    {% endblock %}
     {% block javascripts %}
         {{ importmap('gingerminds-core-admin') }}
+    {% endblock %}
+    {# After importmap(): its vendor CSS (Tom Select theme, bootstrap-icons) must
+     # come first so the admin stylesheet overrides it. #}
+    {% block stylesheets %}
+        <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
     {% endblock %}
 </head>
 <body{% block body_attributes %}{% endblock %}>

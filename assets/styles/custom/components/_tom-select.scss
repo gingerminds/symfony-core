@@ -1,65 +1,188 @@
 //
 // Tom Select (Symfony UX Autocomplete) — Bootstrap theme integration.
-// Replaces the Laravel `_select2.scss`. The base theme is
-// `tom-select/dist/css/tom-select.bootstrap5.css` (imported by admin.js
-// or autoimported by assets/controllers.json); these rules only align
-// the tags and dropdown with the admin look.
+// Port of the Laravel `_select2.scss`: same look as the Select2 fields of the
+// Laravel core. The base theme is `tom-select/dist/css/tom-select.bootstrap5.css`
+// (imported by admin.js or autoimported by assets/controllers.json).
 //
+// The layouts link admin.css after importmap() (which links the theme), so
+// these rules win over the theme at equal specificity.
+//
+// The wrapper keeps the `form-select` class of the original <select>: it
+// carries the border, the chevron and the focus ring; the inner .ts-control is
+// borderless and transparent (bootstrap5 theme).
+//
+
+$gm-ts-chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
 
 .ts-wrapper {
     width: 100%;
 
-    &.multi .ts-control > .item {
-        display: inline-flex;
-        align-items: baseline;
-        padding: 3px 7px 3px 6px;
-        font-size: .8rem;
-        font-weight: 500;
-        line-height: 1;
-        color: shade-color($primary, 10%);
-        background-color: rgba($primary, .12);
-        border: 1px solid rgba($primary, .3);
-        border-radius: $border-radius-sm;
+    &.form-select {
+        background-color: $input-bg;
+        border: $input-border-width solid $input-border-color;
+        border-radius: $input-border-radius;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
 
-        &.active {
-            color: $white;
-            background-color: $primary;
-            border-color: $primary;
-        }
+    .ts-control {
+        padding: $input-padding-y $input-padding-x;
+        font-size: $input-font-size;
+        line-height: $input-line-height;
+        color: $input-color;
 
-        .remove {
-            border-left: none !important;
-            color: rgba($primary, .5);
-
-            &:hover {
-                color: $danger;
-                background: none;
-            }
+        > input::placeholder {
+            color: $input-placeholder-color;
         }
     }
 
-    &.focus .ts-control {
+    // ─── Single select ──────────────────────────────────────────────────────
+    &.single {
+        background-image: $gm-ts-chevron;
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        background-size: 16px 12px;
+
+    }
+
+    // ─── Multiple select ────────────────────────────────────────────────────
+    &.multi {
+        background-image: none;
+
+        // No chevron on multiple selects: drop the room the theme keeps for it
+        &.form-select {
+            --ts-pr-caret: 0px;
+        }
+
+        &.form-select .ts-control {
+            gap: 4px;
+            padding: $input-padding-y $input-padding-x;
+        }
+
+        // Tags: pull the padding in by the tag's own inner padding so their
+        // text lines up with the other fields (theme trick).
+        &.form-select.has-items .ts-control {
+            padding-left: calc(#{$input-padding-x} - 5px);
+        }
+
+        .ts-control > .item {
+            display: inline-flex;
+            align-items: baseline;
+            margin: 0;
+            padding: 3px 7px 3px 6px;
+            font-size: .8rem;
+            font-weight: 500;
+            line-height: 1;
+            color: shade-color($primary, 10%);
+            background-color: rgba($primary, .12);
+            border: 1px solid rgba($primary, .3);
+            border-radius: $border-radius-sm;
+
+            &.active {
+                color: $white;
+                background-color: $primary;
+                border-color: $primary;
+            }
+
+            .remove {
+                margin-left: 4px;
+                padding: 0 2px;
+                border-radius: $border-radius-sm;
+                font-size: .9rem;
+                line-height: 1;
+                color: rgba($primary, .5);
+                border-left: none !important;
+
+                &:hover {
+                    color: $danger;
+                    background: none;
+                }
+            }
+        }
+
+        // The search input (7rem min-width, native ~150px basis in the theme)
+        // wraps onto its own line and doubles the field height once tags are
+        // set: let it shrink to the room left on the tags row instead.
+        &.has-items .ts-control > input {
+            flex: 1 1 2rem;
+            width: 2rem;
+            min-width: 2rem;
+        }
+    }
+
+    // The remove_button plugin sets `padding-right: 0 !important` on the tags,
+    // gluing the cross to their right edge.
+    &.plugin-remove_button.multi:not(.rtl) .ts-control > .item {
+        padding-right: 5px !important;
+    }
+
+    // ─── Focus / open state ─────────────────────────────────────────────────
+    &.form-select.focus {
         border-color: $input-focus-border-color;
         box-shadow: $input-focus-box-shadow;
+        outline: 0;
     }
 }
 
+// ─── Dropdown ───────────────────────────────────────────────────────────────
+// Card attached under the field (square top corners), roomy options, soft
+// highlight (primary text on a primary tint) like the Laravel Select2 dropdown.
 .ts-dropdown {
     z-index: 9999;
-    border-radius: $input-border-radius;
-    box-shadow: 0 4px 12px rgba($black, .08);
+    overflow: hidden;
+    background-color: $input-bg;
+    border: 0;
+    border-radius: 0 0 $border-radius-lg $border-radius-lg;
+    // Downward shadow only, so the list continues the field instead of
+    // floating over it.
+    box-shadow: 0 10px 20px -6px rgba($black, .15);
+}
 
-    .option {
-        padding: $input-padding-y $input-padding-x;
+// Tom Select positions the dropdown from the inner .ts-control, i.e. inside
+// the wrapper border: widen it to the field's outer edges and push it below
+// the bottom border.
+.ts-wrapper.form-select > .ts-dropdown {
+    width: calc(100% + 2 * #{$input-border-width}) !important;
+    margin: $input-border-width 0 0 calc(-1 * #{$input-border-width});
+}
+
+.ts-dropdown {
+    .ts-dropdown-content {
+        padding: 0;
     }
 
-    .active {
-        color: $white;
-        background-color: $primary;
+    .option,
+    .no-results,
+    .create {
+        padding: .625rem 1rem;
+        font-size: $input-font-size;
+        color: $input-color;
     }
 
     [data-selectable].option.selected:not(.active) {
-        color: shade-color($primary, 5%);
+        color: $primary;
+        background-color: rgba($primary, .06);
+    }
+
+    .active,
+    [data-selectable].option.active {
+        color: $primary;
         background-color: rgba($primary, .1);
     }
+
+    // Search field of the dropdown_input plugin (Select2-style search box)
+    .dropdown-input-wrap {
+        padding: .75rem .75rem .25rem;
+    }
+
+    .dropdown-input {
+        padding: $input-padding-y $input-padding-x;
+        font-size: $input-font-size;
+        border: $input-border-width solid $input-border-color;
+        border-radius: $input-border-radius;
+    }
+}
+
+.plugin-dropdown_input.focus .ts-dropdown .dropdown-input {
+    border-color: $input-focus-border-color;
+    box-shadow: $input-focus-box-shadow;
 }

@@ -217,6 +217,13 @@ final class GingermindsCoreBundle extends AbstractBundle
             ],
         ]);
 
+        if ($builder->hasExtension('api_platform')) {
+            // Prepended: a project can still turn Webby back on in its own config.
+            $builder->prependExtensionConfig('api_platform', [
+                'show_webby' => false,
+            ]);
+        }
+
         if ($builder->hasExtension('symfonycasts_sass')) {
             $projectDir = $builder->getParameter('kernel.project_dir');
             $projectDir = \is_string($projectDir) ? $projectDir : '';
@@ -229,7 +236,13 @@ final class GingermindsCoreBundle extends AbstractBundle
             $builder->prependExtensionConfig('symfonycasts_sass', [
                 'root_sass' => $rootSass,
                 'sass_options' => [
-                    'load_path' => [$this->bootstrapScssParentDirectory($projectDir)],
+                    // Order matters: the project's `_theme.scss` shadows the
+                    // bundle's empty default one (see assets/styles/admin.scss).
+                    'load_path' => [
+                        $projectDir . '/assets/styles/gingerminds-core',
+                        $this->getPath() . '/assets/styles/defaults',
+                        $this->bootstrapScssParentDirectory($projectDir),
+                    ],
                     'quiet_deps' => true,
                 ],
             ]);

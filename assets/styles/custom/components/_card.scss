@@ -15,6 +15,13 @@
   }
 }
 
+// Header: near-white tint separated from the body by a hairline, rounded
+// with the card (Bootstrap's :first-child rule).
+.card-header {
+  background-color: mix($white, $gray-200, 55%);
+  border-bottom: 1px solid tint-color($primary, 88%);
+}
+
 .card-drop {
   color: var(--#{$prefix}body-color);
 }
