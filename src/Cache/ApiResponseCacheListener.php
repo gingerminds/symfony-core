@@ -33,25 +33,14 @@ final readonly class ApiResponseCacheListener
 
     public function onKernelRequest(RequestEvent $event): void
     {
+        $cacheable = $this->resolveCacheableOperation($event);
+
+        if (null === $cacheable) {
+            return;
+        }
+
+        [$resourceClass, $operation] = $cacheable;
         $request = $event->getRequest();
-
-        if (!$this->enabled || !$event->isMainRequest() || !$request->isMethodCacheable()) {
-            return;
-        }
-
-        $resourceClass = $request->attributes->get('_api_resource_class');
-        $operationName = $request->attributes->get('_api_operation_name');
-
-        if (!\is_string($resourceClass) || !\is_string($operationName) || !is_subclass_of($resourceClass, CacheableResourceInterface::class)) {
-            return;
-        }
-
-        $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
-
-        if (!$operation instanceof HttpOperation || !$this->isCacheableOperation($operation, $resourceClass)) {
-            return;
-        }
-
         $resourceTag = $resourceClass::getCacheKey();
         $key = $this->keyBuilder->responseKey($resourceTag, $request);
         $item = $this->cache->getItem($key);
@@ -105,6 +94,35 @@ final readonly class ApiResponseCacheListener
     }
 
     /**
+     * The resource class and operation of a cacheable API request, null when the response must not be cached.
+     *
+     * @return array{class-string<CacheableResourceInterface>, HttpOperation}|null
+     */
+    private function resolveCacheableOperation(RequestEvent $event): ?array
+    {
+        $request = $event->getRequest();
+
+        if (!$this->enabled || !$event->isMainRequest() || !$request->isMethodCacheable()) {
+            return null;
+        }
+
+        $resourceClass = $request->attributes->get('_api_resource_class');
+        $operationName = $request->attributes->get('_api_operation_name');
+
+        if (!\is_string($resourceClass) || !\is_string($operationName) || !is_subclass_of($resourceClass, CacheableResourceInterface::class)) {
+            return null;
+        }
+
+        $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
+
+        if (!$operation instanceof HttpOperation || !$this->isCacheableOperation($operation, $resourceClass)) {
+            return null;
+        }
+
+        return [$resourceClass, $operation];
+    }
+
+    /**
      * @param class-string $resourceClass
      */
     private function isCacheableOperation(HttpOperation $operation, string $resourceClass): bool
@@ -119,10 +137,8 @@ final readonly class ApiResponseCacheListener
             return true;
         }
 
-        if (!$operation instanceof CollectionOperationInterface || !$this->resourceAccessChecker instanceof ResourceAccessCheckerInterface) {
-            return false;
-        }
-
-        return $this->resourceAccessChecker->isGranted($resourceClass, $security, ['object' => null]);
+        return $operation instanceof CollectionOperationInterface
+            && $this->resourceAccessChecker instanceof ResourceAccessCheckerInterface
+            && $this->resourceAccessChecker->isGranted($resourceClass, $security, ['object' => null]);
     }
 }

@@ -39,6 +39,11 @@ final readonly class ResourceGenerator
 {
     private const array FIELD_NAME_LABELS = ['fr' => 'Nom', 'en' => 'Name'];
 
+    /**
+     * Skip reason of a file that is already there, also the wording of the MakerBundle "already exists" errors.
+     */
+    private const string ALREADY_EXISTS = 'already exists';
+
     private string $skeletonDirectory;
 
     public function __construct(?string $skeletonDirectory = null)
@@ -213,7 +218,7 @@ final readonly class ResourceGenerator
         try {
             $generator->generateClass($class, $this->skeletonDirectory . '/' . $template, $variables);
         } catch (RuntimeCommandException $exception) {
-            $this->writeSkipped($io, $class, str_contains($exception->getMessage(), 'already exists') ? null : $exception->getMessage());
+            $this->writeSkipped($io, $class, self::skipReason($exception));
 
             return false;
         }
@@ -230,7 +235,7 @@ final readonly class ResourceGenerator
                 'resource' => $resource,
             ]);
         } catch (RuntimeCommandException $exception) {
-            $this->writeSkipped($io, 'templates/' . $target, str_contains($exception->getMessage(), 'already exists') ? null : $exception->getMessage());
+            $this->writeSkipped($io, 'templates/' . $target, self::skipReason($exception));
         }
     }
 
@@ -241,18 +246,9 @@ final readonly class ResourceGenerator
     {
         $relativePath = ltrim(substr($path, \strlen($generator->getRootDirectory())), '/');
         $content = is_file($path) ? (string) file_get_contents($path) : '';
+        $existing = $this->parseTranslations($io, $relativePath, $content);
 
-        try {
-            $existing = '' === trim($content) ? [] : Yaml::parse($content);
-        } catch (ParseException $exception) {
-            $io->warning(\sprintf('%s is not valid YAML (%s): translations not added.', $relativePath, $exception->getMessage()));
-
-            return;
-        }
-
-        if (!\is_array($existing)) {
-            $io->warning(\sprintf('%s is not a YAML mapping: translations not added.', $relativePath));
-
+        if (null === $existing) {
             return;
         }
 
@@ -280,6 +276,30 @@ final readonly class ResourceGenerator
 
         $io->note(\sprintf('%s is rewritten to merge the missing keys: YAML comments of that file are lost.', $relativePath));
         $generator->dumpFile($path, Yaml::dump(array_replace_recursive($defaults, $existing), 10, 4));
+    }
+
+    /**
+     * The translations already in the file, null (with a warning) when it cannot be merged into.
+     *
+     * @return array<mixed>|null
+     */
+    private function parseTranslations(ConsoleStyle $io, string $relativePath, string $content): ?array
+    {
+        try {
+            $existing = '' === trim($content) ? [] : Yaml::parse($content);
+        } catch (ParseException $exception) {
+            $io->warning(\sprintf('%s is not valid YAML (%s): translations not added.', $relativePath, $exception->getMessage()));
+
+            return null;
+        }
+
+        if (!\is_array($existing)) {
+            $io->warning(\sprintf('%s is not a YAML mapping: translations not added.', $relativePath));
+
+            return null;
+        }
+
+        return $existing;
     }
 
     /**
@@ -347,8 +367,16 @@ final readonly class ResourceGenerator
         }
     }
 
+    /**
+     * Null (default "already exists" reason) when the target file is already there, the error message otherwise.
+     */
+    private static function skipReason(RuntimeCommandException $exception): ?string
+    {
+        return str_contains($exception->getMessage(), self::ALREADY_EXISTS) ? null : $exception->getMessage();
+    }
+
     private function writeSkipped(ConsoleStyle $io, string $what, ?string $reason = null): void
     {
-        $io->text(\sprintf('<fg=yellow>skipped</>: %s (%s)', $what, $reason ?? 'already exists'));
+        $io->text(\sprintf('<fg=yellow>skipped</>: %s (%s)', $what, $reason ?? self::ALREADY_EXISTS));
     }
 }

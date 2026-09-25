@@ -4,13 +4,14 @@ Every admin page extends one of these Twig layouts (namespace `@GingermindsCore`
 Each layout documents its full variable/block API in its header comment.
 
 ```
-layout/guest.html.twig            guest pages (login)
-layout/base.html.twig             authenticated shell: sidebar (menu + user menu), flashes, breadcrumb
- ├── crud/list.html.twig          paginated list with search/filters/sort
- ├── crud/list_tree.html.twig     hierarchical list with drag & drop
- ├── crud/form.html.twig          create/edit form
- │    └── crud/form_tabs.html.twig  tabbed form
- └── crud/show.html.twig          bare content wrapper for custom pages
+layout/_document.html.twig        shared HTML document: <head> (meta, title, importmap, admin.scss), <body>
+ ├── layout/guest.html.twig       guest pages (login)
+ └── layout/base.html.twig        authenticated shell: sidebar (menu + user menu), flashes, breadcrumb
+      ├── crud/list.html.twig          paginated list with search/filters/sort
+      ├── crud/list_tree.html.twig     hierarchical list with drag & drop
+      ├── crud/form.html.twig          create/edit form
+      │    └── crud/form_tabs.html.twig  tabbed form
+      └── crud/show.html.twig          bare content wrapper for custom pages
 ```
 
 **Configuration variables** are set with a top-level `{% set %}` in the child template

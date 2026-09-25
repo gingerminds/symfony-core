@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\LimiterInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -44,14 +45,10 @@ final readonly class AuthController
         $email = \is_string($payload['email'] ?? null) ? trim($payload['email']) : '';
         $password = \is_string($payload['password'] ?? null) ? $payload['password'] : '';
 
-        if ('' === $email || '' === $password) {
-            return $this->message('security.api.credentials_required', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $rejection = $this->rejectAttempt($request, $email, $password);
 
-        $limiter = $this->loginLimiter->create(mb_strtolower($email) . '|' . $request->getClientIp());
-
-        if (!$limiter->consume()->isAccepted()) {
-            return $this->message('security.api.too_many_attempts', Response::HTTP_TOO_MANY_REQUESTS);
+        if (null !== $rejection) {
+            return $rejection;
         }
 
         $user = $this->users->loadUserByIdentifier($email);
@@ -60,20 +57,9 @@ final readonly class AuthController
             return $this->message('security.api.invalid_credentials', Response::HTTP_UNAUTHORIZED);
         }
 
-        $limiter->reset();
+        $this->limiter($request, $email)->reset();
 
-        $expiresAt = null !== $this->tokenTtl ? new \DateTimeImmutable('+' . $this->tokenTtl . ' seconds') : null;
-        $data = [
-            'token' => $this->tokens->createToken($user, 'api-token', $expiresAt),
-            'token_type' => 'Bearer',
-            'expires_at' => $expiresAt?->format(\DATE_ATOM),
-        ];
-
-        foreach ($this->enrichers as $enricher) {
-            $data = $enricher->enrich($user, $data);
-        }
-
-        return new JsonResponse($data);
+        return $this->issueToken($user);
     }
 
     public function logout(Request $request): JsonResponse
@@ -97,6 +83,44 @@ final readonly class AuthController
         }
 
         return $this->message('security.api.logged_out');
+    }
+
+    /**
+     * The error response of a login attempt rejected before checking the password
+     * (missing credentials, too many attempts), null when the attempt may proceed.
+     */
+    private function rejectAttempt(Request $request, string $email, string $password): ?JsonResponse
+    {
+        if ('' === $email || '' === $password) {
+            return $this->message('security.api.credentials_required', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        if (!$this->limiter($request, $email)->consume()->isAccepted()) {
+            return $this->message('security.api.too_many_attempts', Response::HTTP_TOO_MANY_REQUESTS);
+        }
+
+        return null;
+    }
+
+    private function limiter(Request $request, string $email): LimiterInterface
+    {
+        return $this->loginLimiter->create(mb_strtolower($email) . '|' . $request->getClientIp());
+    }
+
+    private function issueToken(UserInterface $user): JsonResponse
+    {
+        $expiresAt = null !== $this->tokenTtl ? new \DateTimeImmutable('+' . $this->tokenTtl . ' seconds') : null;
+        $data = [
+            'token' => $this->tokens->createToken($user, 'api-token', $expiresAt),
+            'token_type' => 'Bearer',
+            'expires_at' => $expiresAt?->format(\DATE_ATOM),
+        ];
+
+        foreach ($this->enrichers as $enricher) {
+            $data = $enricher->enrich($user, $data);
+        }
+
+        return new JsonResponse($data);
     }
 
     private function message(string $key, int $status = Response::HTTP_OK): JsonResponse

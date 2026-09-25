@@ -74,6 +74,11 @@ final class GingermindsCoreBundle extends AbstractBundle
         ],
     ];
 
+    /**
+     * Where Composer installs twbs/bootstrap, relative to a project or package root.
+     */
+    private const string TWBS_VENDOR_DIR = '/vendor/twbs';
+
     protected string $extensionAlias = 'gingerminds_core';
 
     public function getPath(): string
@@ -297,12 +302,12 @@ final class GingermindsCoreBundle extends AbstractBundle
 
     private function bootstrapScssParentDirectory(string $projectDir): string
     {
-        foreach ([$projectDir . '/vendor/twbs', $this->getPath() . '/vendor/twbs', \dirname($this->getPath()) . '/twbs'] as $candidate) {
+        foreach ([$projectDir . self::TWBS_VENDOR_DIR, $this->getPath() . self::TWBS_VENDOR_DIR, \dirname($this->getPath()) . '/twbs'] as $candidate) {
             if (is_dir($candidate . '/bootstrap/scss')) {
                 return $candidate;
             }
         }
 
-        return $projectDir . '/vendor/twbs';
+        return $projectDir . self::TWBS_VENDOR_DIR;
     }
 }

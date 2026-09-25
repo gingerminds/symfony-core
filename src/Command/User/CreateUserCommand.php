@@ -83,6 +83,14 @@ final class CreateUserCommand extends Command
         $contributor->setLastname((string) $lastname);
         $contributor->setFirstname((string) $firstname);
 
+        return $this->saveUser($io, $user, $contributor, (string) $password, (string) $roleName);
+    }
+
+    /**
+     * Validates the user, then hashes its password and persists it with its contributor.
+     */
+    private function saveUser(SymfonyStyle $io, UserInterface $user, ContributorInterface $contributor, string $password, string $roleName): int
+    {
         $violations = $this->validator->validate($user);
 
         if (\count($violations) > 0) {
@@ -93,7 +101,7 @@ final class CreateUserCommand extends Command
             return Command::FAILURE;
         }
 
-        $user->setPassword($this->passwordHasher->hashPassword($user, (string) $password));
+        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
         $user->setPlainPassword(null);
 
         $this->entityManager->wrapInTransaction(function () use ($user, $contributor): void {
@@ -102,7 +110,7 @@ final class CreateUserCommand extends Command
             $this->entityManager->persist($contributor);
         });
 
-        $io->success(\sprintf('User "%s" created with role "%s".', $email, $roleName));
+        $io->success(\sprintf('User "%s" created with role "%s".', $user->getEmail(), $roleName));
 
         return Command::SUCCESS;
     }

@@ -53,12 +53,8 @@ final class DateFacetCalculator
             return \DateTimeImmutable::createFromInterface($value);
         }
 
-        if (!\is_string($value) || '' === $value) {
-            return null;
-        }
-
         try {
-            return new \DateTimeImmutable($value);
+            return \is_string($value) && '' !== $value ? new \DateTimeImmutable($value) : null;
         } catch (\Exception) {
             return null;
         }

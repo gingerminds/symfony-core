@@ -135,17 +135,7 @@ $gm-ts-chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg
     // Downward shadow only, so the list continues the field instead of
     // floating over it.
     box-shadow: 0 10px 20px -6px rgba($black, .15);
-}
 
-// Tom Select positions the dropdown from the inner .ts-control, i.e. inside
-// the wrapper border: widen it to the field's outer edges and push it below
-// the bottom border.
-.ts-wrapper.form-select > .ts-dropdown {
-    width: calc(100% + 2 * #{$input-border-width}) !important;
-    margin: $input-border-width 0 0 calc(-1 * #{$input-border-width});
-}
-
-.ts-dropdown {
     .ts-dropdown-content {
         padding: 0;
     }
@@ -180,6 +170,14 @@ $gm-ts-chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg
         border: $input-border-width solid $input-border-color;
         border-radius: $input-border-radius;
     }
+}
+
+// Tom Select positions the dropdown from the inner .ts-control, i.e. inside
+// the wrapper border: widen it to the field's outer edges and push it below
+// the bottom border.
+.ts-wrapper.form-select > .ts-dropdown {
+    width: calc(100% + 2 * #{$input-border-width}) !important;
+    margin: $input-border-width 0 0 calc(-1 * #{$input-border-width});
 }
 
 .plugin-dropdown_input.focus .ts-dropdown .dropdown-input {

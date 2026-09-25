@@ -28,25 +28,11 @@
  # Override from a project with templates/bundles/GingermindsCoreBundle/layout/base.html.twig
  # (or extend it and redefine blocks).
  #}
+{% extends '@GingermindsCore/layout/_document.html.twig' %}
 {% trans_default_domain 'GingermindsCore' %}
-<!DOCTYPE html>
-<html lang="{{ app.request.locale|default('fr')|replace({'_': '-'}) }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="Gingerminds">
-    <meta name="robots" content="noindex, nofollow">
-    <title>{% block title %}{{ page_title ?? '' }}{% endblock %} | {{ gm_admin_title() }}</title>
-    {% block javascripts %}
-        {{ importmap('gingerminds-core-admin') }}
-    {% endblock %}
-    {# After importmap(): its vendor CSS (Tom Select theme, bootstrap-icons) must
-     # come first so the admin stylesheet overrides it. #}
-    {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
-    {% endblock %}
-</head>
-<body{% block body_attributes %}{% endblock %}>
+
+{% block title %}{{ page_title ?? '' }}{% endblock %}
+
 {% block body %}
     <div class="gm-shell d-flex">
         {% block sidebar %}
@@ -82,5 +68,3 @@
 
     {% block modals %}{% endblock %}
 {% endblock %}
-</body>
-</html>

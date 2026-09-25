@@ -57,10 +57,7 @@ abstract class AbstractCrudController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getRepository()->save($entity, $form);
-            $this->addFlash($request, 'success', $this->trans('flash.created', [
-                '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
-                '%label%' => $this->getLabel($entity),
-            ]));
+            $this->addResourceFlash($request, 'flash.created', $this->getLabel($entity));
 
             return $this->redirectAfterSave($entity, true);
         }
@@ -85,10 +82,7 @@ abstract class AbstractCrudController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getRepository()->save($entity, $form);
-            $this->addFlash($request, 'success', $this->trans('flash.updated', [
-                '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
-                '%label%' => $this->getLabel($entity),
-            ]));
+            $this->addResourceFlash($request, 'flash.updated', $this->getLabel($entity));
 
             return $this->redirectAfterSave($entity, false);
         }
@@ -125,12 +119,22 @@ abstract class AbstractCrudController
         $label = $this->getLabel($entity);
         $this->getRepository()->remove($entity);
 
-        $this->addFlash($request, 'success', $this->trans('flash.deleted', [
+        $this->addResourceFlash($request, 'flash.deleted', $label);
+
+        return $this->redirectToRoute($resource->route('index'));
+    }
+
+    /**
+     * Success flash naming the resource and the entity label (flash.created, flash.updated, flash.deleted).
+     */
+    private function addResourceFlash(Request $request, string $message, string $label): void
+    {
+        $resource = $this->getResource();
+
+        $this->addFlash($request, 'success', $this->trans($message, [
             '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
             '%label%' => $label,
         ]));
-
-        return $this->redirectToRoute($resource->route('index'));
     }
 
     protected function getResourceName(): string

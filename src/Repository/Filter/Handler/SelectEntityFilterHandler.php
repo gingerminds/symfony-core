@@ -18,35 +18,50 @@ final class SelectEntityFilterHandler implements FilterHandlerInterface
             return;
         }
 
+        if (null === $value || 'null' === $value) {
+            $this->applyIsNull($query, $owner);
+
+            return;
+        }
+
+        $this->applyIn($query, $owner, SelectFilterHandler::normalize($value));
+    }
+
+    /**
+     * @param array{metadata: ClassMetadata<object>, alias: string, name: string} $owner
+     */
+    private function applyIsNull(QueryBuilderHelper $query, array $owner): void
+    {
         $qb = $query->getQueryBuilder();
         $metadata = $owner['metadata'];
         $name = $owner['name'];
 
-        if (null === $value || 'null' === $value) {
-            if ($this->isToMany($metadata, $name)) {
-                $qb->andWhere($qb->expr()->isNull($query->join($owner['alias'], $name) . '.id'));
-            } elseif ($metadata->hasAssociation($name)) {
-                $qb->andWhere($qb->expr()->isNull(\sprintf('IDENTITY(%s.%s)', $owner['alias'], $name)));
-            } else {
-                $qb->andWhere($qb->expr()->isNull(\sprintf('%s.%s', $owner['alias'], $name)));
-            }
-
-            return;
+        if ($this->isToMany($metadata, $name)) {
+            $qb->andWhere($qb->expr()->isNull($query->join($owner['alias'], $name) . '.id'));
+        } elseif ($metadata->hasAssociation($name)) {
+            $qb->andWhere($qb->expr()->isNull(\sprintf('IDENTITY(%s.%s)', $owner['alias'], $name)));
+        } else {
+            $qb->andWhere($qb->expr()->isNull(\sprintf('%s.%s', $owner['alias'], $name)));
         }
+    }
 
-        $values = SelectFilterHandler::normalize($value);
-
+    /**
+     * @param array{metadata: ClassMetadata<object>, alias: string, name: string} $owner
+     * @param list<scalar>                                                        $values
+     */
+    private function applyIn(QueryBuilderHelper $query, array $owner, array $values): void
+    {
         if ([] === $values) {
             return;
         }
 
+        $qb = $query->getQueryBuilder();
+        $metadata = $owner['metadata'];
+        $name = $owner['name'];
+
         if (!$metadata->hasAssociation($name)) {
             $qb->andWhere(\sprintf('%s.%s IN (%s)', $owner['alias'], $name, $query->parameter($values)));
-
-            return;
-        }
-
-        if ($this->isToMany($metadata, $name)) {
+        } elseif ($this->isToMany($metadata, $name)) {
             $alias = $query->join($owner['alias'], $name);
             $identifier = $query->getEntityManager()
                 ->getClassMetadata($metadata->getAssociationTargetClass($name))
@@ -54,11 +69,9 @@ final class SelectEntityFilterHandler implements FilterHandlerInterface
 
             $qb->andWhere(\sprintf('%s.%s IN (%s)', $alias, $identifier, $query->parameter($values)))
                 ->distinct();
-
-            return;
+        } else {
+            $qb->andWhere(\sprintf('IDENTITY(%s.%s) IN (%s)', $owner['alias'], $name, $query->parameter($values)));
         }
-
-        $qb->andWhere(\sprintf('IDENTITY(%s.%s) IN (%s)', $owner['alias'], $name, $query->parameter($values)));
     }
 
     /**

@@ -4,24 +4,8 @@
  #
  # Blocks: title, stylesheets, javascripts, body_attributes, body, content.
  #}
-<!DOCTYPE html>
-<html lang="{{ app.request.locale|default('fr')|replace({'_': '-'}) }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="author" content="Gingerminds">
-    <meta name="robots" content="noindex, nofollow">
-    <title>{% block title %}{% endblock %} | {{ gm_admin_title() }}</title>
-    {% block javascripts %}
-        {{ importmap('gingerminds-core-admin') }}
-    {% endblock %}
-    {# After importmap(): its vendor CSS (Tom Select theme, bootstrap-icons) must
-     # come first so the admin stylesheet overrides it. #}
-    {% block stylesheets %}
-        <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
-    {% endblock %}
-</head>
-<body{% block body_attributes %}{% endblock %}>
+{% extends '@GingermindsCore/layout/_document.html.twig' %}
+
 {% block body %}
     <div class="account-pages py-5">
         <div class="container">
@@ -29,5 +13,3 @@
         </div>
     </div>
 {% endblock %}
-</body>
-</html>
