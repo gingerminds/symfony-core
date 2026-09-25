@@ -26,7 +26,6 @@ use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -37,7 +36,7 @@ use Symfony\Component\Yaml\Yaml;
 
 final readonly class ResourceGenerator
 {
-    private const array FIELD_NAME_LABELS = ['fr' => 'Nom', 'en' => 'Name'];
+    private const array LOCALES = ['fr', 'en'];
 
     /**
      * Skip reason of a file that is already there, also the wording of the MakerBundle "already exists" errors.
@@ -55,7 +54,6 @@ final readonly class ResourceGenerator
     {
         $uses = [
             'Doctrine\\ORM\\Mapping as ORM',
-            'Symfony\\Component\\Validator\\Constraints as Assert',
             $resource->repositoryClass(),
             ResourceInterface::class,
             SearchableInterface::class,
@@ -103,7 +101,6 @@ final readonly class ResourceGenerator
         return $this->generateClass($generator, $io, $resource->formClass(), 'FormType.tpl.php', [
             'use_statements' => $this->useStatements($resource->formClass(), [
                 AbstractType::class,
-                TextType::class,
                 FormBuilderInterface::class,
                 OptionsResolver::class,
                 $resource->entityClass(),
@@ -134,12 +131,12 @@ final readonly class ResourceGenerator
             $this->generateTemplate($generator, $io, $resource, $template);
         }
 
-        foreach (self::FIELD_NAME_LABELS as $locale => $fieldNameLabel) {
+        foreach (self::LOCALES as $locale) {
             $this->mergeTranslations($generator, $io, $generator->getRootDirectory() . '/translations/admin.' . $locale . '.yaml', [
                 $resource->snake => [
                     'name_s' => $resource->label(),
                     'name_p' => $resource->label(true),
-                    'field' => ['name' => $fieldNameLabel],
+                    'field' => ['id' => 'ID'],
                 ],
             ]);
         }

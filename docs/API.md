@@ -76,6 +76,8 @@ option in API Platform, hence its repetition on `Post`/`Patch`.
 
 > Change from the Laravel core: core resources declare `security` expressions on every
 > operation (the Laravel core only required a Sanctum token, whatever the permissions).
+> The API is open by default: an operation is only closed by its `security` expression, see
+> [Authentication](Authentication.md#protecting-api-operations).
 
 ### Mapping URI variables to filters
 

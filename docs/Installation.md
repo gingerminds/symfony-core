@@ -82,10 +82,10 @@ security:
     access_control:
         - { path: ^/admin/login$, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: IS_AUTHENTICATED }
-        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: IS_AUTHENTICATED }
 ```
+
+There is no `^/api` rule: the API is open by default and every operation is protected by its
+`security` expression (resource voter), see [Authentication](Authentication.md#protecting-api-operations).
 
 `login_throttling` requires `symfony/rate-limiter` (already a dependency of the bundle).
 Keep the default `affirmative` access decision strategy: the Super-Admin bypass relies on it.

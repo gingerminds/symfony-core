@@ -7,7 +7,8 @@ namespace <?= $namespace ?>;
 <?= $use_statements ?>
 
 /**
- * `view|edit|delete <?= $resource->snakePlural ?>` permissions. Override canView()/canCreate()/canEdit()/canDelete() for specific rules.
+ * `view|edit|delete <?= $resource->snakePlural ?>` permissions. Override canView()/canCreate()/canEdit()/canDelete() for specific rules,
+ * getPublicAttributes() to open an attribute to anonymous users (e.g. `[self::VIEW]`).
  */
 final class <?= $class_name ?> extends AbstractResourceVoter
 {

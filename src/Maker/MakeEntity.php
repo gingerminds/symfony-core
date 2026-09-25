@@ -15,8 +15,8 @@ use Symfony\Component\Console\Input\InputOption;
 
 /**
  * make:gm:entity Namespace/Name [--api]: `App\Entity\Namespace\Name`, a
- * resource entity (sortable, searchable, timestampable) with an `id` and a
- * `name`. `--api` adds the #[ApiResource] wired to the generated
+ * resource entity (sortable, searchable, timestampable) with only an `id`.
+ * `--api` adds the #[ApiResource] wired to the generated
  * provider/processor and secured by the resource voter.
  */
 final class MakeEntity extends AbstractResourceMaker

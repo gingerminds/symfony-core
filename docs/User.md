@@ -68,12 +68,15 @@ $this->denyAccessUnlessGranted('EDIT', $product);
 
 Override `canView()`, `canCreate()`, `canEdit()`, `canDelete()` for specific rules — e.g. the
 bundle `UserVoter` lets a user view/edit their own account and forbids deleting it,
-`RoleVoter` requires `manage roles` for everything. A resource readable by anyone:
+`RoleVoter` requires `manage roles` for everything. These methods only run for an authenticated
+user; `canView()` returning `true` opens the resource to every **logged in** user.
+
+A resource readable by anyone, anonymous API clients included:
 
 ```php
-protected function canView(UserInterface $user, ?object $subject): bool
+protected function getPublicAttributes(): array
 {
-    return true;
+    return [self::VIEW];
 }
 ```
 

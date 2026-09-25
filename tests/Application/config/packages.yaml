@@ -95,9 +95,6 @@ security:
     access_control:
         - { path: ^/admin/login$, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: IS_AUTHENTICATED }
-        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
-        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: IS_AUTHENTICATED }
 
 gingerminds_core:
     resources:

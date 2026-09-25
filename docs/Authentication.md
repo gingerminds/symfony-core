@@ -43,6 +43,30 @@ This replaces **both** Laravel layers (the `gingerminds-core.auth` middleware an
 `EnsureAdminAreaIsAuthenticated` safety net): any route under the admin prefix is protected,
 whether it comes from the bundle, another Gingerminds bundle or the project.
 
+## Protecting API operations
+
+The API has no `access_control` rule: it is open by default and each resource closes what it
+needs, operation by operation, with its `security` expression. A token is only required when
+the voter denies access to the anonymous user, who then gets a 401 (a 403 once authenticated).
+The core resources (users, contributors, roles, permissions) are closed on every operation.
+
+A resource readable without a token, writable only with the permissions:
+
+```php
+final class ProductVoter extends AbstractResourceVoter
+{
+    // ...
+
+    protected function getPublicAttributes(): array
+    {
+        return [self::VIEW];
+    }
+}
+```
+
+An operation without `security` is public. `make:gm:resource --api` secures the 5 operations
+with the voter, so a generated resource stays closed until its voter opens it.
+
 ## API authentication (Sanctum equivalent)
 
 ```http

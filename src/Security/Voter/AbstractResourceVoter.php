@@ -30,6 +30,17 @@ abstract class AbstractResourceVoter extends Voter
 
     abstract protected function getPermissionName(): string;
 
+    /**
+     * Attributes granted to everyone, anonymous API clients included, e.g. `[self::VIEW]`
+     * for a resource readable without a token. The API is open unless a voter denies access.
+     *
+     * @return list<string>
+     */
+    protected function getPublicAttributes(): array
+    {
+        return [];
+    }
+
     protected function supports(string $attribute, mixed $subject): bool
     {
         if (!\in_array($attribute, self::ATTRIBUTES, true)) {
@@ -46,6 +57,10 @@ abstract class AbstractResourceVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
     {
+        if (\in_array($attribute, $this->getPublicAttributes(), true)) {
+            return true;
+        }
+
         $user = $token->getUser();
 
         if (!$user instanceof UserInterface) {

@@ -74,6 +74,17 @@ final class AuthTest extends ApiTestCase
         $this->assertStatus(401);
     }
 
+    public function testApiIsOpenByDefault(): void
+    {
+        $this->api('GET', '/api/products');
+        $this->assertStatus(200);
+
+        foreach (['/api/users', '/api/contributors', '/api/roles', '/api/permissions'] as $uri) {
+            $this->api('GET', $uri);
+            $this->assertStatus(401);
+        }
+    }
+
     public function testLogoutRevokesTheCurrentToken(): void
     {
         $user = $this->fixtures->user('logout@example.com', ['view users']);

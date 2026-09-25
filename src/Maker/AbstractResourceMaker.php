@@ -68,7 +68,7 @@ abstract class AbstractResourceMaker extends AbstractMaker implements InputAware
     {
         return [
             \sprintf(
-                "Add fields with <fg=yellow>bin/console make:entity '%s'</> (a <comment>name</comment> field is generated as a starting point).",
+                "Add fields with <fg=yellow>bin/console make:entity '%s'</> (only the <comment>id</comment> is generated).",
                 $resource->relativeClassName(),
             ),
             'Create the table: <fg=yellow>bin/console make:migration</> then <fg=yellow>bin/console doctrine:migrations:migrate</>.',

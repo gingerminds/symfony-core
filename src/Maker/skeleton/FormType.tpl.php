@@ -15,10 +15,7 @@ final class <?= $class_name ?> extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        $builder
-            ->add('name', TextType::class, [
-                'label' => '<?= $resource->snake ?>.field.name',
-            ]);
+        // TODO: add the fields edited in the admin and the API.
     }
 
     public function configureOptions(OptionsResolver $resolver): void

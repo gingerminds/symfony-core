@@ -7,11 +7,13 @@ namespace Gingerminds\CoreBundle\Tests\Unit\Security;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Entity\User\User;
+use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
 use Gingerminds\CoreBundle\Security\Voter\PermissionNameVoter;
 use Gingerminds\CoreBundle\Security\Voter\Role\RoleVoter;
 use Gingerminds\CoreBundle\Security\Voter\SuperAdminVoter;
 use Gingerminds\CoreBundle\Security\Voter\User\UserVoter;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Security\Core\Authentication\Token\NullToken;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
@@ -29,6 +31,42 @@ final class VoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($token, $other, ['DELETE']));
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, 'role', ['VIEW']));
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, 'user', ['PUBLISH']));
+    }
+
+    public function testResourceVoterDeniesAnonymousUsers(): void
+    {
+        self::assertSame(VoterInterface::ACCESS_DENIED, new UserVoter()->vote(new NullToken(), 'user', ['VIEW']));
+    }
+
+    public function testPublicAttributesAreGrantedWithoutAuthentication(): void
+    {
+        $voter = new class extends AbstractResourceVoter {
+            protected function getResourceName(): string
+            {
+                return 'user';
+            }
+
+            protected function getSubjectClass(): string
+            {
+                return User::class;
+            }
+
+            protected function getPermissionName(): string
+            {
+                return 'users';
+            }
+
+            protected function getPublicAttributes(): array
+            {
+                return [self::VIEW];
+            }
+        };
+
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote(new NullToken(), 'user', ['VIEW']));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote(new NullToken(), new User(), ['VIEW']));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote(new NullToken(), 'user', ['CREATE']));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->token($this->user([])), new User(), ['EDIT']));
+        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote(new NullToken(), 'role', ['VIEW']));
     }
 
     public function testRoleVoterRequiresManageRoles(): void
