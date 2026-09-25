@@ -218,7 +218,7 @@ final readonly class ResourceGenerator
         try {
             $generator->generateClass($class, $this->skeletonDirectory . '/' . $template, $variables);
         } catch (RuntimeCommandException $exception) {
-            $this->writeSkipped($io, $class, self::skipReason($exception));
+            $this->writeSkipped($io, $class, $this->skipReason($exception));
 
             return false;
         }
@@ -235,7 +235,7 @@ final readonly class ResourceGenerator
                 'resource' => $resource,
             ]);
         } catch (RuntimeCommandException $exception) {
-            $this->writeSkipped($io, 'templates/' . $target, self::skipReason($exception));
+            $this->writeSkipped($io, 'templates/' . $target, $this->skipReason($exception));
         }
     }
 
@@ -370,7 +370,7 @@ final readonly class ResourceGenerator
     /**
      * Null (default "already exists" reason) when the target file is already there, the error message otherwise.
      */
-    private static function skipReason(RuntimeCommandException $exception): ?string
+    private function skipReason(RuntimeCommandException $exception): ?string
     {
         return str_contains($exception->getMessage(), self::ALREADY_EXISTS) ? null : $exception->getMessage();
     }

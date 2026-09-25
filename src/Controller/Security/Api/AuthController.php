@@ -47,7 +47,7 @@ final readonly class AuthController
 
         $rejection = $this->rejectAttempt($request, $email, $password);
 
-        if (null !== $rejection) {
+        if ($rejection instanceof JsonResponse) {
             return $rejection;
         }
 

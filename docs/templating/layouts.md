@@ -124,7 +124,7 @@ The authenticated shell with a `sub_content` block, for custom detail pages.
 ## Components & macros
 
 `{% import '@GingermindsCore/components/macros.html.twig' as gm %}`: `trans` (with domain
-fallback), `sort_header`, `boolean_badge`, `edit_button`, `delete_button`, `confirm_link`.
+fallback), `sort_header`, `boolean_badge`, `create_button`, `edit_button`, `delete_button`, `row_actions`, `confirm_link`.
 Partials: `components/_flashes`, `components/_breadcrumb`, `components/display/_boolean`,
 `components/list/{_filters,_pagination,_items_per_page}`,
 `components/list/filter/_{text,date,number,boolean,select,select_entity}`,

@@ -71,9 +71,7 @@
                 </h5>
                 {% block list_actions %}
                     {% if is_granted('CREATE', resource.name) %}
-                        <a href="{{ path(resource.route('new'), route_parameters) }}" class="btn btn-sm btn-success">
-                            <i class="bi bi-plus-lg me-1"></i> {{ 'action.create'|trans }}
-                        </a>
+                        {{ gm.create_button(path(resource.route('new'), route_parameters)) }}
                     {% endif %}
                 {% endblock %}
             </div>
@@ -92,14 +90,7 @@
 {% endblock %}
 
 {% block row_actions %}
-    <div class="btn-group">
-        {% if is_granted('EDIT', item) %}
-            {{ gm.edit_button(path(resource.route('edit'), route_parameters|merge({id: item.id}))) }}
-        {% endif %}
-        {% if is_granted('DELETE', item) %}
-            {{ gm.delete_button(path(resource.route('delete'), route_parameters|merge({id: item.id})), csrf_token('delete-' ~ item.id), item_label ?? (item ~ '')) }}
-        {% endif %}
-    </div>
+    {{ gm.row_actions(item, resource, route_parameters, item_label ?? (item ~ '')) }}
 {% endblock %}
 
 {% block modals %}

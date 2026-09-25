@@ -100,12 +100,11 @@ final readonly class ApiResponseCacheListener
      */
     private function resolveCacheableOperation(RequestEvent $event): ?array
     {
-        $request = $event->getRequest();
-
-        if (!$this->enabled || !$event->isMainRequest() || !$request->isMethodCacheable()) {
+        if (!$this->isCacheableRequest($event)) {
             return null;
         }
 
+        $request = $event->getRequest();
         $resourceClass = $request->attributes->get('_api_resource_class');
         $operationName = $request->attributes->get('_api_operation_name');
 
@@ -115,11 +114,14 @@ final readonly class ApiResponseCacheListener
 
         $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
 
-        if (!$operation instanceof HttpOperation || !$this->isCacheableOperation($operation, $resourceClass)) {
-            return null;
-        }
+        return $operation instanceof HttpOperation && $this->isCacheableOperation($operation, $resourceClass)
+            ? [$resourceClass, $operation]
+            : null;
+    }
 
-        return [$resourceClass, $operation];
+    private function isCacheableRequest(RequestEvent $event): bool
+    {
+        return $this->enabled && $event->isMainRequest() && $event->getRequest()->isMethodCacheable();
     }
 
     /**

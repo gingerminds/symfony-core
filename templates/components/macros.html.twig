@@ -62,6 +62,13 @@
     </a>
 {%- endmacro %}
 
+{# Create link of a list (card header, empty state). #}
+{% macro create_button(url, class = 'btn btn-sm btn-success') -%}
+    <a href="{{ url }}" class="{{ class }}">
+        <i class="bi bi-plus-lg me-1"></i> {{ 'action.create'|trans({}, 'GingermindsCore') }}
+    </a>
+{%- endmacro %}
+
 {#
  # Delete button opening the delete modal (`gm-delete-modal`, see
  # components/modal/_delete.html.twig): POSTs `_token` to `url`.
@@ -78,6 +85,21 @@
         <i class="bi bi-trash"></i>
         <span class="visually-hidden">{{ 'action.delete'|trans({}, 'GingermindsCore') }}</span>
     </button>
+{%- endmacro %}
+
+{#
+ # Edit / delete buttons of a list row, each guarded by is_granted('EDIT' / 'DELETE', item).
+ # `label` names the item in the delete modal.
+ #}
+{% macro row_actions(item, resource, route_parameters = {}, label = '') -%}
+    <div class="btn-group">
+        {% if is_granted('EDIT', item) %}
+            {{ _self.edit_button(path(resource.route('edit'), route_parameters|merge({id: item.id}))) }}
+        {% endif %}
+        {% if is_granted('DELETE', item) %}
+            {{ _self.delete_button(path(resource.route('delete'), route_parameters|merge({id: item.id})), csrf_token('delete-' ~ item.id), label) }}
+        {% endif %}
+    </div>
 {%- endmacro %}
 
 {#
