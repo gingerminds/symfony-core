@@ -7,6 +7,8 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 use Gingerminds\CoreBundle\Form\Extension\SizeTypeExtension;
 use Gingerminds\CoreBundle\Form\Permission\PermissionType;
 use Gingerminds\CoreBundle\Form\Role\RoleType;
+use Gingerminds\CoreBundle\Form\Type\ContributorSelectorType;
+use Gingerminds\CoreBundle\Form\Type\ResourceAutocompleteType;
 use Gingerminds\CoreBundle\Form\User\ContributorType;
 use Gingerminds\CoreBundle\Form\User\ProfileType;
 use Gingerminds\CoreBundle\Form\User\UserType;
@@ -36,6 +38,13 @@ return static function (ContainerConfigurator $container): void {
             ->args([service('gingerminds_core.resource_registry')])
             ->tag('form.type');
     }
+
+    $services->set('gingerminds_core.form.type.resource_autocomplete', ResourceAutocompleteType::class)
+        ->args([service('gingerminds_core.resource_registry'), service('router')])
+        ->tag('form.type');
+    $services->set('gingerminds_core.form.type.contributor_selector', ContributorSelectorType::class)
+        ->args([service(ContributorRepository::class), service('translator'), service('router')])
+        ->tag('form.type');
 
     $services->set('gingerminds_core.form.extension.size', SizeTypeExtension::class)
         ->tag('form.type_extension');
