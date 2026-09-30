@@ -35,7 +35,7 @@ All of them live under `Gingerminds\CoreBundle\Model`.
 | `SortableInterface` | Enables `?sortBy=&sort=asc\|desc` (admin column headers and API). `sortBy` accepts a mapped field or `relation.field` through a to-one association; anything else is ignored (whitelisted against the Doctrine metadata, never injected in DQL). See [Sorting](Sorting.md). |
 | `SearchableInterface` | Enables `filters[search]`: case-insensitive `LIKE` on `getSearchableFields()` (supports `relation.field`). |
 | `FilterableInterface` | Enables the filters panel and `filters[...]` on the API, from `getFilters()`. See [Filters](partials/filters.md) and [Facets](partials/facets.md). |
-| `EagerLoadableInterface` | `getEagerLoads()` associations are fetch-joined on every repository read (lists, API reads, admin edit page). Fixes N+1 at the source. |
+| `EagerLoadableInterface` | `getEagerLoads()` associations are loaded with the entities on every repository read (lists, API reads, admin edit page). Fixes N+1 at the source. To-one paths are fetch-joined; on paginated lists, a path going through a collection is loaded after the page, one `WHERE IN` query per path (joining it would paginate through `DISTINCT` subqueries over the whole table). |
 | `CacheableResourceInterface` | Caches the API responses of the resource. See [Cache](Cache.md). |
 | `CacheCascadeInterface` | Invalidates other resources' cache when this entity changes. See [Cache](Cache.md). |
 | `TimestampableInterface` + `TimestampableTrait` | `createdAt`/`updatedAt` filled automatically (Eloquent timestamps). |
@@ -62,7 +62,7 @@ That is all: pagination, sorting, search, filters and eager loads come from `Abs
 
 | Method | Purpose |
 |---|---|
-| `paginate(ListQuery $query): Paginator` | Admin lists and API collections. |
+| `paginate(ListQuery $query): Paginator` | Admin lists and API collections. The total is a separate `COUNT` without eager loads nor sort (`countForList()`, skipped on a partial page); the id subqueries (`DISTINCT`) only run when a collection is joined. |
 | `findForList(ListQuery $query): array` | Same query, no pagination. |
 | `createListQueryBuilder(ListQuery $query, array $excludedFilters = []): QueryBuilder` | The underlying query, to build on. |
 | `findOneForRead(int\|string $id, ?ListQuery $query = null): ?object` | Single item honouring context filters and eager loads (API item reads, admin edit page). |
@@ -143,6 +143,21 @@ Generated routes (`admin_product_index|new|edit|delete`), templates and hooks: s
 `getIndexParameters()`, `getFormParameters()`, `getDeleteError()`, `redirectAfterSave()`,
 `createListQuery()` (force a filter on the admin list). The redirect after a save is
 configurable without code: see [Redirect after save](Configuration.md#redirect-after-save).
+
+## List performance
+
+`paginate()` keeps lists cheap on large tables by itself (plain `COUNT`, `LIMIT` without
+`DISTINCT` subqueries, collection eager loads loaded after the page). What depends on the
+resource:
+
+1. **Eager load what the list shows.** Every relation displayed by the admin list or exposed in
+   the API list group goes in `getEagerLoads()` (`EagerLoadableInterface`), otherwise each row
+   runs its own query. The inverse side of a one-to-one (`mappedBy`) is never lazy: it costs one
+   query per row even when not displayed.
+2. **Index the sorts and filters.** Add a `#[ORM\Index]` on the default sort of the repository
+   and on the sortable / filtered columns once the table can grow (then `make:migration`).
+3. **Search is a full scan.** `filters[search]` runs `LOWER(field) LIKE '%…%'`, which no index can
+   serve: past a few hundred thousand rows, move to a full-text search.
 
 ## See also
 

@@ -8,6 +8,8 @@ namespace <?= $namespace ?>;
 
 #[ORM\Entity(repositoryClass: <?= $repository_class ?>::class)]
 #[ORM\Table(name: '<?= $resource->snakePlural ?>')]
+// Index the default sort and the sortable / filtered columns once the table can grow:
+// #[ORM\Index(name: '<?= $resource->snakePlural ?>_name_idx', fields: ['name'])]
 <?php if ($api): include __DIR__ . '/ApiResource.tpl.php'; endif ?>
 class <?= $class_name ?> implements ResourceInterface, SearchableInterface, SortableInterface, TimestampableInterface, \Stringable
 {
@@ -37,6 +39,9 @@ class <?= $class_name ?> implements ResourceInterface, SearchableInterface, Sort
         // TODO: list the fields matched by `filters[search]` (`relation.field` supported).
         return [];
     }
+
+    // Relations shown by the admin list or the API list group: implement EagerLoadableInterface
+    // and return them from getEagerLoads(), e.g. ['category', 'tags'] (no query per row).
 
     public function getId(): ?int
     {
