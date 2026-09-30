@@ -31,7 +31,9 @@ final class ResourceAutocompleteType extends AbstractType
 
         $resolver->setDefaults([
             'class' => fn (Options $options): string => $this->resources->getEntityClass($options['resource']),
-            'choice_loader' => static fn (Options $options, ?ChoiceLoaderInterface $loader): ?ChoiceLoaderInterface => null === $loader ? null : new LazyChoiceLoader($loader),
+            'choice_loader' => static fn (Options $options, ?ChoiceLoaderInterface $loader): ?ChoiceLoaderInterface => $loader instanceof ChoiceLoaderInterface
+                ? new LazyChoiceLoader($loader)
+                : null,
             'autocomplete' => true,
             'autocomplete_url' => fn (Options $options): string => $this->urlGenerator->generate('gingerminds_core_autocomplete', ['resource' => $options['resource']]),
         ]);
