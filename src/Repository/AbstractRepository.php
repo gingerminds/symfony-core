@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator as DoctrinePaginator;
 use Doctrine\Persistence\ManagerRegistry;
@@ -60,16 +61,26 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     public function paginate(ListQuery $query): Paginator
     {
         $itemsPerPage = min($this->maxItemsPerPage, $query->itemsPerPage ?? $this->itemsPerPage);
-        $qb = $this->createListQueryBuilder($query)
-            ->setFirstResult(($query->page - 1) * $itemsPerPage)
+        $offset = ($query->page - 1) * $itemsPerPage;
+        // Collection eager loads are loaded after the page (loadEagerCollections()).
+        $qb = $this->buildListQueryBuilder($query, [], eagerCollections: false)
+            ->setFirstResult($offset)
             ->setMaxResults($itemsPerPage);
 
-        $doctrinePaginator = new DoctrinePaginator($qb, fetchJoinCollection: true);
+        // The id subqueries (DISTINCT) are only needed when a collection is joined:
+        // otherwise LIMIT applies to the entities themselves.
+        $doctrinePaginator = new DoctrinePaginator($qb, fetchJoinCollection: $this->joinsCollection($qb));
 
         /** @var list<T> $items */
         $items = iterator_to_array($doctrinePaginator->getIterator(), false);
+        $this->loadEagerCollections($items);
 
-        return new Paginator($items, \count($doctrinePaginator), $query->page, $itemsPerPage);
+        // A partial page gives the total without counting (not for an empty page past the end).
+        $total = [] !== $items && \count($items) < $itemsPerPage
+            ? $offset + \count($items)
+            : $this->countForList($query) ?? \count($doctrinePaginator);
+
+        return new Paginator($items, $total, $query->page, $itemsPerPage);
     }
 
     public function findForList(ListQuery $query): array
@@ -80,10 +91,18 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
 
     public function createListQueryBuilder(ListQuery $query, array $excludedFilters = []): QueryBuilder
     {
+        return $this->buildListQueryBuilder($query, $excludedFilters, eagerCollections: true);
+    }
+
+    /**
+     * @param list<string> $excludedFilters
+     */
+    private function buildListQueryBuilder(ListQuery $query, array $excludedFilters, bool $eagerCollections): QueryBuilder
+    {
         $qb = $this->createQueryBuilder(self::ALIAS);
         $helper = new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager());
 
-        $this->applyEagerLoads($helper);
+        $this->applyEagerLoads($helper, $eagerCollections);
         $this->configureListQueryBuilder($qb, $query);
 
         $filters = array_diff_key($query->filters, array_flip($excludedFilters));
@@ -136,6 +155,67 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     }
 
     /**
+     * Total of the list without the eager loads and the sort: a plain COUNT, DISTINCT only
+     * when a filter joins a collection. Null when the list query groups its rows
+     * (GROUP BY / HAVING from configureListQueryBuilder()): the Doctrine paginator counts then.
+     */
+    protected function countForList(ListQuery $query): ?int
+    {
+        $qb = $this->createQueryBuilder(self::ALIAS);
+        $helper = new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager());
+
+        $this->configureListQueryBuilder($qb, $query);
+        $this->applyItem($helper, $query->filters);
+        $this->applySearch($helper, $query->filters);
+        $this->applyFilters($helper, $query->filters);
+
+        if ([] !== $qb->getDQLPart('groupBy') || null !== $qb->getDQLPart('having')) {
+            return null;
+        }
+
+        $identifier = self::ALIAS . '.' . $this->getClassMetadata()->getSingleIdentifierFieldName();
+        $qb->select(\sprintf($this->joinsCollection($qb) ? 'COUNT(DISTINCT %s)' : 'COUNT(%s)', $identifier))
+            ->resetDQLPart('orderBy');
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Whether the query joins a to-many association (rows are duplicated per entity).
+     * A join that isn't an association path of a known alias (arbitrary entity join)
+     * counts as one.
+     */
+    protected function joinsCollection(QueryBuilder $qb): bool
+    {
+        /** @var array<string, class-string> $classes alias => entity class */
+        $classes = [self::ALIAS => $this->getEntityClass()];
+
+        /** @var array<string, list<Join>> $joinParts */
+        $joinParts = $qb->getDQLPart('join');
+
+        foreach ($joinParts as $joins) {
+            foreach ($joins as $join) {
+                $path = explode('.', $join->getJoin(), 2);
+                $fromClass = $classes[$path[0]] ?? null;
+
+                if (2 !== \count($path) || null === $fromClass) {
+                    return true;
+                }
+
+                $metadata = $this->getEntityManager()->getClassMetadata($fromClass);
+
+                if (!$metadata->hasAssociation($path[1]) || $metadata->isCollectionValuedAssociation($path[1])) {
+                    return true;
+                }
+
+                $classes[(string) $join->getAlias()] = $metadata->getAssociationTargetClass($path[1]);
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param T                         $entity
      * @param FormInterface<mixed>|null $form
      */
@@ -158,17 +238,72 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     {
     }
 
-    protected function applyEagerLoads(QueryBuilderHelper $helper): void
+    /**
+     * Fetch-joins the eager loads; with $collections false, only the to-one paths (a joined
+     * collection turns the paginated query into DISTINCT id subqueries over the whole table).
+     */
+    protected function applyEagerLoads(QueryBuilderHelper $helper, bool $collections = true): void
     {
-        $entityClass = $this->getEntityClass();
+        foreach ($this->eagerLoads() as $path) {
+            if ($collections || !$this->isCollectionPath($path)) {
+                $helper->eagerLoad($path);
+            }
+        }
+    }
 
-        if (!is_subclass_of($entityClass, EagerLoadableInterface::class)) {
+    /**
+     * Loads the eager loads going through a collection for already fetched entities, one
+     * query per path (WHERE IN): Doctrine fills their uninitialized collections.
+     *
+     * @param list<T> $items
+     */
+    protected function loadEagerCollections(array $items): void
+    {
+        if ([] === $items) {
             return;
         }
 
-        foreach ($entityClass::getEagerLoads() as $path) {
-            $helper->eagerLoad($path);
+        foreach ($this->eagerLoads() as $path) {
+            if (!$this->isCollectionPath($path)) {
+                continue;
+            }
+
+            $qb = $this->createQueryBuilder(self::ALIAS);
+            new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager())->eagerLoad($path);
+            $qb->where(self::ALIAS . ' IN (:gm_items)')
+                ->setParameter('gm_items', $items)
+                ->getQuery()
+                ->getResult();
         }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function eagerLoads(): array
+    {
+        $entityClass = $this->getEntityClass();
+
+        return is_subclass_of($entityClass, EagerLoadableInterface::class) ? $entityClass::getEagerLoads() : [];
+    }
+
+    private function isCollectionPath(string $path): bool
+    {
+        $metadata = $this->getClassMetadata();
+
+        foreach (explode('.', $path) as $association) {
+            if (!$metadata->hasAssociation($association)) {
+                return false;
+            }
+
+            if ($metadata->isCollectionValuedAssociation($association)) {
+                return true;
+            }
+
+            $metadata = $this->getEntityManager()->getClassMetadata($metadata->getAssociationTargetClass($association));
+        }
+
+        return false;
     }
 
     /**

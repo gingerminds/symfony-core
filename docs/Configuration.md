@@ -133,6 +133,10 @@ gingerminds_core:
             entity: App\Entity\User\User
 ```
 
+Class-level `#[ORM\Index]` are not inherited either: an entity overriding `Contributor` restates
+`#[ORM\Index(name: 'contributors_name_idx', fields: ['lastname', 'firstname'])]` (default sort
+of the contributor list), then generates its migration.
+
 The bundle then:
 
 - excludes its own `Entity/User/User.php` from the Doctrine mapping and the API resources

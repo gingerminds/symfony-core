@@ -15,6 +15,7 @@ use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
 
 #[ORM\Entity(repositoryClass: ContributorRepository::class)]
 #[ORM\Table(name: 'contributors')]
+#[ORM\Index(name: 'contributors_name_idx', fields: ['lastname', 'firstname'])]
 #[ApiResource(
     shortName: 'Contributor',
     operations: [

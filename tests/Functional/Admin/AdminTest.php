@@ -92,6 +92,38 @@ final class AdminTest extends ApiTestCase
         self::assertCount(0, $crawler->filter('head link[rel="next"]'));
     }
 
+    public function testUserListQueryCountDoesNotDependOnTheRows(): void
+    {
+        // One kernel for the whole test: the query collector below is the one of the requests.
+        $this->client->disableReboot();
+        $this->client->loginUser($this->fixtures->user('rows-0@example.com', superAdmin: true), 'admin');
+        $this->fixtures->user('rows-1@example.com', ['view rows']);
+        $this->fixtures->user('rows-2@example.com', ['view rows']);
+        $few = $this->listQueryCount('/admin/users');
+
+        foreach (range(3, 7) as $i) {
+            $this->fixtures->user('rows-' . $i . '@example.com', ['view rows']);
+        }
+
+        // Contributors (inverse one-to-one) and roles are eager loaded, not one query per user.
+        self::assertSame($few, $this->listQueryCount('/admin/users'));
+    }
+
+    public function testRoleListQueryCountDoesNotDependOnTheRows(): void
+    {
+        $this->client->disableReboot();
+        $this->client->loginUser($this->fixtures->user('roles@example.com', superAdmin: true), 'admin');
+        $this->fixtures->role('Role 1', ['view one', 'view two']);
+        $few = $this->listQueryCount('/admin/roles');
+
+        foreach (range(2, 6) as $i) {
+            $this->fixtures->role('Role ' . $i, ['view one', 'view two']);
+        }
+
+        // Permissions counted by the list are loaded for the page, not once per role.
+        self::assertSame($few, $this->listQueryCount('/admin/roles'));
+    }
+
     public function testEditPagesRender(): void
     {
         $user = $this->fixtures->user('edit@example.com', superAdmin: true);
@@ -244,6 +276,22 @@ final class AdminTest extends ApiTestCase
 
         self::assertResponseRedirects('/admin/roles');
         self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Role::class, $role->getId()));
+    }
+
+    /**
+     * SQL queries run by one list page.
+     */
+    private function listQueryCount(string $uri): int
+    {
+        // Nothing loaded yet: every user of the page comes from the database.
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
+        $queries = self::getContainer()->get('doctrine.debug_data_holder');
+        $queries->reset();
+
+        $this->client->request('GET', $uri);
+        self::assertResponseIsSuccessful();
+
+        return \count($queries->getData()['default'] ?? []);
     }
 
     /**
