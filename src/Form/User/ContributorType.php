@@ -6,8 +6,8 @@ namespace Gingerminds\CoreBundle\Form\User;
 
 use Gingerminds\CoreBundle\Entity\User\ContributorInterface;
 use Gingerminds\CoreBundle\Enum\Civility;
+use Gingerminds\CoreBundle\Form\Type\ResourceAutocompleteType;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -47,13 +47,11 @@ class ContributorType extends AbstractType
                 'required' => false,
                 'size' => 'tiny',
             ])
-            ->add('user', EntityType::class, [
+            ->add('user', ResourceAutocompleteType::class, [
                 'label' => 'contributor.field.user',
-                'class' => $this->resources->getEntityClass('user'),
-                'choice_label' => 'email',
+                'resource' => 'user',
                 'required' => false,
                 'placeholder' => '',
-                'autocomplete' => true,
             ]);
     }
 

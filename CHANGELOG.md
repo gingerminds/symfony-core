@@ -54,3 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   fetch-joining them: the role list paginates without `DISTINCT` subqueries.
 - Docs: "List performance" (eager loads, indexes, search) in ResourceModel.md; the `make:gm:entity`
   template hints at `getEagerLoads()` and `#[ORM\Index]`.
+- Forms no longer load a whole table into a `<select>`: the contributor `user` field
+  (`ResourceAutocompleteType`) and the user `contributorId` field (`ContributorSelectorType`)
+  are searched remotely through `gingerminds_core_autocomplete` and only load the selected /
+  submitted entities. On a large users table the contributor form ran one query per user
+  (inverse one-to-one) until it ran out of memory. `ResourceAutocompleteType`
+  (`['resource' => 'user']`) is reusable by project forms. `UserType::contributorChoices()`
+  is deprecated.

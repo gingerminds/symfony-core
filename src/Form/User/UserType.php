@@ -7,12 +7,12 @@ namespace Gingerminds\CoreBundle\Form\User;
 use Gingerminds\CoreBundle\Entity\User\ContributorInterface;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Enum\Civility;
+use Gingerminds\CoreBundle\Form\Type\ContributorSelectorType;
 use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
 use Gingerminds\CoreBundle\Repository\User\UserRepository;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
-use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -62,14 +62,12 @@ class UserType extends AbstractType
                 'autocomplete' => true,
                 'by_reference' => false,
             ])
-            ->add('contributorId', ChoiceType::class, [
+            // "New contributor" or an existing one, searched remotely (never the whole table).
+            ->add('contributorId', ContributorSelectorType::class, [
                 'label' => 'user.field.contributor',
                 'mapped' => false,
                 'required' => false,
                 'placeholder' => 'user.contributor.none',
-                'choices' => $this->contributorChoices(),
-                'choice_translation_domain' => false,
-                'autocomplete' => true,
             ]);
 
         $this->addContributorFields($builder);
@@ -143,6 +141,9 @@ class UserType extends AbstractType
     }
 
     /**
+     * @deprecated loads every contributor: the contributorId field uses
+     *             ContributorSelectorType (remote search) instead
+     *
      * @return array<string, string>
      */
     protected function contributorChoices(): array
