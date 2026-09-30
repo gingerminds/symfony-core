@@ -2,7 +2,8 @@
  # HTML document shared by the admin layouts (guest.html.twig, base.html.twig):
  # <head> (meta, title, importmap, admin stylesheet) and an empty <body>.
  #
- # Blocks: title, javascripts, stylesheets, body_attributes, body.
+ # Blocks: title, head (extra <link>/<meta>, e.g. rel prev/next), javascripts,
+ # stylesheets, body_attributes, body.
  #}
 <!DOCTYPE html>
 <html lang="{{ app.request.locale|default('fr')|replace({'_': '-'}) }}">
@@ -12,6 +13,7 @@
     <meta name="author" content="Gingerminds">
     <meta name="robots" content="noindex, nofollow">
     <title>{% block title %}{% endblock %} | {{ gm_admin_title() }}</title>
+    {% block head %}{% endblock %}
     {% block javascripts %}
         {{ importmap('gingerminds-core-admin') }}
     {% endblock %}
