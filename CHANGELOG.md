@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   e.g. `[self::VIEW]` for a resource readable without an API token.
 - Admin theme override: `assets/styles/gingerminds-core/_theme.scss` in the project sets any
   (now `!default`) admin SCSS variable, e.g. `$primary`.
+- Paginated admin lists (`crud/list.html.twig`) emit `<link rel="prev">` / `<link rel="next">`
+  in the `<head>`, through the new `head` block of the admin layouts.
 
 ### Changed
 

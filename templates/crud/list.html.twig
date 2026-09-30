@@ -19,6 +19,7 @@
  #   items_per_page_options     default [10, 25, 50, 100]
  #
  # Blocks (besides the base.html.twig ones):
+ #   head                       <link rel="prev|next"> of the pagination (when show_pagination)
  #   list_before / list_after   around the list card (e.g. a back button)
  #   list_filters               filters panel
  #   list_title / list_actions  card header (list_actions: create button, guarded by is_granted('CREATE', resource.name))
@@ -54,6 +55,12 @@
 {% set list_title = list_title ?? gm.trans(resource.translationKey('manage'), domain, {}, page_title) %}
 {% set breadcrumb = breadcrumb ?? [{label: resource.translationKey('name_p')|trans({}, domain)}] %}
 {% set show_pagination = show_pagination ?? true %}
+
+{% block head %}
+    {% if show_pagination %}
+        {% include '@GingermindsCore/components/list/_pagination_links.html.twig' with {items: items, list_query: list_query, route: route, route_parameters: route_parameters} only %}
+    {% endif %}
+{% endblock %}
 
 {% block content %}
     {% block list_before %}{% endblock %}
