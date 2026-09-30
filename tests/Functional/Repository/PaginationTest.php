@@ -73,7 +73,7 @@ final class PaginationTest extends KernelTestCase
     {
         $items = $this->products->paginate(new ListQuery(page: $page, itemsPerPage: 2, sortBy: 'name'));
 
-        self::assertSame($expected, array_map(static fn (Product $product): ?string => $product->getName(), $items->getItems()));
+        self::assertSame($expected, array_map(static fn (Product $product): string => $product->getName(), $items->getItems()));
         self::assertSame(5, $items->getTotalItems());
         self::assertSame(3, $items->getLastPage());
     }
@@ -126,7 +126,7 @@ final class PaginationTest extends KernelTestCase
 
         $items = $this->products->paginate(new ListQuery(page: 1, itemsPerPage: 2, sortBy: 'name', filters: $filters));
 
-        self::assertSame(['A', 'B'], array_map(static fn (Product $product): ?string => $product->getName(), $items->getItems()));
+        self::assertSame(['A', 'B'], array_map(static fn (Product $product): string => $product->getName(), $items->getItems()));
         self::assertSame(3, $items->getTotalItems());
     }
 }
