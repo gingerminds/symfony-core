@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Repository\Role;
 
-use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Entity\Role\RoleInterface;
 use Gingerminds\CoreBundle\Repository\AbstractRepository;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormInterface;
 
@@ -44,12 +42,6 @@ class RoleRepository extends AbstractRepository
     public function findAllOrdered(): array
     {
         return $this->findBy([], ['name' => 'ASC']);
-    }
-
-    protected function configureListQueryBuilder(QueryBuilder $qb, ListQuery $query): void
-    {
-        // Permissions are counted on the list and serialized on reads.
-        $qb->leftJoin(self::ALIAS . '.permissions', 'gm_permissions')->addSelect('gm_permissions');
     }
 
     /**

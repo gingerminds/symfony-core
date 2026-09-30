@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
+use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
@@ -22,7 +23,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['name'])]
-abstract class BaseRole implements RoleInterface, TimestampableInterface, SortableInterface, SearchableInterface, \Stringable
+abstract class BaseRole implements RoleInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -150,6 +151,15 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Sortab
     public static function getSearchableFields(): array
     {
         return ['name'];
+    }
+
+    /**
+     * Counted on the list (getPermissionsCount(), `role:list` group) and serialized on reads:
+     * loaded for the whole page at once on lists, fetch-joined on reads.
+     */
+    public static function getEagerLoads(): array
+    {
+        return ['permissions'];
     }
 
     public function __toString(): string

@@ -41,3 +41,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Theme docs: a project's brand color goes in `$sidebar-menu-primary-color` (sidebar menu and
   avatar only); overriding `$primary` recolors the whole admin.
 - Login page background is white (`secondary-bg`) instead of light indigo (`tertiary-bg`).
+- Faster `AbstractRepository::paginate()` on large tables: the total is a plain `COUNT` without
+  eager loads nor sort (`COUNT(DISTINCT)` only when a filter joins a collection, skipped on a
+  partial page), the `DISTINCT` id subqueries only run when a collection is joined.
+- `Contributor`: `contributors_name_idx` index on `(lastname, firstname)`, the list default sort
+  (an overriding project entity restates it and generates a migration).
+- `BaseUser` eager loads `contributor` and `roleEntities` (`EagerLoadableInterface`): the user
+  list no longer runs one query per user (inverse one-to-one contributor, lazy roles).
+- `paginate()`: eager loads going through a collection are loaded after the page, one `WHERE IN`
+  query per path, instead of being joined (to-one paths stay fetch-joined).
+- `BaseRole` eager loads `permissions` instead of `RoleRepository::configureListQueryBuilder()`
+  fetch-joining them: the role list paginates without `DISTINCT` subqueries.
+- Docs: "List performance" (eager loads, indexes, search) in ResourceModel.md; the `make:gm:entity`
+  template hints at `getEagerLoads()` and `#[ORM\Index]`.

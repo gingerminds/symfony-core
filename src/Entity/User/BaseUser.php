@@ -9,6 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\Trait\UserRolesTrait;
+use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
@@ -19,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['email'])]
-abstract class BaseUser implements UserInterface, TimestampableInterface, SortableInterface, SearchableInterface, \Stringable
+abstract class BaseUser implements UserInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
     use UserRolesTrait;
@@ -138,6 +139,15 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
     public static function getSearchableFields(): array
     {
         return ['email'];
+    }
+
+    /**
+     * Shown by the admin list and the `user:list` group. `contributor` is the inverse side
+     * of a one-to-one: Doctrine can't lazy load it, it would cost one query per user.
+     */
+    public static function getEagerLoads(): array
+    {
+        return ['contributor', 'roleEntities'];
     }
 
     /**
