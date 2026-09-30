@@ -1,0 +1,13 @@
+{#
+ # <link rel="prev|next"> of a paginated list, for the <head> (`head` block).
+ # Absolute URLs, built with gm_list_path() like _pagination.html.twig; the
+ # first page has no `page` parameter (its canonical URL).
+ # Vars: items (Paginator), list_query, route, route_parameters?
+ #}
+{% set route_parameters = route_parameters ?? {} %}
+{% if items.hasPreviousPage %}
+    <link rel="prev" href="{{ app.request.schemeAndHttpHost ~ gm_list_path(route, list_query, {page: items.getPage > 2 ? items.getPage - 1 : null}, route_parameters) }}">
+{% endif %}
+{% if items.hasNextPage %}
+    <link rel="next" href="{{ app.request.schemeAndHttpHost ~ gm_list_path(route, list_query, {page: items.getPage + 1}, route_parameters) }}">
+{% endif %}

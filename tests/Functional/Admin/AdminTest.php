@@ -72,6 +72,25 @@ final class AdminTest extends ApiTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testListHeadHasPaginationLinks(): void
+    {
+        $this->client->loginUser($this->fixtures->user('rel-a@example.com', superAdmin: true), 'admin');
+        $this->fixtures->user('rel-b@example.com');
+        $this->fixtures->user('rel-c@example.com');
+
+        $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1');
+        self::assertCount(0, $crawler->filter('head link[rel="prev"]'));
+        self::assertSame('http://localhost/admin/users?itemsPerPage=1&page=2', $crawler->filter('head link[rel="next"]')->attr('href'));
+
+        $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1&page=2');
+        self::assertSame('http://localhost/admin/users?itemsPerPage=1', $crawler->filter('head link[rel="prev"]')->attr('href'));
+        self::assertSame('http://localhost/admin/users?page=3&itemsPerPage=1', $crawler->filter('head link[rel="next"]')->attr('href'));
+
+        $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1&page=3');
+        self::assertSame('http://localhost/admin/users?page=2&itemsPerPage=1', $crawler->filter('head link[rel="prev"]')->attr('href'));
+        self::assertCount(0, $crawler->filter('head link[rel="next"]'));
+    }
+
     public function testEditPagesRender(): void
     {
         $user = $this->fixtures->user('edit@example.com', superAdmin: true);
