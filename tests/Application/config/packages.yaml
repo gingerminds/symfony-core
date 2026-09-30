@@ -111,6 +111,11 @@ gingerminds_core:
     api:
         rate_limit:
             limit: 3
+    # AdminTest: global value (edit -> list) and a per resource override (permission).
+    redirect_after_save:
+        edit: index
     resources:
+        permission:
+            redirect_after_new: edit
         category:
             entity: Gingerminds\CoreBundle\Tests\Application\Entity\Category
