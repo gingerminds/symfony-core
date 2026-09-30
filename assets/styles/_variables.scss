@@ -85,7 +85,9 @@ $light:         $gray-200 !default;
 $dark:          $gray-800 !default;
 // scss-docs-end theme-color-variables
 
-// Sidebar menu accent color; exposed as --bs-sidebar-menu-primary-color (see _root.scss)
+// Sidebar menu accent color (menu items, collapse toggle, user avatar): the variable a
+// project sets for its brand color, rather than $primary which recolors the whole admin.
+// Exposed as --bs-sidebar-menu-primary-color (see _root.scss)
 // so consuming projects can override it at runtime without recompiling the Sass.
 $sidebar-menu-primary-color:                          $primary !default;
 $sidebar-menu-item-active-color:                      $sidebar-menu-primary-color !default;
