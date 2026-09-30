@@ -19,6 +19,10 @@ gingerminds_core:
         login_throttling:
             max_attempts: 5
             interval: '5 minutes'
+        rate_limit:                  # every request under the API prefix, per user (IP when anonymous)
+            enabled: true
+            limit: 60
+            interval: '1 minute'     # sliding window
 
     cache:
         enabled: true                # global switch of the API response cache

@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   e.g. `[self::VIEW]` for a resource readable without an API token.
 - Admin theme override: `assets/styles/gingerminds-core/_theme.scss` in the project sets any
   (now `!default`) admin SCSS variable, e.g. `$primary`.
+- API rate limit (`gingerminds_core.api.rate_limit`, 60 requests / minute per user or IP by
+  default): 429 with `X-RateLimit-*` / `Retry-After` headers, overridable per API Platform
+  operation (`rate_limiter` extra property) or route (`_rate_limiter` default).
 - Paginated admin lists (`crud/list.html.twig`) emit `<link rel="prev">` / `<link rel="next">`
   in the `<head>`, through the new `head` block of the admin layouts.
 

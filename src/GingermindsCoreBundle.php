@@ -26,6 +26,7 @@ use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Menu\AdminMenuProviderInterface;
 use Gingerminds\CoreBundle\Repository\Filter\AsFilterHandler;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
+use Gingerminds\CoreBundle\Security\Api\ApiRateLimitListener;
 use Gingerminds\CoreBundle\Security\Api\LoginResponseEnricherInterface;
 use Symfony\Bundle\MakerBundle\MakerBundle;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
@@ -118,6 +119,7 @@ final class GingermindsCoreBundle extends AbstractBundle
         $parameters->set('gingerminds_core.health_check_path', trim((string) $config['health_check_path'], '/'));
         $parameters->set('gingerminds_core.api.prefix', trim((string) $config['api']['prefix'], '/'));
         $parameters->set('gingerminds_core.api.token_ttl', $config['api']['token_ttl']);
+        $parameters->set('gingerminds_core.api.rate_limit.enabled', $config['api']['rate_limit']['enabled']);
         $parameters->set('gingerminds_core.security.authorized_domains', $config['security']['authorized_domains']);
         $parameters->set('gingerminds_core.cache.enabled', $config['cache']['enabled']);
         $parameters->set('gingerminds_core.cache.default_ttl', $config['cache']['default_ttl']);
@@ -207,6 +209,11 @@ final class GingermindsCoreBundle extends AbstractBundle
                     'policy' => 'fixed_window',
                     'limit' => $config['api']['login_throttling']['max_attempts'],
                     'interval' => $config['api']['login_throttling']['interval'],
+                ],
+                ApiRateLimitListener::DEFAULT_LIMITER => [
+                    'policy' => 'sliding_window',
+                    'limit' => $config['api']['rate_limit']['limit'],
+                    'interval' => $config['api']['rate_limit']['interval'],
                 ],
             ],
             'cache' => [

@@ -19,6 +19,9 @@ services:
             - '../Enum/'
             - '../Override/'
 
+    test.rate_limiter_storage:
+        class: Symfony\Component\RateLimiter\Storage\InMemoryStorage
+
     # Keep PHPUnit output clean (the default logger writes errors to stderr).
     logger:
         class: Psr\Log\NullLogger

@@ -3,6 +3,7 @@ security:
     api:
         credentials_required: Les champs « email » et « password » sont obligatoires.
         too_many_attempts: Trop de tentatives de connexion. Réessayez dans quelques minutes.
+        too_many_requests: Trop de requêtes. Réessayez dans quelques instants.
         invalid_credentials: Identifiants invalides.
         invalid_token: Jeton d'API invalide ou expiré.
         unauthenticated: Authentification requise.
