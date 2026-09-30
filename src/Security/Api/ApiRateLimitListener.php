@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
 use Symfony\Component\RateLimiter\RateLimit;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final readonly class ApiRateLimitListener
@@ -118,6 +119,6 @@ final readonly class ApiRateLimitListener
     {
         $user = $this->security->getUser();
 
-        return null !== $user ? 'user:' . $user->getUserIdentifier() : 'ip:' . $request->getClientIp();
+        return $user instanceof UserInterface ? 'user:' . $user->getUserIdentifier() : 'ip:' . $request->getClientIp();
     }
 }
