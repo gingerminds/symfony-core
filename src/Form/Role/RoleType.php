@@ -52,7 +52,7 @@ class RoleType extends AbstractType
                 'required' => false,
                 'by_reference' => false,
                 'choice_translation_domain' => false,
-                'query_builder' => static fn ($repository) => $repository->createQueryBuilder('p')->orderBy('p.name', 'ASC'),
+                'query_builder' => static fn ($repository) => $repository->createQueryBuilder('p')->orderBy('p.name', \SortDirection::Ascending),
                 'size' => 'xl',
             ]);
     }

@@ -109,7 +109,7 @@ abstract class AbstractFilterComputeService
             ->setParameter('ids', $ids);
 
         if ($orderBySortOrder) {
-            $qb->orderBy('c.sortOrder', 'ASC');
+            $qb->orderBy('c.sortOrder', \SortDirection::Ascending);
         }
 
         $options = [];

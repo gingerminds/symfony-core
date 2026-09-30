@@ -391,11 +391,11 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
             $field = $helper->resolveField($query->sortBy);
 
             if (null !== $field) {
-                $qb->addOrderBy($field, strtoupper($query->sort));
+                $qb->addOrderBy($field, ListQuery::SORT_DESC === $query->sort ? \SortDirection::Descending : \SortDirection::Ascending);
             }
         }
 
         // Stable pagination: always end with the identifier.
-        $qb->addOrderBy(self::ALIAS . '.' . $this->getClassMetadata()->getSingleIdentifierFieldName(), 'ASC');
+        $qb->addOrderBy(self::ALIAS . '.' . $this->getClassMetadata()->getSingleIdentifierFieldName(), \SortDirection::Ascending);
     }
 }
