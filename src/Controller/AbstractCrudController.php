@@ -11,6 +11,7 @@ use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
+use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Gingerminds\CoreBundle\Resource\ResourceDefinition;
 use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
 use Symfony\Component\Form\FormInterface;
@@ -214,15 +215,13 @@ abstract class AbstractCrudController
 
     protected function redirectAfterSave(object $entity, bool $isNew): Response
     {
-        if ($isNew) {
-            return $this->redirectToRoute($this->getResource()->route('index'));
+        $resource = $this->getResource();
+
+        if (RedirectTarget::Edit === $resource->redirectAfterSave($isNew) && $entity instanceof ResourceInterface) {
+            return $this->redirectToRoute($resource->route('edit'), ['id' => $entity->getId()]);
         }
 
-        if (!$entity instanceof ResourceInterface) {
-            return $this->redirectToRoute($this->getResource()->route('index'));
-        }
-
-        return $this->redirectToRoute($this->getResource()->route('edit'), ['id' => $entity->getId()]);
+        return $this->redirectToRoute($resource->route('index'));
     }
 
     protected function getDeleteError(object $entity): ?string

@@ -141,7 +141,8 @@ final class ProductController extends AbstractCrudController
 Generated routes (`admin_product_index|new|edit|delete`), templates and hooks: see
 [Layouts](templating/layouts.md). Useful hooks: `createEntity()`, `getFormOptions()`,
 `getIndexParameters()`, `getFormParameters()`, `getDeleteError()`, `redirectAfterSave()`,
-`createListQuery()` (force a filter on the admin list).
+`createListQuery()` (force a filter on the admin list). The redirect after a save is
+configurable without code: see [Redirect after save](Configuration.md#redirect-after-save).
 
 ## See also
 

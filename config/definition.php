@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 
 return static function (DefinitionConfigurator $definition): void {
@@ -54,6 +55,15 @@ return static function (DefinitionConfigurator $definition): void {
                             ->scalarNode('interval')->defaultValue('5 minutes')->end()
                         ->end()
                     ->end()
+                    ->arrayNode('rate_limit')
+                        ->info('Rate limit of every request under the API prefix, per user (or IP when anonymous). An operation / route overrides it with its own limiter.')
+                        ->addDefaultsIfNotSet()
+                        ->children()
+                            ->booleanNode('enabled')->defaultTrue()->end()
+                            ->integerNode('limit')->defaultValue(60)->min(1)->end()
+                            ->scalarNode('interval')->defaultValue('1 minute')->end()
+                        ->end()
+                    ->end()
                 ->end()
             ->end()
             ->arrayNode('cache')
@@ -75,6 +85,14 @@ return static function (DefinitionConfigurator $definition): void {
                 ->scalarPrototype()->end()
                 ->defaultValue([])
             ->end()
+            ->arrayNode('redirect_after_save')
+                ->info('Where the admin goes after creating (new) / updating (edit) a resource: its list (index) or its form (edit). Overridden per resource.')
+                ->addDefaultsIfNotSet()
+                ->children()
+                    ->enumNode('new')->values(array_column(RedirectTarget::cases(), 'value'))->defaultValue(RedirectTarget::Index->value)->end()
+                    ->enumNode('edit')->values(array_column(RedirectTarget::cases(), 'value'))->defaultValue(RedirectTarget::Edit->value)->end()
+                ->end()
+            ->end()
             ->arrayNode('resources')
                 ->info('Admin resources. Core ones (user, contributor, role, permission) can be overridden key by key.')
                 ->useAttributeAsKey('name')
@@ -89,6 +107,8 @@ return static function (DefinitionConfigurator $definition): void {
                         ->scalarNode('translation_prefix')->defaultNull()->end()
                         ->scalarNode('translation_domain')->defaultNull()->end()
                         ->scalarNode('template_prefix')->defaultNull()->end()
+                        ->enumNode('redirect_after_new')->values(array_column(RedirectTarget::cases(), 'value'))->defaultNull()->end()
+                        ->enumNode('redirect_after_edit')->values(array_column(RedirectTarget::cases(), 'value'))->defaultNull()->end()
                     ->end()
                 ->end()
                 ->defaultValue([])

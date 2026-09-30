@@ -19,6 +19,10 @@ gingerminds_core:
         login_throttling:
             max_attempts: 5
             interval: '5 minutes'
+        rate_limit:                  # every request under the API prefix, per user (IP when anonymous)
+            enabled: true
+            limit: 60
+            interval: '1 minute'     # sliding window
 
     cache:
         enabled: true                # global switch of the API response cache
@@ -26,6 +30,10 @@ gingerminds_core:
         pool: gingerminds_core.resource_cache
 
     permissions: []                  # extra permissions created by gingerminds:permissions:sync
+
+    redirect_after_save:             # after a save in the admin: list (index) or form (edit)
+        new: index
+        edit: edit
 
     resources: {}                    # see below
 ```
@@ -35,6 +43,28 @@ gingerminds_core:
 `admin_prefix` prefixes every admin route of the bundle (login, dashboard, profile, CRUD
 routes, autocomplete). Protection itself is your firewall's `access_control` (see
 [Authentication](Authentication.md)): keep both in sync.
+
+## Redirect after save
+
+Where the admin goes after creating (`new`) or updating (`edit`) a resource: its list
+(`index`) or its edit form (`edit`). `redirect_after_save` sets it for every resource, each
+resource overrides it with `redirect_after_new` / `redirect_after_edit`:
+
+```yaml
+gingerminds_core:
+    redirect_after_save:
+        new: edit                    # stay on the form after a creation
+    resources:
+        user:
+            redirect_after_edit: index
+```
+
+```php
+#[AsCrudController(resource: 'page', entity: Page::class, redirectAfterEdit: RedirectTarget::Index)]
+```
+
+For anything else (another route, a query string...), override
+`AbstractCrudController::redirectAfterSave()`.
 
 ## Health check route
 
@@ -58,6 +88,8 @@ Every admin resource is described by a `ResourceDefinition` held in the
 | `translation_prefix` | `<name>`                                 | `<name>`                      |
 | `translation_domain` | `GingermindsCore`                        | `messages`                    |
 | `template_prefix`    | `@GingermindsCore/pages/<name>`          | `admin/<name>`                |
+| `redirect_after_new` | `redirect_after_save.new` (`index`)      | `redirect_after_save.new` (`index`) |
+| `redirect_after_edit`| `redirect_after_save.edit` (`edit`)      | `redirect_after_save.edit` (`edit`) |
 
 Sources are merged in this order (last wins): core resources, `#[AsCrudController]`
 controllers, `gingerminds_core.resources` configuration. Only the keys you set are overridden.

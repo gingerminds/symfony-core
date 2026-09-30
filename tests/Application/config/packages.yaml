@@ -23,6 +23,17 @@ framework:
     asset_mapper:
         paths: ['assets/']
         importmap_path: '%kernel.project_dir%/config/importmap.php'
+    # Limiter state in memory, per kernel (test.rate_limiter_storage): the browser reboots
+    # it between requests, so counters only add up in a test that calls disableReboot()
+    # (RateLimitTest).
+    rate_limiter:
+        gingerminds_core_api:
+            storage_service: test.rate_limiter_storage
+        test_strict:
+            policy: fixed_window
+            limit: 1
+            interval: '1 minute'
+            storage_service: test.rate_limiter_storage
 
 doctrine:
     dbal:
@@ -97,6 +108,14 @@ security:
         - { path: ^/admin, roles: IS_AUTHENTICATED }
 
 gingerminds_core:
+    api:
+        rate_limit:
+            limit: 3
+    # AdminTest: global value (edit -> list) and a per resource override (permission).
+    redirect_after_save:
+        edit: index
     resources:
+        permission:
+            redirect_after_new: edit
         category:
             entity: Gingerminds\CoreBundle\Tests\Application\Entity\Category

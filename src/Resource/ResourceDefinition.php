@@ -23,11 +23,13 @@ final readonly class ResourceDefinition
         public string $translationPrefix,
         public string $translationDomain,
         public string $templatePrefix,
+        public RedirectTarget $redirectAfterNew = RedirectTarget::Index,
+        public RedirectTarget $redirectAfterEdit = RedirectTarget::Edit,
     ) {
     }
 
     /**
-     * @param array{entity: class-string, controller?: string|null, form?: class-string<FormTypeInterface<mixed>>|null, path: string, permission: string, route_prefix: string, translation_prefix: string, translation_domain: string, template_prefix: string} $config
+     * @param array{entity: class-string, controller?: string|null, form?: class-string<FormTypeInterface<mixed>>|null, path: string, permission: string, route_prefix: string, translation_prefix: string, translation_domain: string, template_prefix: string, redirect_after_new?: string, redirect_after_edit?: string} $config
      */
     public static function fromArray(string $name, array $config): self
     {
@@ -42,7 +44,14 @@ final readonly class ResourceDefinition
             translationPrefix: $config['translation_prefix'],
             translationDomain: $config['translation_domain'],
             templatePrefix: $config['template_prefix'],
+            redirectAfterNew: RedirectTarget::from($config['redirect_after_new'] ?? RedirectTarget::Index->value),
+            redirectAfterEdit: RedirectTarget::from($config['redirect_after_edit'] ?? RedirectTarget::Edit->value),
         );
+    }
+
+    public function redirectAfterSave(bool $isNew): RedirectTarget
+    {
+        return $isNew ? $this->redirectAfterNew : $this->redirectAfterEdit;
     }
 
     public function route(string $action): string

@@ -91,6 +91,35 @@ POST /api/logout {"revoke_all": true} # revokes every token of the user
 
 Login attempts are rate limited (`gingerminds_core.api.login_throttling`, 429 when exceeded).
 
+### Rate limit
+
+Every request under the API prefix goes through the `gingerminds_core_api` limiter
+(`gingerminds_core.api.rate_limit`, 60 requests / minute by default, sliding window), keyed by
+the token's user, or the client IP when anonymous. Responses carry `X-RateLimit-Limit`,
+`X-RateLimit-Remaining` and `X-RateLimit-Reset`; past the limit the API answers
+`429 {"message": "..."}` (`security.api.too_many_requests`) with `Retry-After`.
+
+An operation or a route uses another limiter, declared as usual under
+`framework.rate_limiter` (each limiter counts on its own), or `false` to skip it:
+
+```yaml
+# config/packages/rate_limiter.yaml
+framework:
+    rate_limiter:
+        export:
+            policy: fixed_window
+            limit: 5
+            interval: '1 hour'
+```
+
+```php
+// API Platform operation
+new GetCollection(uriTemplate: '/products/export', extraProperties: ['rate_limiter' => 'export']),
+
+// any Symfony route, API or not (e.g. a public contact form)
+#[Route('/contact', name: 'contact', defaults: ['_rate_limiter' => 'contact'])]
+```
+
 Every error has the same shape, `{"message": "..."}`, translated in the `security` domain
 (`translations/security.{fr,en}.yaml`, keys `security.api.*`). Invalid/expired tokens are
 answered by `gingerminds_core.security.api_failure_handler` (401 + `WWW-Authenticate`),

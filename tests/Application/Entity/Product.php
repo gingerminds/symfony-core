@@ -35,7 +35,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiResource(
     operations: [
         new GetCollection(normalizationContext: ['groups' => ['product:list']], provider: ProductProvider::class),
-        new Get(normalizationContext: ['groups' => ['product:list']], provider: ProductProvider::class),
+        new Get(normalizationContext: ['groups' => ['product:list']], provider: ProductProvider::class, extraProperties: ['rate_limiter' => 'test_strict']),
     ],
     paginationClientItemsPerPage: true,
 )]
