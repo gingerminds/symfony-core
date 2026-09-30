@@ -27,3 +27,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `IS_AUTHENTICATED` rule, each operation is closed by its `security` expression (voter).
 - `make:gm:resource` / `make:gm:entity`: the generated entity only has an `id` (no `name`
   field), with the matching form, admin templates and translations.
+- Theme docs: a project's brand color goes in `$sidebar-menu-primary-color` (sidebar menu and
+  avatar only); overriding `$primary` recolors the whole admin.

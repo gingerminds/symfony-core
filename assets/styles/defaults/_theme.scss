@@ -5,5 +5,7 @@
 // (found first on the Sass load path), setting any `!default` variable of
 // `../_variables.scss` before the core defaults are applied:
 //
-//     $primary: #d32f2f;
+//     $sidebar-menu-primary-color: #d32f2f; // brand color: sidebar menu and avatar only
+//
+// Overriding `$primary` recolors the whole admin (buttons, links, badges...).
 //

@@ -161,19 +161,25 @@ bin/console sass:build          # or sass:build --watch in development
 bin/console asset-map:compile   # production
 ```
 
-### Theme (primary color...)
+### Theme (brand color...)
 
 Every variable of the admin stylesheet (`assets/styles/_variables.scss` of the bundle, a
 Bootstrap 5 variables file) is `!default`. Override them in
 `assets/styles/gingerminds-core/_theme.scss`: this file is looked up before the bundle's empty
-default one, and imported before the core and Bootstrap variables, so every derived value
-(tints, badges, Tom Select tags, sidebar accent, focus rings) follows.
+default one, and imported before the core and Bootstrap variables.
+
+To apply the project's brand color, set `$sidebar-menu-primary-color`: it only colors the
+sidebar menu (hover, active items, collapse toggle) and the user avatar, the rest of the admin
+keeps the core palette.
 
 ```scss
 // assets/styles/gingerminds-core/_theme.scss
-$primary: #d32f2f;
-$sage: #fdf1f1;   // light background of table heads / tertiary-bg (not derived from $primary)
+$sidebar-menu-primary-color: #d32f2f;
 ```
+
+Overriding `$primary` instead recolors the whole admin (buttons, links, badges, pagination,
+focus rings, Tom Select tags, tints...): only do it with a color designed for UI use, together
+with `$sage` (light background of table heads / tertiary-bg, not derived from `$primary`).
 
 Then run `bin/console sass:build` again. No bundle file is copied into the project.
 
