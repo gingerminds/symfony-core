@@ -21,6 +21,8 @@ final readonly class AsCrudController
         public ?string $translationPrefix = null,
         public ?string $translationDomain = null,
         public ?string $templatePrefix = null,
+        public ?RedirectTarget $redirectAfterNew = null,
+        public ?RedirectTarget $redirectAfterEdit = null,
     ) {
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Tests\Functional\Admin;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
@@ -150,6 +151,25 @@ final class AdminTest extends ApiTestCase
         $role = self::getContainer()->get(EntityManagerInterface::class)->getRepository(Role::class)->findOneBy(['name' => 'Widget manager']);
         self::assertNotNull($role);
         self::assertSame($permission->getId(), $role->getPermissions()->first()->getId());
+    }
+
+    public function testRedirectAfterSaveFollowsTheConfiguration(): void
+    {
+        $this->client->loginUser($this->fixtures->user('redirect@example.com', superAdmin: true), 'admin');
+        $role = $this->fixtures->role('Redirected');
+
+        // Global `edit: index`
+        $crawler = $this->client->request('GET', '/admin/roles/' . $role->getId() . '/edit');
+        $this->client->submit($crawler->filter('form[name="role"]')->form(['role[name]' => 'Redirected again']));
+        self::assertResponseRedirects('/admin/roles');
+
+        // `permission` resource override `redirect_after_new: edit`
+        $crawler = $this->client->request('GET', '/admin/permissions/new');
+        $this->client->submit($crawler->filter('form[name="permission"]')->form(['permission[name]' => 'view redirects']));
+
+        $permission = self::getContainer()->get(EntityManagerInterface::class)->getRepository(Permission::class)->findOneBy(['name' => 'view redirects']);
+        self::assertNotNull($permission);
+        self::assertResponseRedirects('/admin/permissions/' . $permission->getId() . '/edit');
     }
 
     public function testInvalidFormIsRedisplayedWith422(): void

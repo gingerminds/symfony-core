@@ -48,5 +48,33 @@ final class ResourceRegistryPassTest extends TestCase
         self::assertSame('admin_product_category', $resources['product_category']['route_prefix']);
         self::assertSame('admin/product_category', $resources['product_category']['template_prefix']);
         self::assertSame('messages', $resources['product_category']['translation_domain']);
+
+        // Redirect after save: core defaults when no global configuration
+        self::assertSame('index', $resources['user']['redirect_after_new']);
+        self::assertSame('edit', $resources['user']['redirect_after_edit']);
+    }
+
+    public function testRedirectAfterSaveResolution(): void
+    {
+        $container = new ContainerBuilder();
+        $container->setDefinition('gingerminds_core.resource_registry', new Definition(ResourceRegistry::class, ['$resources' => []]));
+        $container->setParameter('gingerminds_core.redirect_after_save', ['new' => 'edit', 'edit' => 'index']);
+        $container->setParameter('gingerminds_core.resources_config', [
+            'page' => ['entity' => 'App\Entity\Page', 'redirect_after_edit' => 'edit'],
+        ]);
+        $container->register('App\Controller\PageController')
+            ->addTag(ResourceRegistryPass::CRUD_CONTROLLER_TAG, ['resource' => 'page', 'entity' => 'App\Entity\Page', 'redirect_after_new' => 'index', 'redirect_after_edit' => 'index']);
+
+        new ResourceRegistryPass()->process($container);
+
+        $resources = $container->getDefinition('gingerminds_core.resource_registry')->getArgument('$resources');
+
+        // Global configuration
+        self::assertSame('edit', $resources['user']['redirect_after_new']);
+        self::assertSame('index', $resources['user']['redirect_after_edit']);
+
+        // Attribute overrides the global value, configuration overrides the attribute
+        self::assertSame('index', $resources['page']['redirect_after_new']);
+        self::assertSame('edit', $resources['page']['redirect_after_edit']);
     }
 }

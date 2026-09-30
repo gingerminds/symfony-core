@@ -125,6 +125,7 @@ final class GingermindsCoreBundle extends AbstractBundle
         $parameters->set('gingerminds_core.cache.default_ttl', $config['cache']['default_ttl']);
         $parameters->set('gingerminds_core.permissions', $config['permissions']);
         $parameters->set('gingerminds_core.resources_config', $config['resources']);
+        $parameters->set('gingerminds_core.redirect_after_save', $config['redirect_after_save']);
 
         $excludedEntityFiles = [];
         $overriddenEntities = [];
@@ -158,6 +159,8 @@ final class GingermindsCoreBundle extends AbstractBundle
                     'translation_prefix' => $attribute->translationPrefix,
                     'translation_domain' => $attribute->translationDomain,
                     'template_prefix' => $attribute->templatePrefix,
+                    'redirect_after_new' => $attribute->redirectAfterNew?->value,
+                    'redirect_after_edit' => $attribute->redirectAfterEdit?->value,
                 ], static fn (?string $value): bool => null !== $value));
                 $definition->addTag('controller.service_arguments');
                 $definition->setPublic(true);
