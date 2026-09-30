@@ -27,3 +27,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `IS_AUTHENTICATED` rule, each operation is closed by its `security` expression (voter).
 - `make:gm:resource` / `make:gm:entity`: the generated entity only has an `id` (no `name`
   field), with the matching form, admin templates and translations.
+- Login page background is white (`secondary-bg`) instead of light indigo (`tertiary-bg`).
