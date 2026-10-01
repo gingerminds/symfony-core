@@ -45,4 +45,27 @@ final class SkeletonTemplate
         $current = $this->variables[$variable] ?? [];
         $this->variables[$variable] = [...(\is_array($current) ? array_values($current) : []), ...array_values($values)];
     }
+
+    /**
+     * The `use` statements of `$generatedClass` (sorted, classes of its own namespace left out).
+     */
+    public function useStatements(string $generatedClass): string
+    {
+        $namespace = substr($generatedClass, 0, (int) strrpos($generatedClass, '\\'));
+        $statements = [];
+
+        foreach ($this->uses as $class) {
+            $name = explode(' as ', $class)[0];
+
+            if (substr($name, 0, (int) strrpos($name, '\\')) === $namespace && !str_contains($class, ' as ')) {
+                continue;
+            }
+
+            $statements[$class] = 'use ' . $class . ';';
+        }
+
+        uksort($statements, static fn (string $a, string $b): int => strcasecmp(str_replace('\\', ' ', $a), str_replace('\\', ' ', $b)));
+
+        return implode("\n", $statements) . "\n";
+    }
 }

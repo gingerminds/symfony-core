@@ -34,13 +34,9 @@ use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Serializer\Attribute\Groups;
-use Symfony\Component\Yaml\Exception\ParseException;
-use Symfony\Component\Yaml\Yaml;
 
 final readonly class ResourceGenerator
 {
-    private const array LOCALES = ['fr', 'en'];
-
     /**
      * Skip reason of a file that is already there, also the wording of the MakerBundle "already exists" errors.
      */
@@ -54,6 +50,7 @@ final readonly class ResourceGenerator
     public function __construct(
         ?string $skeletonDirectory = null,
         private array $extensions = [],
+        private TranslationMerger $translationMerger = new TranslationMerger(),
     ) {
         $this->skeletonDirectory = $skeletonDirectory ?? __DIR__ . '/skeleton';
     }
@@ -65,7 +62,7 @@ final readonly class ResourceGenerator
      */
     public function withExtensions(array $extensions): self
     {
-        return new self($this->skeletonDirectory, $extensions);
+        return new self($this->skeletonDirectory, $extensions, $this->translationMerger);
     }
 
     public function getSkeletonDirectory(): string
@@ -237,7 +234,7 @@ final readonly class ResourceGenerator
             $generator->generateClass($class, $skeleton->path, [
                 ...$skeleton->variables,
                 'skeleton_directory' => $this->skeletonDirectory,
-                'use_statements' => $this->useStatements($class, $skeleton->uses),
+                'use_statements' => $skeleton->useStatements($class),
             ]);
         } catch (RuntimeCommandException $exception) {
             $this->writeSkipped($io, $class, $this->skipReason($exception));
@@ -255,9 +252,7 @@ final readonly class ResourceGenerator
      */
     public function addTranslations(Generator $generator, ConsoleStyle $io, string $domain, array $defaults): void
     {
-        foreach (self::LOCALES as $locale) {
-            $this->mergeTranslations($generator, $io, $generator->getRootDirectory() . '/translations/' . $domain . '.' . $locale . '.yaml', $defaults);
-        }
+        $this->translationMerger->merge($generator, $io, $domain, $defaults);
     }
 
     public static function shortName(string $class): string
@@ -297,114 +292,6 @@ final readonly class ResourceGenerator
         } catch (RuntimeCommandException $exception) {
             $this->writeSkipped($io, 'templates/' . $target, $this->skipReason($exception));
         }
-    }
-
-    /**
-     * @param array<string, mixed> $defaults
-     */
-    private function mergeTranslations(Generator $generator, ConsoleStyle $io, string $path, array $defaults): void
-    {
-        $relativePath = ltrim(substr($path, \strlen($generator->getRootDirectory())), '/');
-        $content = is_file($path) ? (string) file_get_contents($path) : '';
-        $existing = $this->parseTranslations($io, $relativePath, $content);
-
-        if (null === $existing) {
-            return;
-        }
-
-        $existingKeys = self::flatten($existing);
-        $missing = array_diff_key(self::flatten($defaults), $existingKeys);
-
-        if ([] === $missing) {
-            $io->text(\sprintf('<fg=yellow>skipped</>: %s (translation keys already present)', $relativePath));
-
-            return;
-        }
-
-        $topLevelKeys = array_keys($defaults);
-        $isNewBlock = [] === array_filter(
-            array_keys($existingKeys),
-            static fn (string $key): bool => array_any($topLevelKeys, static fn (string $top): bool => $key === $top || str_starts_with($key, $top . '.')),
-        );
-
-        if ($isNewBlock) {
-            $separator = '' === $content || str_ends_with($content, "\n") ? '' : "\n";
-            $generator->dumpFile($path, $content . $separator . ('' === $content ? '' : "\n") . Yaml::dump($defaults, 10, 4));
-
-            return;
-        }
-
-        $io->note(\sprintf('%s is rewritten to merge the missing keys: YAML comments of that file are lost.', $relativePath));
-        $generator->dumpFile($path, Yaml::dump(array_replace_recursive($defaults, $existing), 10, 4));
-    }
-
-    /**
-     * The translations already in the file, null (with a warning) when it cannot be merged into.
-     *
-     * @return array<mixed>|null
-     */
-    private function parseTranslations(ConsoleStyle $io, string $relativePath, string $content): ?array
-    {
-        try {
-            $existing = '' === trim($content) ? [] : Yaml::parse($content);
-        } catch (ParseException $exception) {
-            $io->warning(\sprintf('%s is not valid YAML (%s): translations not added.', $relativePath, $exception->getMessage()));
-
-            return null;
-        }
-
-        if (!\is_array($existing)) {
-            $io->warning(\sprintf('%s is not a YAML mapping: translations not added.', $relativePath));
-
-            return null;
-        }
-
-        return $existing;
-    }
-
-    /**
-     * @param array<mixed> $values
-     *
-     * @return array<string, mixed>
-     */
-    private static function flatten(array $values, string $prefix = ''): array
-    {
-        $flat = [];
-
-        foreach ($values as $key => $value) {
-            $key = $prefix . $key;
-
-            if (\is_array($value) && [] !== $value) {
-                $flat += self::flatten($value, $key . '.');
-            } else {
-                $flat[$key] = $value;
-            }
-        }
-
-        return $flat;
-    }
-
-    /**
-     * @param list<string> $classes
-     */
-    private function useStatements(string $generatedClass, array $classes): string
-    {
-        $namespace = substr($generatedClass, 0, (int) strrpos($generatedClass, '\\'));
-        $statements = [];
-
-        foreach ($classes as $class) {
-            $name = explode(' as ', $class)[0];
-
-            if (substr($name, 0, (int) strrpos($name, '\\')) === $namespace && !str_contains($class, ' as ')) {
-                continue;
-            }
-
-            $statements[$class] = 'use ' . $class . ';';
-        }
-
-        uksort($statements, static fn (string $a, string $b): int => strcasecmp(str_replace('\\', ' ', $a), str_replace('\\', ' ', $b)));
-
-        return implode("\n", $statements) . "\n";
     }
 
     /**
