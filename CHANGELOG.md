@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   list no longer runs one query per user (inverse one-to-one contributor, lazy roles).
 - `paginate()`: eager loads going through a collection are loaded after the page, one `WHERE IN`
   query per path, instead of being joined (to-one paths stay fetch-joined).
+- `AbstractRepository`: eager loading moved to `Repository\Query\EagerLoader` and collection
+  join detection to `QueryBuilderHelper::joinsCollection()`. The undocumented protected methods
+  `applyEagerLoads()`, `loadEagerCollections()` and `joinsCollection()` are removed.
 - `BaseRole` eager loads `permissions` instead of `RoleRepository::configureListQueryBuilder()`
   fetch-joining them: the role list paginates without `DISTINCT` subqueries.
 - Docs: "List performance" (eager loads, indexes, search) in ResourceModel.md; the `make:gm:entity`
