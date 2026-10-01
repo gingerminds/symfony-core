@@ -13,6 +13,14 @@
   }
 }
 
+.form-label.required,
+.col-form-label.required {
+  &::after {
+    content: " *";
+    color: var(--#{$prefix}danger);
+  }
+}
+
 .form-check {
   position: relative;
   text-align: left
