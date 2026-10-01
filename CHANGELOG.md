@@ -75,3 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (inverse one-to-one) until it ran out of memory. `ResourceAutocompleteType`
   (`['resource' => 'user']`) is reusable by project forms. `UserType::contributorChoices()`
   is deprecated.
+
+### Fixed
+
+- Required fields show a `*` after their label again (`.form-label.required`), as the Laravel
+  core components did.
