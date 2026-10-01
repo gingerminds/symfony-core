@@ -165,6 +165,18 @@ final class AdminTest extends ApiTestCase
         self::assertNotFalse($bottom);
         self::assertGreaterThan(strpos($sidebar, 'id="gm-sidebar-menu"'), $bottom);
         self::assertLessThan(strpos($sidebar, 'sidebar-profile-toggle'), $bottom);
+        // Separators: under the logo, above the bottom includes, above the user menu.
+        self::assertCount(3, $crawler->filter('#gm-sidebar > hr'));
+    }
+
+    public function testNoSidebarBottomSeparatorWhenItsTemplatesRenderNothing(): void
+    {
+        $this->client->loginUser($this->fixtures->user('empty-include@example.com', ['view users']), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/?bottom=hide');
+
+        self::assertCount(0, $crawler->filter('#gm-sidebar .gm-test-sidebar-bottom-include'));
+        self::assertCount(2, $crawler->filter('#gm-sidebar > hr'), 'Only the logo and user menu separators.');
     }
 
     public function testPermissionsAreEnforced(): void
