@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Overridable entities for other bundles: `OverriddenEntityPass::registerOverriddenEntity()`
+  excludes a replaced bundle entity from the Doctrine mapping and the API resources
+  (replaces `CoreEntityPass` and the `gingerminds_core.excluded_entity_files` parameter).
+- `gingerminds_core.admin_includes`: templates included in the admin layout by slot
+  (`sidebar`, under the logo), `gm_admin_includes()` Twig function, `sidebar_includes` block.
+- `make:gm:*` extensions: `ResourceMakerExtensionInterface` (autoconfigured) adds maker
+  options, changes the core skeletons (`interfaces`, `traits`, `eager_loads`, `build_form`
+  variables) and generates extra files.
+
 - Initial Symfony 8.1 port of `gingerminds/laravel-core`: resource registry, generic CRUD
   controller and route loader, repository with pagination/sort/search/filters/eager loads,
   filter handlers (date, number, boolean, select, select-entity, select-enum), facets,
@@ -31,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   operation (`rate_limiter` extra property) or route (`_rate_limiter` default).
 - Paginated admin lists (`crud/list.html.twig`) emit `<link rel="prev">` / `<link rel="next">`
   in the `<head>`, through the new `head` block of the admin layouts.
+- Docs: Turbo.md, what Turbo Drive changes for code written for a full page reload (JS run once,
+  422 on invalid forms, hover prefetch of `GET` links, page cache), linked from FromLaravel.md.
 
 ### Changed
 
@@ -50,6 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   list no longer runs one query per user (inverse one-to-one contributor, lazy roles).
 - `paginate()`: eager loads going through a collection are loaded after the page, one `WHERE IN`
   query per path, instead of being joined (to-one paths stay fetch-joined).
+- `AbstractRepository`: eager loading moved to `Repository\Query\EagerLoader` and collection
+  join detection to `QueryBuilderHelper::joinsCollection()`. The undocumented protected methods
+  `applyEagerLoads()`, `loadEagerCollections()` and `joinsCollection()` are removed.
 - `BaseRole` eager loads `permissions` instead of `RoleRepository::configureListQueryBuilder()`
   fetch-joining them: the role list paginates without `DISTINCT` subqueries.
 - Docs: "List performance" (eager loads, indexes, search) in ResourceModel.md; the `make:gm:entity`

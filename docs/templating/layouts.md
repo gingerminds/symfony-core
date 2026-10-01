@@ -28,8 +28,22 @@ Blocks: `title`, `stylesheets`, `javascripts` (override the whole block to add e
 `importmap()` can only be called once per page), `body_attributes`, `sidebar`,
 `footer`, `page_header`, `page_title`, `breadcrumb`, `page_actions`, `flashes`, `content`,
 `modals`. Inside the sidebar (`layout/_sidebar.html.twig`): `sidebar_logo` (dashboard link
-with the admin title, override it to put the project logo) and `sidebar_profile` (current
-user menu: profile, sign out, pinned at the bottom).
+with the admin title, override it to put the project logo), `sidebar_includes` (under the
+logo, see below) and `sidebar_profile` (current user menu: profile, sign out, pinned at the
+bottom).
+
+A bundle (or the project) adds a template to the sidebar without overriding it with
+`gingerminds_core.admin_includes` (e.g. the site switcher of `gingerminds/symfony-multisite`):
+
+```yaml
+gingerminds_core:
+    admin_includes:
+        sidebar: ['admin/_site_switcher.html.twig']
+```
+
+From a bundle, prepend it in `prependExtension()`:
+`$builder->prependExtensionConfig('gingerminds_core', ['admin_includes' => ['sidebar' => ['@MyBundle/...']]])`.
+`gm_admin_includes('sidebar')` returns the templates of a slot.
 
 The sidebar comes from `gm_admin_menu()`: add entries by implementing
 `Gingerminds\CoreBundle\Menu\AdminMenuProviderInterface` (autoconfigured, the Laravel

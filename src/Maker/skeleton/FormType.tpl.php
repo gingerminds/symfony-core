@@ -15,7 +15,11 @@ final class <?= $class_name ?> extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+<?php if ([] === $build_form): ?>
         // TODO: add the fields edited in the admin and the API.
+<?php else: ?>
+<?= implode("\n", $build_form) . "\n" ?>
+<?php endif ?>
     }
 
     public function configureOptions(OptionsResolver $resolver): void

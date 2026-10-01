@@ -33,6 +33,7 @@ final class MakeApi extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
     }
 
     public function configureDependencies(DependencyBuilder $dependencies, ?InputInterface $input = null): void
@@ -44,11 +45,11 @@ final class MakeApi extends AbstractResourceMaker
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $resource = $this->getResourceName($input, $generator);
-        $this->resourceGenerator->generateApi($generator, $io, $resource);
+        $this->generatorFor($input)->generateApi($generator, $io, $resource);
 
         $this->finish($generator, $io, [
             \sprintf('They require <comment>%s</comment> and <comment>%s</comment>.', $resource->repositoryClass(), $resource->formClass()),
-        ]);
+        ], $input, $resource);
 
         $this->writeApiResourceSnippet($io, $resource);
     }

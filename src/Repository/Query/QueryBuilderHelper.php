@@ -127,6 +127,41 @@ final readonly class QueryBuilderHelper
         }
     }
 
+    /**
+     * Whether the query joins a to-many association (rows are duplicated per entity).
+     * A join that isn't an association path of a known alias (arbitrary entity join)
+     * counts as one.
+     */
+    public function joinsCollection(): bool
+    {
+        /** @var array<string, class-string> $classes alias => entity class */
+        $classes = [$this->rootAlias => $this->getRootMetadata()->getName()];
+
+        /** @var array<string, list<Join>> $joinParts */
+        $joinParts = $this->queryBuilder->getDQLPart('join');
+
+        foreach ($joinParts as $joins) {
+            foreach ($joins as $join) {
+                $path = explode('.', $join->getJoin(), 2);
+                $fromClass = $classes[$path[0]] ?? null;
+
+                if (2 !== \count($path) || null === $fromClass) {
+                    return true;
+                }
+
+                $metadata = $this->entityManager->getClassMetadata($fromClass);
+
+                if (!$metadata->hasAssociation($path[1]) || $metadata->isCollectionValuedAssociation($path[1])) {
+                    return true;
+                }
+
+                $classes[(string) $join->getAlias()] = $metadata->getAssociationTargetClass($path[1]);
+            }
+        }
+
+        return false;
+    }
+
     public function parameter(mixed $value, mixed $type = null): string
     {
         $name = 'gm_p' . $this->queryBuilder->getParameters()->count();

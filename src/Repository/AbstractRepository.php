@@ -5,16 +5,15 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator as DoctrinePaginator;
 use Doctrine\Persistence\ManagerRegistry;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerRegistry;
+use Gingerminds\CoreBundle\Repository\Query\EagerLoader;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\Service\Attribute\Required;
@@ -62,18 +61,19 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     {
         $itemsPerPage = min($this->maxItemsPerPage, $query->itemsPerPage ?? $this->itemsPerPage);
         $offset = ($query->page - 1) * $itemsPerPage;
-        // Collection eager loads are loaded after the page (loadEagerCollections()).
+        // Collection eager loads are loaded after the page (EagerLoader::loadCollections()).
         $qb = $this->buildListQueryBuilder($query, [], eagerCollections: false)
             ->setFirstResult($offset)
             ->setMaxResults($itemsPerPage);
 
         // The id subqueries (DISTINCT) are only needed when a collection is joined:
         // otherwise LIMIT applies to the entities themselves.
-        $doctrinePaginator = new DoctrinePaginator($qb, fetchJoinCollection: $this->joinsCollection($qb));
+        $joinsCollection = new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager())->joinsCollection();
+        $doctrinePaginator = new DoctrinePaginator($qb, fetchJoinCollection: $joinsCollection);
 
         /** @var list<T> $items */
         $items = iterator_to_array($doctrinePaginator->getIterator(), false);
-        $this->loadEagerCollections($items);
+        $this->createEagerLoader()->loadCollections($items, self::ALIAS);
 
         // A partial page gives the total without counting (not for an empty page past the end).
         $total = [] !== $items && \count($items) < $itemsPerPage
@@ -102,7 +102,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         $qb = $this->createQueryBuilder(self::ALIAS);
         $helper = new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager());
 
-        $this->applyEagerLoads($helper, $eagerCollections);
+        $this->createEagerLoader()->apply($helper, $eagerCollections);
         $this->configureListQueryBuilder($qb, $query);
 
         $filters = array_diff_key($query->filters, array_flip($excludedFilters));
@@ -150,6 +150,11 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         }
     }
 
+    private function createEagerLoader(): EagerLoader
+    {
+        return new EagerLoader($this->getEntityManager(), $this->getEntityClass());
+    }
+
     protected function configureListQueryBuilder(QueryBuilder $qb, ListQuery $query): void
     {
     }
@@ -174,45 +179,10 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         }
 
         $identifier = self::ALIAS . '.' . $this->getClassMetadata()->getSingleIdentifierFieldName();
-        $qb->select(\sprintf($this->joinsCollection($qb) ? 'COUNT(DISTINCT %s)' : 'COUNT(%s)', $identifier))
+        $qb->select(\sprintf($helper->joinsCollection() ? 'COUNT(DISTINCT %s)' : 'COUNT(%s)', $identifier))
             ->resetDQLPart('orderBy');
 
         return (int) $qb->getQuery()->getSingleScalarResult();
-    }
-
-    /**
-     * Whether the query joins a to-many association (rows are duplicated per entity).
-     * A join that isn't an association path of a known alias (arbitrary entity join)
-     * counts as one.
-     */
-    protected function joinsCollection(QueryBuilder $qb): bool
-    {
-        /** @var array<string, class-string> $classes alias => entity class */
-        $classes = [self::ALIAS => $this->getEntityClass()];
-
-        /** @var array<string, list<Join>> $joinParts */
-        $joinParts = $qb->getDQLPart('join');
-
-        foreach ($joinParts as $joins) {
-            foreach ($joins as $join) {
-                $path = explode('.', $join->getJoin(), 2);
-                $fromClass = $classes[$path[0]] ?? null;
-
-                if (2 !== \count($path) || null === $fromClass) {
-                    return true;
-                }
-
-                $metadata = $this->getEntityManager()->getClassMetadata($fromClass);
-
-                if (!$metadata->hasAssociation($path[1]) || $metadata->isCollectionValuedAssociation($path[1])) {
-                    return true;
-                }
-
-                $classes[(string) $join->getAlias()] = $metadata->getAssociationTargetClass($path[1]);
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -236,74 +206,6 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
      */
     protected function beforeRemove(object $entity): void
     {
-    }
-
-    /**
-     * Fetch-joins the eager loads; with $collections false, only the to-one paths (a joined
-     * collection turns the paginated query into DISTINCT id subqueries over the whole table).
-     */
-    protected function applyEagerLoads(QueryBuilderHelper $helper, bool $collections = true): void
-    {
-        foreach ($this->eagerLoads() as $path) {
-            if ($collections || !$this->isCollectionPath($path)) {
-                $helper->eagerLoad($path);
-            }
-        }
-    }
-
-    /**
-     * Loads the eager loads going through a collection for already fetched entities, one
-     * query per path (WHERE IN): Doctrine fills their uninitialized collections.
-     *
-     * @param list<T> $items
-     */
-    protected function loadEagerCollections(array $items): void
-    {
-        if ([] === $items) {
-            return;
-        }
-
-        foreach ($this->eagerLoads() as $path) {
-            if (!$this->isCollectionPath($path)) {
-                continue;
-            }
-
-            $qb = $this->createQueryBuilder(self::ALIAS);
-            new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager())->eagerLoad($path);
-            $qb->where(self::ALIAS . ' IN (:gm_items)')
-                ->setParameter('gm_items', $items)
-                ->getQuery()
-                ->getResult();
-        }
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function eagerLoads(): array
-    {
-        $entityClass = $this->getEntityClass();
-
-        return is_subclass_of($entityClass, EagerLoadableInterface::class) ? $entityClass::getEagerLoads() : [];
-    }
-
-    private function isCollectionPath(string $path): bool
-    {
-        $metadata = $this->getClassMetadata();
-
-        foreach (explode('.', $path) as $association) {
-            if (!$metadata->hasAssociation($association)) {
-                return false;
-            }
-
-            if ($metadata->isCollectionValuedAssociation($association)) {
-                return true;
-            }
-
-            $metadata = $this->getEntityManager()->getClassMetadata($metadata->getAssociationTargetClass($association));
-        }
-
-        return false;
     }
 
     /**
@@ -391,11 +293,11 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
             $field = $helper->resolveField($query->sortBy);
 
             if (null !== $field) {
-                $qb->addOrderBy($field, strtoupper($query->sort));
+                $qb->addOrderBy($field, ListQuery::SORT_DESC === $query->sort ? \SortDirection::Descending : \SortDirection::Ascending);
             }
         }
 
         // Stable pagination: always end with the identifier.
-        $qb->addOrderBy(self::ALIAS . '.' . $this->getClassMetadata()->getSingleIdentifierFieldName(), 'ASC');
+        $qb->addOrderBy(self::ALIAS . '.' . $this->getClassMetadata()->getSingleIdentifierFieldName(), \SortDirection::Ascending);
     }
 }

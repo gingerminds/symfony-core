@@ -34,8 +34,8 @@ class ContributorRepository extends AbstractRepository
     {
         /** @var list<ContributorInterface> */
         return $this->createQueryBuilder('c')
-            ->orderBy('c.lastname', 'ASC')
-            ->addOrderBy('c.firstname', 'ASC')
+            ->orderBy('c.lastname', \SortDirection::Ascending)
+            ->addOrderBy('c.firstname', \SortDirection::Ascending)
             ->getQuery()
             ->getResult();
     }
