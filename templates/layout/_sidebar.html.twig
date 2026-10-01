@@ -3,8 +3,10 @@
  # services), current user menu (profile, logout) pinned at the bottom,
  # collapse-to-icons toggle (Stimulus `gm-sidebar`, remembered in localStorage).
  #
- # Blocks: sidebar_logo, sidebar_includes, sidebar_profile.
- # `sidebar_includes` renders the `gingerminds_core.admin_includes.sidebar` templates.
+ # Blocks: sidebar_logo, sidebar_includes, sidebar_bottom_includes, sidebar_profile.
+ # `sidebar_includes` renders the `gingerminds_core.admin_includes.sidebar` templates
+ # (under the logo), `sidebar_bottom_includes` the `sidebar_bottom` ones (right above
+ # the current user menu).
  #}
 {% trans_default_domain 'GingermindsCore' %}
 <nav class="sidebar d-flex flex-column flex-shrink-0" id="gm-sidebar" data-controller="gm-sidebar" aria-label="{{ 'menu.main'|trans }}">
@@ -33,6 +35,16 @@
             {% endfor %}
         </ul>
     </div>
+
+    {% block sidebar_bottom_includes %}
+        {% set bottom_includes = gm_admin_includes('sidebar_bottom') %}
+        {% if bottom_includes is not empty %}
+            <hr>
+            {% for template in bottom_includes %}
+                {{ include(template) }}
+            {% endfor %}
+        {% endif %}
+    {% endblock %}
 
     {% block sidebar_profile %}
         {% set user = app.user %}
