@@ -34,6 +34,7 @@ final class MakeCrudController extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
     }
 
     public function configureDependencies(DependencyBuilder $dependencies, ?InputInterface $input = null): void
@@ -46,9 +47,9 @@ final class MakeCrudController extends AbstractResourceMaker
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $resource = $this->getResourceName($input, $generator);
-        $this->resourceGenerator->generateCrudController($generator, $io, $resource);
+        $this->generatorFor($input)->generateCrudController($generator, $io, $resource);
 
-        $this->finish($generator, $io, self::nextSteps($resource));
+        $this->finish($generator, $io, self::nextSteps($resource), $input, $resource);
     }
 
     /**

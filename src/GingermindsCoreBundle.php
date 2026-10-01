@@ -9,7 +9,7 @@ use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
 use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
-use Gingerminds\CoreBundle\DependencyInjection\Compiler\CoreEntityPass;
+use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
 use Gingerminds\CoreBundle\DependencyInjection\Compiler\ResourceRegistryPass;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
@@ -23,6 +23,7 @@ use Gingerminds\CoreBundle\Form\Permission\PermissionType;
 use Gingerminds\CoreBundle\Form\Role\RoleType;
 use Gingerminds\CoreBundle\Form\User\ContributorType;
 use Gingerminds\CoreBundle\Form\User\UserType;
+use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Menu\AdminMenuProviderInterface;
 use Gingerminds\CoreBundle\Repository\Filter\AsFilterHandler;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
@@ -97,7 +98,7 @@ final class GingermindsCoreBundle extends AbstractBundle
         parent::build($container);
 
         $container->addCompilerPass(new ResourceRegistryPass());
-        $container->addCompilerPass(new CoreEntityPass());
+        $container->addCompilerPass(new OverriddenEntityPass());
     }
 
     /**
@@ -110,6 +111,8 @@ final class GingermindsCoreBundle extends AbstractBundle
         // make:gm:* generators (dev only dependency).
         if (class_exists(MakerBundle::class)) {
             $container->import('../config/services/maker.php');
+            $builder->registerForAutoconfiguration(ResourceMakerExtensionInterface::class)
+                ->addTag(ResourceMakerExtensionInterface::TAG);
         }
 
         $parameters = $container->parameters();
@@ -126,22 +129,19 @@ final class GingermindsCoreBundle extends AbstractBundle
         $parameters->set('gingerminds_core.permissions', $config['permissions']);
         $parameters->set('gingerminds_core.resources_config', $config['resources']);
         $parameters->set('gingerminds_core.redirect_after_save', $config['redirect_after_save']);
-
-        $excludedEntityFiles = [];
-        $overriddenEntities = [];
+        $parameters->set('gingerminds_core.admin_includes', $config['admin_includes']);
 
         foreach ($this->coreEntities($config) as $name => $entity) {
             $parameters->set('gingerminds_core.resource.' . $name . '.entity', $entity);
             $default = self::CORE_RESOURCES[$name]['entity'];
 
             if ($entity !== $default) {
-                $overriddenEntities[] = $default;
-                $excludedEntityFiles[] = (string) new \ReflectionClass($default)->getFileName();
+                OverriddenEntityPass::registerOverriddenEntity($builder, $default);
             }
         }
 
-        $parameters->set('gingerminds_core.excluded_entity_files', $excludedEntityFiles);
-        $parameters->set('gingerminds_core.overridden_entities', $overriddenEntities);
+        // Filled by OverriddenEntityPass.
+        $parameters->set(OverriddenEntityPass::PARAMETER, []);
 
         $container->services()
             ->alias('gingerminds_core.cache.pool', (string) $config['cache']['pool']);

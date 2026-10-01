@@ -29,6 +29,8 @@ final class GingermindsCoreExtension extends AbstractExtension
         private readonly TranslatorInterface $translator,
         private readonly string $adminTitle,
         private readonly string $adminTitleDomain,
+        /** @var array<string, list<string>> */
+        private readonly array $adminIncludes = [],
     ) {
     }
 
@@ -40,6 +42,7 @@ final class GingermindsCoreExtension extends AbstractExtension
             new TwigFunction('gm_entity_choices', $this->entityChoices(...)),
             new TwigFunction('gm_admin_menu', $this->menu->getItems(...)),
             new TwigFunction('gm_admin_title', fn (): string => $this->translator->trans($this->adminTitle, [], $this->adminTitleDomain)),
+            new TwigFunction('gm_admin_includes', $this->adminIncludes(...)),
             new TwigFunction('gm_is_menu_active', $this->isMenuActive(...)),
             new TwigFunction('gm_list_path', $this->listPath(...)),
             new TwigFunction('gm_sort_path', $this->sortPath(...)),
@@ -90,6 +93,16 @@ final class GingermindsCoreExtension extends AbstractExtension
         }
 
         return $choices;
+    }
+
+    /**
+     * Templates included in an admin layout slot (`gingerminds_core.admin_includes`).
+     *
+     * @return list<string>
+     */
+    public function adminIncludes(string $slot): array
+    {
+        return $this->adminIncludes[$slot] ?? [];
     }
 
     public function isMenuActive(MenuItem $item): bool

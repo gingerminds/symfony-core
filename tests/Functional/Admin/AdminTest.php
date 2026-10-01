@@ -151,6 +151,15 @@ final class AdminTest extends ApiTestCase
         self::assertCount(0, $crawler->filter('a[href="/admin/roles"]'));
     }
 
+    public function testSidebarRendersTheAdminIncludes(): void
+    {
+        $this->client->loginUser($this->fixtures->user('include@example.com', ['view users']), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/');
+
+        self::assertSame('include@example.com', $crawler->filter('#gm-sidebar .gm-test-sidebar-include')->text());
+    }
+
     public function testPermissionsAreEnforced(): void
     {
         $this->client->loginUser($this->fixtures->user('limited@example.com', ['view users']), 'admin');

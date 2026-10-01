@@ -3,7 +3,8 @@
  # services), current user menu (profile, logout) pinned at the bottom,
  # collapse-to-icons toggle (Stimulus `gm-sidebar`, remembered in localStorage).
  #
- # Blocks: sidebar_logo, sidebar_profile.
+ # Blocks: sidebar_logo, sidebar_includes, sidebar_profile.
+ # `sidebar_includes` renders the `gingerminds_core.admin_includes.sidebar` templates.
  #}
 {% trans_default_domain 'GingermindsCore' %}
 <nav class="sidebar d-flex flex-column flex-shrink-0" id="gm-sidebar" data-controller="gm-sidebar" aria-label="{{ 'menu.main'|trans }}">
@@ -18,6 +19,12 @@
         </a>
     {% endblock %}
     <hr>
+
+    {% block sidebar_includes %}
+        {% for template in gm_admin_includes('sidebar') %}
+            {{ include(template) }}
+        {% endfor %}
+    {% endblock %}
 
     <div class="sidebar-menu">
         <ul class="list-unstyled ps-0" id="gm-sidebar-menu">

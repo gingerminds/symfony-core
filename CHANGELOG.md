@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Overridable entities for other bundles: `OverriddenEntityPass::registerOverriddenEntity()`
+  excludes a replaced bundle entity from the Doctrine mapping and the API resources
+  (replaces `CoreEntityPass` and the `gingerminds_core.excluded_entity_files` parameter).
+- `gingerminds_core.admin_includes`: templates included in the admin layout by slot
+  (`sidebar`, under the logo), `gm_admin_includes()` Twig function, `sidebar_includes` block.
+- `make:gm:*` extensions: `ResourceMakerExtensionInterface` (autoconfigured) adds maker
+  options, changes the core skeletons (`interfaces`, `traits`, `eager_loads`, `build_form`
+  variables) and generates extra files.
+
 - Initial Symfony 8.1 port of `gingerminds/laravel-core`: resource registry, generic CRUD
   controller and route loader, repository with pagination/sort/search/filters/eager loads,
   filter handlers (date, number, boolean, select, select-entity, select-enum), facets,

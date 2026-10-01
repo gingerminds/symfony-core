@@ -35,6 +35,9 @@ gingerminds_core:
         new: index
         edit: edit
 
+    admin_includes:                  # templates included in the admin layout, by slot
+        sidebar: []                  # under the logo (see templating/layouts.md)
+
     resources: {}                    # see below
 ```
 
@@ -151,6 +154,24 @@ base class; only `#[ORM\Entity]`, `#[ORM\Table]` and `#[ApiResource]` must be re
 The same works for `contributor` (`BaseContributor`), `role` (`BaseRole`, keep the
 `roles_default_unique` unique constraint on `is_external, is_default`) and `permission`
 (`BasePermission`).
+
+### Overridable entities of another bundle
+
+A bundle shipping its own overridable entities (e.g. `gingerminds/symfony-multisite`) uses
+the same mechanism: in its `loadExtension()`, it registers every bundle entity replaced by a
+project one, whatever the bundle registration order:
+
+```php
+use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
+
+if ($entity !== Site::class) {
+    OverriddenEntityPass::registerOverriddenEntity($builder, Site::class);
+}
+```
+
+The core then excludes `Site` from the Doctrine attribute mapping and from the API Platform
+resources. The bundle still prepends its own `doctrine.orm.mappings` and
+`resolve_target_entities`.
 
 ### Controller, form, templates, translations
 

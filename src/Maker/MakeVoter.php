@@ -32,6 +32,7 @@ final class MakeVoter extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
     }
 
     public function configureDependencies(DependencyBuilder $dependencies, ?InputInterface $input = null): void
@@ -43,8 +44,8 @@ final class MakeVoter extends AbstractResourceMaker
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $resource = $this->getResourceName($input, $generator);
-        $this->resourceGenerator->generateVoter($generator, $io, $resource);
+        $this->generatorFor($input)->generateVoter($generator, $io, $resource);
 
-        $this->finish($generator, $io, $this->voterNextSteps($resource));
+        $this->finish($generator, $io, $this->voterNextSteps($resource), $input, $resource);
     }
 }
