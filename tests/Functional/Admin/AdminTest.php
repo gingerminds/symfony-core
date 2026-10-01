@@ -158,6 +158,13 @@ final class AdminTest extends ApiTestCase
         $crawler = $this->client->request('GET', '/admin/');
 
         self::assertSame('include@example.com', $crawler->filter('#gm-sidebar .gm-test-sidebar-include')->text());
+
+        // `sidebar_bottom`: after the menu, right before the user menu.
+        $sidebar = $crawler->filter('#gm-sidebar')->html();
+        $bottom = strpos($sidebar, 'gm-test-sidebar-bottom-include');
+        self::assertNotFalse($bottom);
+        self::assertGreaterThan(strpos($sidebar, 'id="gm-sidebar-menu"'), $bottom);
+        self::assertLessThan(strpos($sidebar, 'sidebar-profile-toggle'), $bottom);
     }
 
     public function testPermissionsAreEnforced(): void
