@@ -89,5 +89,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- No `sidebar_bottom` separator when its templates render nothing (e.g. a conditional switcher).
 - Required fields show a `*` after their label again (`.form-label.required`), as the Laravel
   core components did.

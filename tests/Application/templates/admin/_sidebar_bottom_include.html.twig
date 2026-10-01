@@ -1,2 +1,4 @@
-{# AdminTest: `gingerminds_core.admin_includes.sidebar_bottom` template. #}
-<div class="gm-test-sidebar-bottom-include">bottom</div>
+{# AdminTest: `gingerminds_core.admin_includes.sidebar_bottom` template, rendering nothing with `?bottom=hide`. #}
+{% if app.request.query.get('bottom') != 'hide' %}
+    <div class="gm-test-sidebar-bottom-include">bottom</div>
+{% endif %}

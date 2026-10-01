@@ -37,12 +37,15 @@
     </div>
 
     {% block sidebar_bottom_includes %}
-        {% set bottom_includes = gm_admin_includes('sidebar_bottom') %}
-        {% if bottom_includes is not empty %}
-            <hr>
-            {% for template in bottom_includes %}
+        {# The separator only when the templates render something (they may render nothing, e.g. conditionally). #}
+        {% set bottom_includes %}
+            {% for template in gm_admin_includes('sidebar_bottom') %}
                 {{ include(template) }}
             {% endfor %}
+        {% endset %}
+        {% if bottom_includes|trim is not empty %}
+            <hr>
+            {{ bottom_includes }}
         {% endif %}
     {% endblock %}
 
