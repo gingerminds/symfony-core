@@ -41,12 +41,15 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `JsonCollectionNormalizer` | removed | Use JSON-LD/Hydra: `totalItems` + `view` pagination links. |
 | `FilterStore` subclasses + `AbstractInjectFiltersMiddleware` | `ComputedFilterStore` (keyed by resource class) + listener | |
 | Blade layouts/components | Twig layouts/components (`@GingermindsCore/...`) | See [Layouts](templating/layouts.md). |
-| Vite, jQuery, Select2, Livewire `SelectModel` | AssetMapper, Stimulus, UX Autocomplete (Tom Select), `/_autocomplete/{resource}` | No Node build. |
+| Vite, jQuery, Select2, Livewire `SelectModel` | AssetMapper, Stimulus, UX Autocomplete (Tom Select), `/_autocomplete/{resource}` | No Node build. Navigation goes through Turbo Drive, see [Turbo](Turbo.md). |
 | `make:*` artisan commands | `make:gm:*` makers (MakerBundle) | See [Commands](Commands.md). |
 | Migrations shipped by the package | `doctrine:migrations:diff` in the project | Symfony convention. |
 
 ## Behaviour changes worth knowing
 
+- **No full page reload**: Turbo Drive swaps pages without reloading them. JS initialised on
+  `DOMContentLoaded` runs once, invalid forms must answer 422, `GET` links can be prefetched.
+  See [Turbo](Turbo.md).
 - **API permissions**: core API operations check permissions (`VIEW`/`CREATE`/`EDIT`/`DELETE`);
   the Laravel core only required a token.
 - **User deletion from the admin** requires `delete users` (the Laravel controller did not

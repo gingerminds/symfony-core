@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   operation (`rate_limiter` extra property) or route (`_rate_limiter` default).
 - Paginated admin lists (`crud/list.html.twig`) emit `<link rel="prev">` / `<link rel="next">`
   in the `<head>`, through the new `head` block of the admin layouts.
+- Docs: Turbo.md, what Turbo Drive changes for code written for a full page reload (JS run once,
+  422 on invalid forms, hover prefetch of `GET` links, page cache), linked from FromLaravel.md.
 
 ### Changed
 

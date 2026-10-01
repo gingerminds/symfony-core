@@ -38,6 +38,7 @@ database, assets).
 - [Users, roles & permissions](docs/User.md)
 - [Layouts](docs/templating/layouts.md) — list, tree, form, tabs, show.
 - [Forms](docs/templating/forms.md) — form theme, sizes, toggles, autocomplete.
+- [Turbo](docs/Turbo.md) — what changes when pages are not reloaded (JS, forms, prefetch, cache).
 - [Filters](docs/partials/filters.md) and [Facets](docs/partials/facets.md)
 - [Sorting](docs/Sorting.md) — column sorting and drag & drop reordering.
 
