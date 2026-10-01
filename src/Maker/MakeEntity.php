@@ -34,6 +34,7 @@ final class MakeEntity extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
         $command->addOption('api', null, InputOption::VALUE_NONE, 'Expose the entity with API Platform (#[ApiResource] + serialization groups)');
     }
 
@@ -50,7 +51,7 @@ final class MakeEntity extends AbstractResourceMaker
     {
         $resource = $this->getResourceName($input, $generator);
         $api = (bool) $input->getOption('api');
-        $this->resourceGenerator->generateEntity($generator, $io, $resource, $api);
+        $this->generatorFor($input)->generateEntity($generator, $io, $resource, $api);
 
         $nextSteps = [
             ...$this->entityNextSteps($resource),
@@ -70,6 +71,6 @@ final class MakeEntity extends AbstractResourceMaker
             );
         }
 
-        $this->finish($generator, $io, $nextSteps);
+        $this->finish($generator, $io, $nextSteps, $input, $resource);
     }
 }

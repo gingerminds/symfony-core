@@ -108,6 +108,8 @@ security:
         - { path: ^/admin, roles: IS_AUTHENTICATED }
 
 gingerminds_core:
+    admin_includes:
+        sidebar: ['admin/_sidebar_include.html.twig']
     api:
         rate_limit:
             limit: 3

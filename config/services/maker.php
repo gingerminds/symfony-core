@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Maker\MakeApi;
 use Gingerminds\CoreBundle\Maker\MakeCrudController;
 use Gingerminds\CoreBundle\Maker\MakeEntity;
@@ -34,7 +35,10 @@ return static function (ContainerConfigurator $container): void {
 
     foreach ($makers as $name => $class) {
         $services->set('gingerminds_core.maker.' . $name, $class)
-            ->args([service('gingerminds_core.maker.resource_generator')])
+            ->args([
+                service('gingerminds_core.maker.resource_generator'),
+                tagged_iterator(ResourceMakerExtensionInterface::TAG),
+            ])
             ->tag('maker.command');
     }
 };

@@ -31,6 +31,7 @@ final class MakeForm extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
     }
 
     public function configureDependencies(DependencyBuilder $dependencies, ?InputInterface $input = null): void
@@ -42,10 +43,10 @@ final class MakeForm extends AbstractResourceMaker
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $resource = $this->getResourceName($input, $generator);
-        $this->resourceGenerator->generateForm($generator, $io, $resource);
+        $this->generatorFor($input)->generateForm($generator, $io, $resource);
 
         $this->finish($generator, $io, [
             \sprintf('Add a field per entity property; labels are <comment>%s.field.*</comment> in <comment>translations/admin.*.yaml</comment>.', $resource->snake),
-        ]);
+        ], $input, $resource);
     }
 }

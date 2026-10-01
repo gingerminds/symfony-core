@@ -66,6 +66,25 @@ nothing to register (unlike Laravel policies and `AuthServiceProvider`). Remembe
 Generates the provider/processor of an existing entity, and prints the `#[ApiResource]`
 snippet to paste when the entity does not declare one yet. See [API](API.md).
 
+### Extending the makers
+
+Another bundle adds options to the `make:gm:*` makers by implementing
+`Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface` (autoconfigured,
+tag `gingerminds_core.maker_extension`; register it only when `symfony/maker-bundle` is
+installed). E.g. `--translated` of `gingerminds/symfony-multisite`.
+
+| Method | Role |
+|---|---|
+| `configureCommand($commandName, $command)` | adds the options to a maker (`make:gm:resource`, `make:gm:entity`...) |
+| `isEnabled($input)` | whether the extension takes part in the run (its option is set) |
+| `configureTemplate(SkeletonTemplate $template, $resource)` | before a core skeleton is rendered: `addUse()`, `set()` / `append()` variables, or replace `$template->path` |
+| `generate(ResourceMakerContext $context)` | extra files (`$context->resourceGenerator->generateClassFromSkeleton()`, `addTranslations()`), returns next steps |
+
+Extensible skeleton variables: `Entity.tpl.php` `interfaces`, `traits` (short names, import
+them with `addUse()`) and `eager_loads` (PHP expressions; non-empty: the entity implements
+`EagerLoadableInterface`); `FormType.tpl.php` `build_form` (lines of `buildForm()`). Every
+skeleton receives `skeleton_directory` (the core skeleton directory).
+
 ## Runtime commands
 
 | Command | Purpose |

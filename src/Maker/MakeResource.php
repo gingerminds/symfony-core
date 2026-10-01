@@ -36,6 +36,7 @@ final class MakeResource extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
         $command
             ->addOption('api', null, InputOption::VALUE_NONE, 'Also expose the resource with API Platform (provider, processor, #[ApiResource])')
             ->addOption('no-controller', null, InputOption::VALUE_NONE, 'Do not generate the admin CRUD controller, templates and translations');
@@ -61,17 +62,19 @@ final class MakeResource extends AbstractResourceMaker
         $api = (bool) $input->getOption('api');
         $controller = !$input->getOption('no-controller');
 
-        $entityGenerated = $this->resourceGenerator->generateEntity($generator, $io, $resource, $api);
-        $this->resourceGenerator->generateRepository($generator, $io, $resource);
-        $this->resourceGenerator->generateForm($generator, $io, $resource);
-        $this->resourceGenerator->generateVoter($generator, $io, $resource);
+        $resourceGenerator = $this->generatorFor($input);
+
+        $entityGenerated = $resourceGenerator->generateEntity($generator, $io, $resource, $api);
+        $resourceGenerator->generateRepository($generator, $io, $resource);
+        $resourceGenerator->generateForm($generator, $io, $resource);
+        $resourceGenerator->generateVoter($generator, $io, $resource);
 
         if ($controller) {
-            $this->resourceGenerator->generateCrudController($generator, $io, $resource);
+            $resourceGenerator->generateCrudController($generator, $io, $resource);
         }
 
         if ($api) {
-            $this->resourceGenerator->generateApi($generator, $io, $resource);
+            $resourceGenerator->generateApi($generator, $io, $resource);
         }
 
         $nextSteps = [...$this->entityNextSteps($resource), ...$this->voterNextSteps($resource)];
@@ -84,7 +87,7 @@ final class MakeResource extends AbstractResourceMaker
             $nextSteps[] = \sprintf('The API is served under <comment>/{api_prefix}/%s</comment>.', $resource->snakePlural);
         }
 
-        $this->finish($generator, $io, $nextSteps);
+        $this->finish($generator, $io, $nextSteps, $input, $resource);
 
         if ($api && !$entityGenerated) {
             $this->writeApiResourceSnippet($io, $resource);

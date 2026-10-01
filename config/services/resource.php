@@ -43,6 +43,7 @@ return static function (ContainerConfigurator $container): void {
             service('translator'),
             param('gingerminds_core.admin_title'),
             param('gingerminds_core.admin_title_translation_domain'),
+            param('gingerminds_core.admin_includes'),
         ])
         ->tag('twig.extension');
 };

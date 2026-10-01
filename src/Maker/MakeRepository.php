@@ -29,15 +29,16 @@ final class MakeRepository extends AbstractResourceMaker
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
     {
         $this->addNameArgument($command);
+        $this->configureExtensions($command);
     }
 
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $resource = $this->getResourceName($input, $generator);
-        $this->resourceGenerator->generateRepository($generator, $io, $resource);
+        $this->generatorFor($input)->generateRepository($generator, $io, $resource);
 
         $this->finish($generator, $io, [
             \sprintf('Point the entity to it: <comment>#[ORM\Entity(repositoryClass: %s::class)]</comment>.', ResourceGenerator::shortName($resource->repositoryClass())),
-        ]);
+        ], $input, $resource);
     }
 }

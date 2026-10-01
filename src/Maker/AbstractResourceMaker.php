@@ -6,6 +6,8 @@ namespace Gingerminds\CoreBundle\Maker;
 
 use ApiPlatform\Metadata\ApiResource;
 use Doctrine\ORM\Mapping\Entity;
+use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerContext;
+use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\DependencyBuilder;
 use Symfony\Bundle\MakerBundle\Generator;
@@ -22,8 +24,12 @@ use Symfony\Component\Console\Input\InputInterface;
  */
 abstract class AbstractResourceMaker extends AbstractMaker implements InputAwareMakerInterface
 {
+    /**
+     * @param iterable<ResourceMakerExtensionInterface> $extensions
+     */
     public function __construct(
         protected readonly ResourceGenerator $resourceGenerator,
+        private readonly iterable $extensions = [],
     ) {
     }
 
@@ -41,16 +47,42 @@ abstract class AbstractResourceMaker extends AbstractMaker implements InputAware
         );
     }
 
+    /**
+     * Options of the maker extensions (e.g. `--translated`).
+     */
+    protected function configureExtensions(Command $command): void
+    {
+        foreach ($this->extensions as $extension) {
+            $extension->configureCommand(static::getCommandName(), $command);
+        }
+    }
+
+    /**
+     * The resource generator with the extensions enabled for this run.
+     */
+    protected function generatorFor(InputInterface $input): ResourceGenerator
+    {
+        return $this->resourceGenerator->withExtensions($this->enabledExtensions($input));
+    }
+
     protected function getResourceName(InputInterface $input, Generator $generator): ResourceName
     {
         return ResourceName::fromInput($input->getArgument('name'), $generator->getRootNamespace());
     }
 
     /**
+     * Runs the enabled extensions, writes the files and displays the next steps.
+     *
      * @param list<string> $nextSteps
      */
-    protected function finish(Generator $generator, ConsoleStyle $io, array $nextSteps): void
+    protected function finish(Generator $generator, ConsoleStyle $io, array $nextSteps, InputInterface $input, ResourceName $resource): void
     {
+        $context = new ResourceMakerContext(static::getCommandName(), $input, $io, $generator, $this->generatorFor($input), $resource);
+
+        foreach ($this->enabledExtensions($input) as $extension) {
+            $nextSteps = [...$nextSteps, ...$extension->generate($context)];
+        }
+
         $generator->writeChanges();
 
         $this->writeSuccessMessage($io);
@@ -59,6 +91,22 @@ abstract class AbstractResourceMaker extends AbstractMaker implements InputAware
             $io->text('Next:');
             $io->listing($nextSteps);
         }
+    }
+
+    /**
+     * @return list<ResourceMakerExtensionInterface>
+     */
+    private function enabledExtensions(InputInterface $input): array
+    {
+        $enabled = [];
+
+        foreach ($this->extensions as $extension) {
+            if ($extension->isEnabled($input)) {
+                $enabled[] = $extension;
+            }
+        }
+
+        return $enabled;
     }
 
     /**
