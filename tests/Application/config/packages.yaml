@@ -110,6 +110,7 @@ security:
 gingerminds_core:
     admin_includes:
         sidebar: ['admin/_sidebar_include.html.twig']
+        sidebar_bottom: ['admin/_sidebar_bottom_include.html.twig']
     api:
         rate_limit:
             limit: 3

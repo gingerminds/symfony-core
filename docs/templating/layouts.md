@@ -29,7 +29,7 @@ Blocks: `title`, `stylesheets`, `javascripts` (override the whole block to add e
 `footer`, `page_header`, `page_title`, `breadcrumb`, `page_actions`, `flashes`, `content`,
 `modals`. Inside the sidebar (`layout/_sidebar.html.twig`): `sidebar_logo` (dashboard link
 with the admin title, override it to put the project logo), `sidebar_includes` (under the
-logo, see below) and `sidebar_profile` (current user menu: profile, sign out, pinned at the
+logo, see below), `sidebar_bottom_includes` (above the user menu) and `sidebar_profile` (current user menu: profile, sign out, pinned at the
 bottom).
 
 A bundle (or the project) adds a template to the sidebar without overriding it with
@@ -38,8 +38,13 @@ A bundle (or the project) adds a template to the sidebar without overriding it w
 ```yaml
 gingerminds_core:
     admin_includes:
-        sidebar: ['admin/_site_switcher.html.twig']
+        sidebar: ['admin/_banner.html.twig']                  # under the logo
+        sidebar_bottom: ['admin/_site_switcher.html.twig']    # above the user menu
 ```
+
+Reuse the user menu classes (`sidebar-profile-toggle`, `sidebar-avatar`, `profile-info`,
+`profile-role`) for a bottom entry: it gets the same look and collapses to its icon with the
+sidebar.
 
 From a bundle, prepend it in `prependExtension()`:
 `$builder->prependExtensionConfig('gingerminds_core', ['admin_includes' => ['sidebar' => ['@MyBundle/...']]])`.
@@ -54,15 +59,27 @@ final class CatalogMenuProvider implements AdminMenuProviderInterface
 {
     public function getItems(): iterable
     {
-        yield new MenuItem('menu.catalog', icon: 'bi-box', priority: 100, translationDomain: 'admin', children: [
+        yield new MenuItem('menu.catalog', icon: 'bi-box', weight: 10, translationDomain: 'admin', children: [
             new MenuItem('product.name_p', 'admin_product_index', icon: 'bi-tag', permission: 'VIEW', permissionSubject: 'product', translationDomain: 'admin'),
+        ]);
+
+        // Added to the core "Administration" section (merged by id), after its entries.
+        yield new MenuItem('menu.administration', id: CoreAdminMenuProvider::ADMINISTRATION, children: [
+            new MenuItem('setting.name_p', 'admin_setting_index', icon: 'bi-sliders', permission: 'VIEW', permissionSubject: 'setting', translationDomain: 'admin', weight: 100),
         ]);
     }
 }
 ```
 
-Entries are sorted by `priority` (highest first), hidden when `permission` is not granted,
-and empty sections are dropped. The active state matches the route and its CRUD siblings
+Entries are sorted by ascending `weight` (lowest first, registration order on a tie, `0`
+by default), at every level, hidden when `permission` is not granted, and empty sections are
+dropped. Core weights: Dashboard `-100`, Administration `100`, its children users `0`,
+contributors `10`, roles `20`, permissions `30`.
+
+Sections sharing an `id` are merged, whatever provider declares them: their children are
+added up (then sorted by weight), the label, icon and weight are those of the first declared
+one (the core provider runs first). `priority` (highest first) is deprecated since 1.5: it is
+read as `weight: -priority`. The active state matches the route and its CRUD siblings
 (`admin_product_*`) exactly, avoiding the Laravel prefix-collision issue.
 
 ## `crud/list.html.twig`

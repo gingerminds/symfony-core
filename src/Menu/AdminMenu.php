@@ -41,13 +41,17 @@ final class AdminMenu
     }
 
     /**
+     * Merges the sections sharing an id, sorts by weight (stable: registration order on a tie),
+     * drops the entries not granted and the empty sections, at every level.
+     *
      * @param list<MenuItem> $items
      *
      * @return list<MenuItem>
      */
     private function filter(array $items): array
     {
-        usort($items, static fn (MenuItem $a, MenuItem $b): int => $b->priority <=> $a->priority);
+        $items = $this->merge($items);
+        usort($items, static fn (MenuItem $a, MenuItem $b): int => $a->weight <=> $b->weight);
         $visible = [];
 
         foreach ($items as $item) {
@@ -65,5 +69,35 @@ final class AdminMenu
         }
 
         return $visible;
+    }
+
+    /**
+     * @param list<MenuItem> $items
+     *
+     * @return list<MenuItem>
+     */
+    private function merge(array $items): array
+    {
+        $merged = [];
+        $sections = [];
+
+        foreach ($items as $item) {
+            if (null === $item->id) {
+                $merged[] = $item;
+
+                continue;
+            }
+
+            if (isset($sections[$item->id])) {
+                $sections[$item->id]->children = [...$sections[$item->id]->children, ...$item->children];
+
+                continue;
+            }
+
+            $sections[$item->id] = $item;
+            $merged[] = $item;
+        }
+
+        return $merged;
     }
 }

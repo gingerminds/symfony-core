@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Admin menu weights and sections: `MenuItem` `weight` (ascending, lowest first) and `id`;
+  the sections sharing an id are merged whatever provider declares them (e.g. a bundle adds
+  entries to the core `administration` section, `CoreAdminMenuProvider::ADMINISTRATION`).
+  Core weights: Dashboard -100, Administration 100 (users 0, contributors 10, roles 20,
+  permissions 30).
+- `gingerminds_core.admin_includes.sidebar_bottom`: templates included at the bottom of the
+  sidebar, right above the current user menu (`sidebar_bottom_includes` block).
 - Overridable entities for other bundles: `OverriddenEntityPass::registerOverriddenEntity()`
   excludes a replaced bundle entity from the Doctrine mapping and the API resources
   (replaces `CoreEntityPass` and the `gingerminds_core.excluded_entity_files` parameter).
@@ -75,6 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (inverse one-to-one) until it ran out of memory. `ResourceAutocompleteType`
   (`['resource' => 'user']`) is reusable by project forms. `UserType::contributorChoices()`
   is deprecated.
+
+### Deprecated
+
+- `MenuItem` `priority` (highest first): use `weight` (ascending). It is read as `weight: -priority`.
 
 ### Fixed
 

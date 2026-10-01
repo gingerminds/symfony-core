@@ -37,6 +37,7 @@ gingerminds_core:
 
     admin_includes:                  # templates included in the admin layout, by slot
         sidebar: []                  # under the logo (see templating/layouts.md)
+        sidebar_bottom: []           # above the current user menu
 
     resources: {}                    # see below
 ```
