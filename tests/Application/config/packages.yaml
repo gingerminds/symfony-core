@@ -109,6 +109,7 @@ security:
 
 gingerminds_core:
     admin_includes:
+        head: ['admin/_head_include.html.twig']
         sidebar: ['admin/_sidebar_include.html.twig']
         sidebar_bottom: ['admin/_sidebar_bottom_include.html.twig']
     api:

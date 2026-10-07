@@ -86,7 +86,10 @@ return static function (DefinitionConfigurator $definition): void {
                 ->defaultValue([])
             ->end()
             ->arrayNode('admin_includes')
-                ->info('Templates included in the admin layout, by slot: "sidebar" (under the logo), "sidebar_bottom" (above the user menu).')
+                ->info(
+                    'Templates included in the admin layout, by slot: "head" (end of <head>, after the admin assets), '
+                    . '"sidebar" (under the logo), "sidebar_bottom" (above the user menu).',
+                )
                 ->useAttributeAsKey('slot')
                 ->arrayPrototype()
                     ->scalarPrototype()->end()

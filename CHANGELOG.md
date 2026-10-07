@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `gingerminds_core.admin_includes.head`: templates included at the end of `<head>`, after
+  the importmap and the admin stylesheet, on every admin page (login included), e.g. the
+  assets of a bundle.
 - Admin menu weights and sections: `MenuItem` `weight` (ascending, lowest first) and `id`;
   the sections sharing an id are merged whatever provider declares them (e.g. a bundle adds
   entries to the core `administration` section, `CoreAdminMenuProvider::ADMINISTRATION`).
