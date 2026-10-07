@@ -179,6 +179,21 @@ final class AdminTest extends ApiTestCase
         self::assertCount(2, $crawler->filter('#gm-sidebar > hr'), 'Only the logo and user menu separators.');
     }
 
+    public function testHeadRendersTheAdminIncludesAfterTheAdminAssets(): void
+    {
+        $crawler = $this->client->request('GET', '/admin/login');
+
+        $head = $crawler->filter('head')->html();
+        $include = strpos($head, 'gm-test-head-include');
+        self::assertNotFalse($include);
+        self::assertGreaterThan(strpos($head, 'gingerminds-core/styles/admin'), $include);
+
+        $this->client->loginUser($this->fixtures->user('head@example.com', ['view users']), 'admin');
+        $crawler = $this->client->request('GET', '/admin/');
+
+        self::assertCount(1, $crawler->filter('head meta[name="gm-test-head-include"]'));
+    }
+
     public function testPermissionsAreEnforced(): void
     {
         $this->client->loginUser($this->fixtures->user('limited@example.com', ['view users']), 'admin');

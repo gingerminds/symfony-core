@@ -38,9 +38,15 @@ A bundle (or the project) adds a template to the sidebar without overriding it w
 ```yaml
 gingerminds_core:
     admin_includes:
+        head: ['admin/_assets.html.twig']                     # end of <head>, every admin page
         sidebar: ['admin/_banner.html.twig']                  # under the logo
         sidebar_bottom: ['admin/_site_switcher.html.twig']    # above the user menu
 ```
+
+`head` comes after the importmap and the admin stylesheet: a bundle loads its own assets there
+(`<link rel="stylesheet">`, `<script type="module">` importing `gingerminds-core-admin` to
+register its Stimulus controllers on the exported `app`) without the project overriding the
+`javascripts` block.
 
 Reuse the user menu classes (`sidebar-profile-toggle`, `sidebar-avatar`, `profile-info`,
 `profile-role`) for a bottom entry: it gets the same look and collapses to its icon with the
