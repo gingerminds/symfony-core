@@ -3,7 +3,7 @@
  # <head> (meta, title, importmap, admin stylesheet) and an empty <body>.
  #
  # Blocks: title, head (extra <link>/<meta>, e.g. rel prev/next), javascripts,
- # stylesheets, body_attributes, body.
+ # stylesheets, body_attributes, body. Then the `head` admin includes (bundle assets).
  #}
 <!DOCTYPE html>
 <html lang="{{ app.request.locale|default('fr')|replace({'_': '-'}) }}">
@@ -22,6 +22,9 @@
     {% block stylesheets %}
         <link rel="stylesheet" href="{{ asset('gingerminds-core/styles/admin.scss') }}">
     {% endblock %}
+    {% for template in gm_admin_includes('head') %}
+        {% include template %}
+    {% endfor %}
 </head>
 <body{% block body_attributes %}{% endblock %}>
 {% block body %}{% endblock %}
