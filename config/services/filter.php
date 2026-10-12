@@ -32,7 +32,9 @@ return static function (ContainerConfigurator $container): void {
     }
 
     $services->get('gingerminds_core.filter_handler.boolean')->tag('gingerminds_core.filter_handler', ['type' => 'boolean']);
-    $services->get('gingerminds_core.filter_handler.date')->tag('gingerminds_core.filter_handler', ['type' => 'date']);
+    $services->get('gingerminds_core.filter_handler.date')
+        ->args([service('gingerminds_core.display_timezone')])
+        ->tag('gingerminds_core.filter_handler', ['type' => 'date']);
     $services->get('gingerminds_core.filter_handler.number')->tag('gingerminds_core.filter_handler', ['type' => 'number']);
     $services->get('gingerminds_core.filter_handler.select')->tag('gingerminds_core.filter_handler', ['type' => 'select']);
     $services->get('gingerminds_core.filter_handler.select_entity')

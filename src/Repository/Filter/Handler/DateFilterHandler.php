@@ -4,53 +4,59 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Repository\Filter\Handler;
 
+use Doctrine\DBAL\Types\Types;
 use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerInterface;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
+use Gingerminds\CoreBundle\Service\DisplayTimezone;
 
 /**
- * `{from: 'Y-m-d', to: 'Y-m-d'}`, both bounds optional and inclusive (whole days).
+ * `{from: 'Y-m-d', to: 'Y-m-d'}`, both bounds optional and inclusive (whole days of the display timezone).
  */
-final class DateFilterHandler implements FilterHandlerInterface
+final readonly class DateFilterHandler implements FilterHandlerInterface
 {
+    /**
+     * Calendar days (no time, no timezone): compared as is.
+     */
+    private const array DAY_TYPES = [Types::DATE_MUTABLE, Types::DATE_IMMUTABLE, 'day_point'];
+
+    public function __construct(
+        private DisplayTimezone $displayTimezone = new DisplayTimezone(),
+    ) {
+    }
+
     public function apply(QueryBuilderHelper $query, string $property, mixed $value, array $config): void
     {
-        $field = $query->resolveField($property);
-
-        if (null === $field || !\is_array($value)) {
+        if (!\is_array($value)) {
             return;
         }
 
-        self::applyRange($query, $field, $value);
+        $owner = $query->resolveOwner($property);
+
+        if (null === $owner || !$owner['metadata']->hasField($owner['name'])) {
+            return;
+        }
+
+        $calendarDay = \in_array($owner['metadata']->getTypeOfField($owner['name']), self::DAY_TYPES, true);
+        $this->applyRange($query, $owner['alias'] . '.' . $owner['name'], $value, $calendarDay);
     }
 
     /**
-     * Shared with the faceted search (AbstractFacetRepository).
-     *
      * @param array<mixed> $value
+     * @param bool         $calendarDay the column holds a day (`date`), not a UTC date-time
      */
-    public static function applyRange(QueryBuilderHelper $query, string $field, array $value): void
+    public function applyRange(QueryBuilderHelper $query, string $field, array $value, bool $calendarDay = false): void
     {
-        $from = self::parse($value['from'] ?? null)?->setTime(0, 0);
-        $to = self::parse($value['to'] ?? null)?->setTime(23, 59, 59);
+        [$from, $to] = $calendarDay
+            ? $this->displayTimezone->dayRange($value['from'] ?? null, $value['to'] ?? null)
+            : $this->displayTimezone->dayRangeToUtc($value['from'] ?? null, $value['to'] ?? null);
         $qb = $query->getQueryBuilder();
 
-        if (null !== $from) {
+        if ($from instanceof \DateTimeImmutable) {
             $qb->andWhere(\sprintf('%s >= %s', $field, $query->parameter($from)));
         }
 
-        if (null !== $to) {
+        if ($to instanceof \DateTimeImmutable) {
             $qb->andWhere(\sprintf('%s <= %s', $field, $query->parameter($to)));
         }
-    }
-
-    private static function parse(mixed $date): ?\DateTimeImmutable
-    {
-        if (!\is_string($date) || '' === $date) {
-            return null;
-        }
-
-        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
-
-        return false === $parsed ? null : $parsed;
     }
 }
