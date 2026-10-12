@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle;
 
+use Doctrine\DBAL\Types\Types;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterProviderInterface;
 use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
@@ -11,6 +12,8 @@ use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
 use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
 use Gingerminds\CoreBundle\DependencyInjection\Compiler\ResourceRegistryPass;
+use Gingerminds\CoreBundle\Doctrine\Type\UtcDateTimeImmutableType;
+use Gingerminds\CoreBundle\Doctrine\Type\UtcDateTimeType;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\Role\Role;
@@ -101,6 +104,12 @@ final class GingermindsCoreBundle extends AbstractBundle
         $container->addCompilerPass(new OverriddenEntityPass());
     }
 
+    public function boot(): void
+    {
+        // Every date of the system is UTC (`new \DateTimeImmutable()`, logs...): only displays use the display timezone.
+        date_default_timezone_set('UTC');
+    }
+
     /**
      * @param array<string, mixed> $config
      */
@@ -119,6 +128,7 @@ final class GingermindsCoreBundle extends AbstractBundle
         $parameters->set('gingerminds_core.admin_prefix', trim((string) $config['admin_prefix'], '/'));
         $parameters->set('gingerminds_core.admin_title', $config['admin_title']);
         $parameters->set('gingerminds_core.admin_title_translation_domain', $config['admin_title_translation_domain']);
+        $parameters->set('gingerminds_core.display_timezone', $config['display_timezone']);
         $parameters->set('gingerminds_core.health_check_path', trim((string) $config['health_check_path'], '/'));
         $parameters->set('gingerminds_core.api.prefix', trim((string) $config['api']['prefix'], '/'));
         $parameters->set('gingerminds_core.api.token_ttl', $config['api']['token_ttl']);
@@ -200,6 +210,13 @@ final class GingermindsCoreBundle extends AbstractBundle
         }
 
         $builder->prependExtensionConfig('doctrine', [
+            'dbal' => [
+                // Dates are written and read in UTC whatever the timezone of the instance.
+                'types' => [
+                    Types::DATETIME_MUTABLE => UtcDateTimeType::class,
+                    Types::DATETIME_IMMUTABLE => UtcDateTimeImmutableType::class,
+                ],
+            ],
             'orm' => [
                 'resolve_target_entities' => $resolveTargetEntities,
                 'mappings' => $mappings,
@@ -231,6 +248,13 @@ final class GingermindsCoreBundle extends AbstractBundle
                 'paths' => [$this->getPath() . '/assets' => 'gingerminds-core'],
             ],
         ]);
+
+        if ($builder->hasExtension('twig')) {
+            // The Twig `date` filter (and `format_date*`) shows dates in the display timezone.
+            $builder->prependExtensionConfig('twig', [
+                'date' => ['timezone' => $config['display_timezone']],
+            ]);
+        }
 
         if ($builder->hasExtension('api_platform')) {
             // Prepended: a project can still turn Webby back on in its own config.

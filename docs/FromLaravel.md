@@ -20,6 +20,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `AbstractRepository::update(FormRequest, Model)` | `save(entity, ?form)` + `beforeSave()` hook | Mapping is done by the form. |
 | `FormRequest` (+ `FormRequestInterface`) | Symfony form type + validator constraints | One form for admin and API. |
 | `Date/DecimalConverterTrait` | form types (`DateType`, `NumberType` with `scale`) | Conversion is a form concern. |
+| `DisplayTimezone` + `ConvertsDisplayDatetimesToUtc` | `DisplayTimezone` service + UTC Doctrine `datetime` types, `DateTimeType` extension, Twig `date.timezone` | `gingerminds_core.display_timezone` (default `Europe/Paris`, Laravel falls back to `app.timezone`). No per-request field list: every `DateTimeType` converts. |
 | `AbstractController` + generated per-resource CRUD | `AbstractCrudController` (generic) + `CrudRouteLoader` | A resource controller is usually empty. |
 | `Route::resource()` | generated `{prefix}_index\|new\|edit\|delete` routes | `delete` is a POST with CSRF token. |
 | `throttle:api` middleware, `RateLimiter::for()` | `gingerminds_core.api.rate_limit` (`gingerminds_core_api` limiter), `rate_limiter` operation extra property / `_rate_limiter` route default | 429 + `X-RateLimit-*` / `Retry-After` headers. |

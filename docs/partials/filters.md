@@ -18,7 +18,8 @@ into DQL.
 ```
 
 `filters[publishedAt][from]=2024-01-01&filters[publishedAt][to]=2024-12-31` (`Y-m-d`, both
-optional, whole days inclusive).
+optional, whole days inclusive). The days are those of `display_timezone`, converted to UTC
+bounds for a date-time column; a `date` column is compared as is.
 
 ## Number
 

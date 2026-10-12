@@ -8,6 +8,8 @@ use Doctrine\ORM\QueryBuilder;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
+use Gingerminds\CoreBundle\Service\DisplayTimezone;
+use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * @template T of FilterableInterface
@@ -17,6 +19,14 @@ use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
 abstract class AbstractFacetRepository extends AbstractRepository
 {
     protected const string COUNT_TOTAL = 'COUNT(DISTINCT %s) AS total';
+
+    private ?DisplayTimezone $displayTimezone = null;
+
+    #[Required]
+    public function setDisplayTimezone(DisplayTimezone $displayTimezone): void
+    {
+        $this->displayTimezone = $displayTimezone;
+    }
 
     /**
      * @param list<string> $excludedKeys
@@ -44,7 +54,7 @@ abstract class AbstractFacetRepository extends AbstractRepository
             return ['min' => null, 'max' => null, 'years' => []];
         }
 
-        return DateFacetCalculator::compute($qb, $field);
+        return DateFacetCalculator::compute($qb, $field, $this->displayTimezone ??= new DisplayTimezone());
     }
 
     /**
