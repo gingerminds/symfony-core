@@ -34,8 +34,8 @@ final class EventRepository extends AbstractFacetRepository
 > separate dispatch, so a filter behaves identically in lists and facets. Declare
 > relation filters as `select-entity`.
 
-`Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator::compute(QueryBuilder, string $dqlField)`
-is also available directly.
+`Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator::compute(QueryBuilder, string $dqlField, DisplayTimezone)`
+is also available directly. Bounds and years are days of the display timezone.
 
 ## `AbstractFilterComputeService`
 

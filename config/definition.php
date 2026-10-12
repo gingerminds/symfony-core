@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
+use Gingerminds\CoreBundle\Service\DisplayTimezone;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 
 return static function (DefinitionConfigurator $definition): void {
@@ -24,6 +25,11 @@ return static function (DefinitionConfigurator $definition): void {
             ->scalarNode('health_check_path')
                 ->info('Public path always answering {"status": "ok"} (CI/monitoring).')
                 ->defaultValue('health')
+                ->cannotBeEmpty()
+            ->end()
+            ->scalarNode('display_timezone')
+                ->info('Timezone of the dates typed and displayed (forms, Twig "date" filter, date filters and facets). Dates are always stored in UTC.')
+                ->defaultValue(DisplayTimezone::DEFAULT)
                 ->cannotBeEmpty()
             ->end()
             ->arrayNode('security')

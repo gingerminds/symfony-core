@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Repository\Facet;
 
 use Doctrine\ORM\QueryBuilder;
+use Gingerminds\CoreBundle\Service\DisplayTimezone;
 
+/**
+ * Bounds and years are those of the display timezone (dates are stored in UTC).
+ */
 final class DateFacetCalculator
 {
     /**
@@ -13,7 +17,7 @@ final class DateFacetCalculator
      *
      * @return array{min: ?string, max: ?string, years: list<int>}
      */
-    public static function compute(QueryBuilder $query, string $field): array
+    public static function compute(QueryBuilder $query, string $field, DisplayTimezone $displayTimezone = new DisplayTimezone()): array
     {
         $base = (clone $query)
             ->resetDQLPart('orderBy')
@@ -35,28 +39,23 @@ final class DateFacetCalculator
             ->getSingleColumnResult();
 
         $years = array_values(array_unique(array_map(
-            static fn (mixed $value): int => (int) self::toDate($value)?->format('Y'),
+            static fn (mixed $value): int => (int) $displayTimezone->toDisplay(self::toDate($value))?->format('Y'),
             $values,
         )));
         rsort($years);
 
         return [
-            'min' => self::toDate($bounds['min'] ?? null)?->format('Y-m-d'),
-            'max' => self::toDate($bounds['max'] ?? null)?->format('Y-m-d'),
+            'min' => $displayTimezone->toDisplay(self::toDate($bounds['min'] ?? null))?->format('Y-m-d'),
+            'max' => $displayTimezone->toDisplay(self::toDate($bounds['max'] ?? null))?->format('Y-m-d'),
             'years' => $years,
         ];
     }
 
-    private static function toDate(mixed $value): ?\DateTimeImmutable
+    /**
+     * Aggregates (MIN/MAX) come back as raw database strings: UTC.
+     */
+    private static function toDate(mixed $value): \DateTimeInterface|string|null
     {
-        if ($value instanceof \DateTimeInterface) {
-            return \DateTimeImmutable::createFromInterface($value);
-        }
-
-        try {
-            return \is_string($value) && '' !== $value ? new \DateTimeImmutable($value) : null;
-        } catch (\Exception) {
-            return null;
-        }
+        return $value instanceof \DateTimeInterface || \is_string($value) ? $value : null;
     }
 }

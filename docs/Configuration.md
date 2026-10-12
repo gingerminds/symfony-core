@@ -9,6 +9,7 @@ gingerminds_core:
     admin_title: 'admin.title'       # translation key (plain text also works)
     admin_title_translation_domain: GingermindsCore
     health_check_path: health        # public GET /health -> {"status": "ok"}
+    display_timezone: Europe/Paris   # dates typed and displayed in this timezone, stored in UTC
 
     security:
         authorized_domains: []       # allowed "Origin" hosts of the admin login, [] = no check
@@ -69,6 +70,27 @@ gingerminds_core:
 
 For anything else (another route, a query string...), override
 `AbstractCrudController::redirectAfterSave()`.
+
+## Dates and timezone
+
+Every date of the system is UTC; only what a user types or reads uses `display_timezone`
+(default `Europe/Paris`, `'%env(APP_DISPLAY_TIMEZONE)%'` works):
+
+- storage: the `datetime` and `datetime_immutable` Doctrine types are replaced by UTC ones
+  (written in UTC whatever the timezone of the instance, hydrated as UTC) and the bundle sets
+  the PHP default timezone to UTC (`new \DateTimeImmutable()`, logs, API output);
+- display: the Twig `date` filter (and `format_date*`) uses the display timezone
+  (prepended `twig.date.timezone`);
+- forms: `DateTimeType` defaults to `model_timezone: UTC` and `view_timezone: <display>`.
+  `DateType` (a day, no time) is not converted;
+- list filters and facets: the `date` filter bounds are whole days of the display timezone
+  (a `date` column is compared as is); facet bounds and years are display days.
+
+`Gingerminds\CoreBundle\Service\DisplayTimezone` (autowirable) does the same in your code:
+`toUtc('2026-07-01 10:30')`, `toDisplay($entity->getPublishedAt())`,
+`dayRangeToUtc('2026-07-01', '2026-07-31')`.
+
+> Existing data written in another timezone must be migrated to UTC.
 
 ## Health check route
 

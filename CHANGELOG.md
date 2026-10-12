@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Dates are stored in UTC and displayed in `gingerminds_core.display_timezone` (default
+  `Europe/Paris`): `datetime` / `datetime_immutable` Doctrine types written and read in UTC,
+  PHP default timezone set to UTC, Twig `date` filter and `DateTimeType` fields
+  (`model_timezone: UTC`, `view_timezone`) in the display timezone, `date` filters and date
+  facets on the days of the display timezone. `DisplayTimezone` service (`toUtc()`,
+  `toDisplay()`, `dayRange()`, `dayRangeToUtc()`).
 - `gingerminds_core.admin_includes.head`: templates included at the end of `<head>`, after
   the importmap and the admin stylesheet, on every admin page (login included), e.g. the
   assets of a bundle.
