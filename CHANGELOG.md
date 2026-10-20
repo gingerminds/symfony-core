@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Form include slots: `<resource>_form_main` / `<resource>_form_sidebar` admin includes
+  rendered at the end of the main / right column of the admin forms (`profile_form_*` for the
+  profile), e.g. for the fields another bundle adds with a form type extension.
+  `@GingermindsCore/crud/_form_layout.html.twig` (to `embed`, `main` / `sidebar` blocks; one
+  full-width column without sidebar content nor sidebar include) used by the core forms and
+  the `make:gm:*` form template, `gm_form_includes(name, column)`.
 - Dates are stored in UTC and displayed in `gingerminds_core.display_timezone` (default
   `Europe/Paris`): `datetime` / `datetime_immutable` Doctrine types written and read in UTC,
   PHP default timezone set to UTC, Twig `date` filter and `DateTimeType` fields

@@ -56,6 +56,9 @@ From a bundle, prepend it in `prependExtension()`:
 `$builder->prependExtensionConfig('gingerminds_core', ['admin_includes' => ['sidebar' => ['@MyBundle/...']]])`.
 `gm_admin_includes('sidebar')` returns the templates of a slot.
 
+The admin forms have their own slots, `<resource>_form_main` and `<resource>_form_sidebar`: see
+[Forms](forms.md#form-layout-and-include-slots).
+
 The sidebar comes from `gm_admin_menu()`: add entries by implementing
 `Gingerminds\CoreBundle\Menu\AdminMenuProviderInterface` (autoconfigured, the Laravel
 `dashboard_menu_items` partial):

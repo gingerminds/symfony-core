@@ -151,6 +151,38 @@ final class AdminTest extends ApiTestCase
         self::assertCount(0, $crawler->filter('a[href="/admin/roles"]'));
     }
 
+    public function testFormColumnsRenderTheFormIncludes(): void
+    {
+        $user = $this->fixtures->user('form-include@example.com', superAdmin: true);
+        $this->client->loginUser($user, 'admin');
+
+        // Two-column form: each column ends with its includes.
+        $crawler = $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+        self::assertSame((string) $user->getId(), $crawler->filter('.col-lg-8 > .gm-test-form-include')->text());
+        self::assertSame('user', $crawler->filter('.col-lg-4 > .gm-test-form-include')->attr('data-form'));
+        self::assertSame('gm-test-form-include', $crawler->filter('.col-lg-8 > *')->last()->attr('class'));
+
+        // One-column form: a sidebar include adds the right column.
+        $crawler = $this->client->request('GET', '/admin/permissions/new');
+        self::assertResponseIsSuccessful();
+        self::assertSame('new', $crawler->filter('.col-lg-4 > .gm-test-form-include')->text());
+        self::assertCount(1, $crawler->filter('.crud-form .col-lg-8 #permission_name'));
+
+        // Without include nor sidebar content: one full-width column.
+        $crawler = $this->client->request('GET', '/admin/roles/new');
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.crud-form .col-lg-4'));
+        self::assertCount(1, $crawler->filter('.crud-form .col-12 #role_name'));
+        // The translation domain applies inside the embedded layout.
+        self::assertSelectorTextNotContains('.crud-form', 'role.name_s');
+        self::assertSelectorTextNotContains('.crud-form', 'role.field.permissions');
+
+        // The profile has its own slots.
+        $crawler = $this->client->request('GET', '/admin/profile');
+        self::assertSame('profile', $crawler->filter('.col-lg-8 > .gm-test-form-include')->attr('data-form'));
+    }
+
     public function testSidebarRendersTheAdminIncludes(): void
     {
         $this->client->loginUser($this->fixtures->user('include@example.com', ['view users']), 'admin');
