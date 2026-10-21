@@ -7,6 +7,7 @@ namespace Gingerminds\CoreBundle\Controller;
 use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
@@ -24,6 +25,7 @@ final readonly class CrudContext
         public TranslatorInterface $translator,
         public ResourceRegistry $resources,
         public ManagerRegistry $doctrine,
+        public ?RequestStack $requestStack = null,
     ) {
     }
 }

@@ -10,9 +10,7 @@ use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\ListQuery;
-use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
-use Gingerminds\CoreBundle\Resource\ResourceDefinition;
 use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,8 +20,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 abstract class AbstractCrudController
 {
     use ControllerTrait;
-
-    private ?ResourceDefinition $resource = null;
+    use ResourceControllerTrait;
 
     public function __construct(
         protected readonly CrudContext $context,
@@ -106,7 +103,7 @@ abstract class AbstractCrudController
         if (!$this->isCsrfTokenValid('delete-' . $id, $request->getPayload()->getString('_token'))) {
             $this->addFlash($request, 'danger', $this->trans('flash.invalid_csrf'));
 
-            return $this->redirectToRoute($resource->route('index'));
+            return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
         }
 
         $error = $this->getDeleteError($entity);
@@ -114,7 +111,7 @@ abstract class AbstractCrudController
         if (null !== $error) {
             $this->addFlash($request, 'danger', $error);
 
-            return $this->redirectToRoute($resource->route('index'));
+            return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
         }
 
         $label = $this->getLabel($entity);
@@ -122,7 +119,7 @@ abstract class AbstractCrudController
 
         $this->addResourceFlash($request, 'flash.deleted', $label);
 
-        return $this->redirectToRoute($resource->route('index'));
+        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
     }
 
     /**
@@ -136,44 +133,6 @@ abstract class AbstractCrudController
             '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
             '%label%' => $label,
         ]));
-    }
-
-    protected function getResourceName(): string
-    {
-        foreach ($this->context->resources->all() as $definition) {
-            if (null !== $definition->controller && is_a($this, $definition->controller)) {
-                return $definition->name;
-            }
-        }
-
-        throw new \LogicException(
-            \sprintf('No resource is bound to the controller "%s". Register it with #[AsCrudController] or in "gingerminds_core.resources".', static::class),
-        );
-    }
-
-    protected function getResource(): ResourceDefinition
-    {
-        return $this->resource ??= $this->context->resources->get($this->getResourceName());
-    }
-
-    /**
-     * @return RepositoryInterface<object>
-     */
-    protected function getRepository(): RepositoryInterface
-    {
-        $repository = $this->context->doctrine->getRepository($this->getResource()->entity);
-
-        if (!$repository instanceof RepositoryInterface) {
-            throw new \LogicException(
-                \sprintf(
-                    'The repository of "%s" must implement "%s" (extend AbstractRepository).',
-                    $this->getResource()->entity,
-                    RepositoryInterface::class,
-                ),
-            );
-        }
-
-        return $repository;
     }
 
     protected function createListQuery(Request $request): ListQuery
@@ -218,10 +177,25 @@ abstract class AbstractCrudController
         $resource = $this->getResource();
 
         if (RedirectTarget::Edit === $resource->redirectAfterSave($isNew) && $entity instanceof ResourceInterface) {
-            return $this->redirectToRoute($resource->route('edit'), ['id' => $entity->getId()]);
+            return $this->redirectToRoute($resource->route('edit'), [...$this->getRouteParameters(), 'id' => $entity->getId()]);
         }
 
-        return $this->redirectToRoute($resource->route('index'));
+        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
+    }
+
+    /**
+     * Parameters of the resource routes besides `id`, e.g. the parent id of a nested resource
+     * (`path: 'menus/{menuId}/items'`): those of the current route by default.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getRouteParameters(): array
+    {
+        $parameters = $this->context->requestStack?->getCurrentRequest()?->attributes->get('_route_params', []);
+        $parameters = \is_array($parameters) ? $parameters : [];
+        unset($parameters['id']);
+
+        return $parameters;
     }
 
     protected function getDeleteError(object $entity): ?string
@@ -243,6 +217,7 @@ abstract class AbstractCrudController
 
         return [
             'resource' => $resource,
+            'route_parameters' => $this->getRouteParameters(),
             'entity_class' => $resource->entity,
             'is_searchable' => is_subclass_of($resource->entity, SearchableInterface::class),
             'is_filterable' => is_subclass_of($resource->entity, FilterableInterface::class),
