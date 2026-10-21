@@ -106,7 +106,7 @@ abstract class AbstractCrudController
         if (!$this->isCsrfTokenValid('delete-' . $id, $request->getPayload()->getString('_token'))) {
             $this->addFlash($request, 'danger', $this->trans('flash.invalid_csrf'));
 
-            return $this->redirectToRoute($resource->route('index'));
+            return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
         }
 
         $error = $this->getDeleteError($entity);
@@ -114,7 +114,7 @@ abstract class AbstractCrudController
         if (null !== $error) {
             $this->addFlash($request, 'danger', $error);
 
-            return $this->redirectToRoute($resource->route('index'));
+            return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
         }
 
         $label = $this->getLabel($entity);
@@ -122,7 +122,7 @@ abstract class AbstractCrudController
 
         $this->addResourceFlash($request, 'flash.deleted', $label);
 
-        return $this->redirectToRoute($resource->route('index'));
+        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
     }
 
     /**
@@ -218,10 +218,25 @@ abstract class AbstractCrudController
         $resource = $this->getResource();
 
         if (RedirectTarget::Edit === $resource->redirectAfterSave($isNew) && $entity instanceof ResourceInterface) {
-            return $this->redirectToRoute($resource->route('edit'), ['id' => $entity->getId()]);
+            return $this->redirectToRoute($resource->route('edit'), [...$this->getRouteParameters(), 'id' => $entity->getId()]);
         }
 
-        return $this->redirectToRoute($resource->route('index'));
+        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
+    }
+
+    /**
+     * Parameters of the resource routes besides `id`, e.g. the parent id of a nested resource
+     * (`path: 'menus/{menuId}/items'`): those of the current route by default.
+     *
+     * @return array<string, mixed>
+     */
+    protected function getRouteParameters(): array
+    {
+        $parameters = $this->context->requestStack?->getCurrentRequest()?->attributes->get('_route_params', []);
+        $parameters = \is_array($parameters) ? $parameters : [];
+        unset($parameters['id']);
+
+        return $parameters;
     }
 
     protected function getDeleteError(object $entity): ?string
@@ -243,6 +258,7 @@ abstract class AbstractCrudController
 
         return [
             'resource' => $resource,
+            'route_parameters' => $this->getRouteParameters(),
             'entity_class' => $resource->entity,
             'is_searchable' => is_subclass_of($resource->entity, SearchableInterface::class),
             'is_filterable' => is_subclass_of($resource->entity, FilterableInterface::class),

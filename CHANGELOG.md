@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Nested resources (`path: 'categories/{categoryId}/products'`): `AbstractCrudController::getRouteParameters()`
+  (the current route parameters but `id`), kept by the redirects after save and delete and passed to
+  the templates as `route_parameters`. `CrudContext` takes the request stack (optional last argument).
 - Form include slots: `<resource>_form_main` / `<resource>_form_sidebar` admin includes
   rendered at the end of the main / right column of the admin forms (`profile_form_*` for the
   profile), e.g. for the fields another bundle adds with a form type extension.

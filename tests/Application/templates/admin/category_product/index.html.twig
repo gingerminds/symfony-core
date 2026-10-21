@@ -1,0 +1,8 @@
+{% extends '@GingermindsCore/crud/list.html.twig' %}
+
+{% set columns = [{label: 'Name'}, {label: 'Actions'}] %}
+
+{% block table_row %}
+    <td>{{ item.name }}</td>
+    <td>{{ block('row_actions') }}</td>
+{% endblock %}

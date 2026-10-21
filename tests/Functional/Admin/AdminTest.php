@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
+use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
 use Gingerminds\CoreBundle\Tests\Functional\Fixtures;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -149,6 +150,44 @@ final class AdminTest extends ApiTestCase
 
         self::assertCount(1, $crawler->filter('a[href="/admin/users"]'));
         self::assertCount(0, $crawler->filter('a[href="/admin/roles"]'));
+    }
+
+    public function testNestedResourceKeepsItsParentInTheLinksAndRedirects(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $category = new Category('Tractors');
+        $entityManager->persist($category);
+        $entityManager->flush();
+        $base = '/admin/categories/' . $category->getId() . '/products';
+        $this->client->loginUser($this->fixtures->user('nested@example.com', superAdmin: true), 'admin');
+
+        $crawler = $this->client->request('GET', $base . '/new');
+        self::assertSame($base, $crawler->filter('.crud-form a.btn-secondary')->attr('href'), 'Cancel link');
+        $this->client->submit($crawler->filter('form[name="category_product"]')->form(['category_product[name]' => 'T-800']));
+        self::assertResponseRedirects($base);
+
+        $product = $entityManager->getRepository(Product::class)->findOneBy(['name' => 'T-800']);
+        self::assertInstanceOf(Product::class, $product);
+        self::assertSame($category->getId(), $product->getCategory()?->getId());
+
+        // Global redirect after edit: the list.
+        $crawler = $this->client->request('GET', $base . '/' . $product->getId() . '/edit');
+        $this->client->submit($crawler->filter('form[name="category_product"]')->form(['category_product[name]' => 'T-1000']));
+        self::assertResponseRedirects($base);
+
+        $crawler = $this->client->request('GET', $base);
+        self::assertCount(1, $crawler->filter(\sprintf('a[href="%s/new"]', $base)));
+        self::assertCount(1, $crawler->filter(\sprintf('a[href="%s/%d/edit"]', $base, $product->getId())));
+        $deleteUrl = $base . '/' . $product->getId() . '/delete';
+        $token = (string) $crawler->filter(\sprintf('[data-gm-delete-url="%s"]', $deleteUrl))->attr('data-gm-delete-token');
+
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid']);
+        self::assertResponseRedirects($base);
+
+        $this->client->request('POST', $deleteUrl, ['_token' => $token]);
+        self::assertResponseRedirects($base);
+        $entityManager->clear();
+        self::assertNull($entityManager->find(Product::class, $product->getId()));
     }
 
     public function testFormColumnsRenderTheFormIncludes(): void

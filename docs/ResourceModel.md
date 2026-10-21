@@ -144,6 +144,22 @@ Generated routes (`admin_product_index|new|edit|delete`), templates and hooks: s
 `createListQuery()` (force a filter on the admin list). The redirect after a save is
 configurable without code: see [Redirect after save](Configuration.md#redirect-after-save).
 
+### Nested resources
+
+A resource under a parent puts the parent id in its path, e.g. the products of a category:
+
+```php
+#[AsCrudController(resource: 'category_product', entity: Product::class, path: 'categories/{categoryId}/products')]
+final class CategoryProductController extends AbstractCrudController
+```
+
+The route loader generates `/admin/categories/{categoryId}/products[/new|/{id}/edit|/{id}/delete]`.
+`getRouteParameters()` returns the parameters of the current route but `id` (`['categoryId' => '7']`):
+the redirects after save and delete keep them, and the templates get them as `route_parameters`
+(list, tree, form and row action links). Filter the list on the parent in the repository or with
+`createListQuery()`, set it on new entities in `createEntity()`, and check that an edited entity
+belongs to it in `findEntity()`.
+
 ## List performance
 
 `paginate()` keeps lists cheap on large tables by itself (plain `COUNT`, `LIMIT` without

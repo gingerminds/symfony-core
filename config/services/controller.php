@@ -35,6 +35,7 @@ return static function (ContainerConfigurator $container): void {
             service('translator'),
             service('gingerminds_core.resource_registry'),
             service('doctrine'),
+            service('request_stack'),
         ]);
     $services->alias(CrudContext::class, 'gingerminds_core.controller.context');
 
