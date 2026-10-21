@@ -1,6 +1,6 @@
 {#
  # Current user's profile (ProfileType): account (email, password) and own
- # contributor. Vars: user, form.
+ # contributor. Vars: user, form. Form include slots: `profile_form_main` / `profile_form_sidebar`.
  #}
 {% extends '@GingermindsCore/crud/form.html.twig' %}
 {% trans_default_domain 'GingermindsCore' %}
@@ -11,8 +11,10 @@
 {% set form_id = 'gm-profile-form' %}
 
 {% block form_body %}
-    <div class="row">
-        <div class="col-lg-8">
+    {% embed '@GingermindsCore/crud/_form_layout.html.twig' with {form_includes_name: 'profile'} %}
+        {% trans_default_domain 'GingermindsCore' %}
+
+        {% block main %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex align-items-center py-3">
                     <h5 class="card-title mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'profile.settings'|trans }}</h5>
@@ -25,8 +27,9 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-4">
+        {% endblock %}
+
+        {% block sidebar %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex align-items-center py-3">
                     <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'user.field.contributor'|trans }}</h5>
@@ -40,6 +43,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

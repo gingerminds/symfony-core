@@ -20,6 +20,8 @@ final class GingermindsCoreExtension extends AbstractExtension
 {
     private const int MAX_LOCAL_CHOICES = 500;
 
+    private const array FORM_COLUMNS = ['main', 'sidebar'];
+
     public function __construct(
         private readonly ResourceRegistry $resources,
         private readonly AdminMenu $menu,
@@ -43,6 +45,7 @@ final class GingermindsCoreExtension extends AbstractExtension
             new TwigFunction('gm_admin_menu', $this->menu->getItems(...)),
             new TwigFunction('gm_admin_title', fn (): string => $this->translator->trans($this->adminTitle, [], $this->adminTitleDomain)),
             new TwigFunction('gm_admin_includes', $this->adminIncludes(...)),
+            new TwigFunction('gm_form_includes', $this->formIncludes(...)),
             new TwigFunction('gm_is_menu_active', $this->isMenuActive(...)),
             new TwigFunction('gm_list_path', $this->listPath(...)),
             new TwigFunction('gm_sort_path', $this->sortPath(...)),
@@ -103,6 +106,20 @@ final class GingermindsCoreExtension extends AbstractExtension
     public function adminIncludes(string $slot): array
     {
         return $this->adminIncludes[$slot] ?? [];
+    }
+
+    /**
+     * Templates included in a form column: the `<name>_form_main` / `<name>_form_sidebar` admin include slots.
+     *
+     * @return list<string>
+     */
+    public function formIncludes(string $name, string $column): array
+    {
+        if (!\in_array($column, self::FORM_COLUMNS, true)) {
+            throw new \InvalidArgumentException(\sprintf('Unknown form column "%s", expected one of "%s".', $column, implode('", "', self::FORM_COLUMNS)));
+        }
+
+        return $this->adminIncludes($name . '_form_' . $column);
     }
 
     public function isMenuActive(MenuItem $item): bool

@@ -1,0 +1,36 @@
+{#
+ # Two-column layout of an admin form, to `embed` in a `_form.html.twig`:
+ #
+ #     {% embed '@GingermindsCore/crud/_form_layout.html.twig' %}
+ #         {% block main %}...cards of the main column...{% endblock %}
+ #         {% block sidebar %}...cards of the right column...{% endblock %}
+ #     {% endembed %}
+ #
+ # Each column ends with the templates of the `<form_includes_name>_form_main` /
+ # `<form_includes_name>_form_sidebar` admin include slots (`gingerminds_core.admin_includes`),
+ # e.g. the fields another bundle adds with a form type extension. They see the form context
+ # (form, entity, resource...). `form_includes_name` defaults to the resource name.
+ # Without sidebar content nor sidebar include, the main column takes the full width.
+ #}
+{% set form_includes_name = form_includes_name ?? resource.name %}
+{% set sidebar_includes = gm_form_includes(form_includes_name, 'sidebar') %}
+{% set sidebar_content = block('sidebar') is defined ? block('sidebar')|trim : '' %}
+{% set has_sidebar = sidebar_content is not empty or sidebar_includes is not empty %}
+
+<div class="row">
+    <div class="{{ has_sidebar ? 'col-lg-8' : 'col-12' }}">
+        {% block main %}{% endblock %}
+        {% for template in gm_form_includes(form_includes_name, 'main') %}
+            {% include template %}
+        {% endfor %}
+    </div>
+
+    {% if has_sidebar %}
+        <div class="col-lg-4">
+            {{ sidebar_content|raw }}
+            {% for template in sidebar_includes %}
+                {% include template %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

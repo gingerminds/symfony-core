@@ -30,6 +30,50 @@ $builder
 Compound widgets (the root form included) render as `.row.g-3` grids. When rendering rows one
 by one, wrap them in `<div class="row g-3">`.
 
+## Form layout and include slots
+
+Lay a resource form out with the core two-column layout, embedded in its `_form.html.twig`
+(the `make:gm:*` generators do):
+
+```twig
+{% trans_default_domain 'App' %}
+{% embed '@GingermindsCore/crud/_form_layout.html.twig' %}
+    {% trans_default_domain 'App' %}{# an embed has its own translation domain #}
+
+    {% block main %}...cards of the main column...{% endblock %}
+    {% block sidebar %}...cards of the right column (optional)...{% endblock %}
+{% endembed %}
+```
+
+Each column ends with the templates of an admin include slot, so another bundle or the project
+adds content to a form without overriding its template, typically the fields it adds to the
+form type with a form type extension:
+
+| Slot | Where |
+|---|---|
+| `<resource>_form_main` | end of the main column |
+| `<resource>_form_sidebar` | end of the right column (a one-column form gets one) |
+
+```yaml
+gingerminds_core:
+    admin_includes:
+        user_form_sidebar: ['admin/user/_newsletter.html.twig']
+```
+
+```twig
+{# templates/admin/user/_newsletter.html.twig: same variables as the form (form, entity, resource...) #}
+{% if form.newsletter is defined %}
+    <div class="card shadow-sm mb-4">
+        <div class="card-body"><div class="row g-3">{{ form_row(form.newsletter, {size_columns: 12}) }}</div></div>
+    </div>
+{% endif %}
+```
+
+The resource name gives the slot names (`user_form_main`, `site_form_sidebar`...); the profile
+page uses `profile_form_main` / `profile_form_sidebar`. Pass another name to the layout with
+`{% embed '@GingermindsCore/crud/_form_layout.html.twig' with {form_includes_name: 'my_page'} %}`.
+`gm_form_includes(name, 'main'|'sidebar')` returns the templates of a column.
+
 ## Laravel components → form types
 
 | Laravel `<x-form.inputs.*>` | Symfony |

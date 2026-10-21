@@ -4,8 +4,10 @@
  # contributor") is selected (Stimulus `gm-contributor-fields`).
  #}
 {% trans_default_domain 'GingermindsCore' %}
-<div class="row">
-    <div class="col-lg-8">
+{% embed '@GingermindsCore/crud/_form_layout.html.twig' %}
+    {% trans_default_domain 'GingermindsCore' %}
+
+    {% block main %}
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex align-items-center py-3">
                 <h5 class="card-title mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'user.name_s'|trans }}</h5>
@@ -20,9 +22,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    {% endblock %}
 
-    <div class="col-lg-4">
+    {% block sidebar %}
         {% if form.roles is defined %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex align-items-center py-3">
@@ -60,5 +62,5 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    {% endblock %}
+{% endembed %}

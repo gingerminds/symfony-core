@@ -1,7 +1,9 @@
 {# Contributor fields (ContributorType): identity card and associated user card. #}
 {% trans_default_domain 'GingermindsCore' %}
-<div class="row">
-    <div class="col-lg-8">
+{% embed '@GingermindsCore/crud/_form_layout.html.twig' %}
+    {% trans_default_domain 'GingermindsCore' %}
+
+    {% block main %}
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex align-items-center py-3">
                 <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'contributor.name_s'|trans }}</h5>
@@ -16,9 +18,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    {% endblock %}
 
-    <div class="col-lg-4">
+    {% block sidebar %}
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex align-items-center py-3">
                 <h5 class="card-title mb-0"><i class="bi bi-person-check me-1 text-primary"></i> {{ 'contributor.field.user'|trans }}</h5>
@@ -27,5 +29,5 @@
                 <div class="row g-3">{{ form_row(form.user, {size_columns: 12}) }}</div>
             </div>
         </div>
-    </div>
-</div>
+    {% endblock %}
+{% endembed %}

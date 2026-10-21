@@ -52,19 +52,19 @@ final readonly class DisplayTimezone
      */
     public function toDisplay(\DateTimeInterface|string|null $date): ?\DateTimeImmutable
     {
-        if ($date instanceof \DateTimeInterface) {
-            return \DateTimeImmutable::createFromInterface($date)->setTimezone($this->timezone);
-        }
-
         if (null === $date || '' === $date) {
             return null;
         }
 
         try {
-            return new \DateTimeImmutable($date, $this->utc)->setTimezone($this->timezone);
+            $date = $date instanceof \DateTimeInterface
+                ? \DateTimeImmutable::createFromInterface($date)
+                : new \DateTimeImmutable($date, $this->utc);
         } catch (\Exception) {
             return null;
         }
+
+        return $date->setTimezone($this->timezone);
     }
 
     /**
