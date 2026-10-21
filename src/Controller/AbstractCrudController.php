@@ -10,9 +10,7 @@ use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\SortableInterface;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\ListQuery;
-use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
-use Gingerminds\CoreBundle\Resource\ResourceDefinition;
 use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,8 +20,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 abstract class AbstractCrudController
 {
     use ControllerTrait;
-
-    private ?ResourceDefinition $resource = null;
+    use ResourceControllerTrait;
 
     public function __construct(
         protected readonly CrudContext $context,
@@ -136,44 +133,6 @@ abstract class AbstractCrudController
             '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
             '%label%' => $label,
         ]));
-    }
-
-    protected function getResourceName(): string
-    {
-        foreach ($this->context->resources->all() as $definition) {
-            if (null !== $definition->controller && is_a($this, $definition->controller)) {
-                return $definition->name;
-            }
-        }
-
-        throw new \LogicException(
-            \sprintf('No resource is bound to the controller "%s". Register it with #[AsCrudController] or in "gingerminds_core.resources".', static::class),
-        );
-    }
-
-    protected function getResource(): ResourceDefinition
-    {
-        return $this->resource ??= $this->context->resources->get($this->getResourceName());
-    }
-
-    /**
-     * @return RepositoryInterface<object>
-     */
-    protected function getRepository(): RepositoryInterface
-    {
-        $repository = $this->context->doctrine->getRepository($this->getResource()->entity);
-
-        if (!$repository instanceof RepositoryInterface) {
-            throw new \LogicException(
-                \sprintf(
-                    'The repository of "%s" must implement "%s" (extend AbstractRepository).',
-                    $this->getResource()->entity,
-                    RepositoryInterface::class,
-                ),
-            );
-        }
-
-        return $repository;
     }
 
     protected function createListQuery(Request $request): ListQuery
