@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Gingerminds\CoreBundle\Form\Extension\DisplayTimezoneTypeExtension;
+use Gingerminds\CoreBundle\Form\Extension\InputGroupTypeExtension;
 use Gingerminds\CoreBundle\Form\Extension\SizeTypeExtension;
 use Gingerminds\CoreBundle\Form\Permission\PermissionType;
 use Gingerminds\CoreBundle\Form\Role\RoleType;
@@ -48,6 +49,8 @@ return static function (ContainerConfigurator $container): void {
         ->tag('form.type');
 
     $services->set('gingerminds_core.form.extension.size', SizeTypeExtension::class)
+        ->tag('form.type_extension');
+    $services->set('gingerminds_core.form.extension.input_group', InputGroupTypeExtension::class)
         ->tag('form.type_extension');
     $services->set('gingerminds_core.form.extension.display_timezone', DisplayTimezoneTypeExtension::class)
         ->args([service('gingerminds_core.display_timezone')])

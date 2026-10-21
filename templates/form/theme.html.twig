@@ -8,6 +8,8 @@
  #   (RepeatedType, embedded forms) take the full width.
  # - Checkboxes with `label_attr: {class: 'checkbox-switch'}` render as a
  #   Bootstrap switch (native bootstrap_5_layout feature).
+ # - A single line input with `input_prefix` / `input_suffix` (InputGroupTypeExtension)
+ #   is wrapped in a Bootstrap input group.
  #
  # Applied by `@GingermindsCore/crud/form.html.twig`; elsewhere:
  #     {% form_theme form '@GingermindsCore/form/theme.html.twig' %}
@@ -25,6 +27,20 @@
         {{- parent() -}}
     {%- endif -%}
 {%- endblock form_row %}
+
+{%- block form_widget_simple -%}
+    {%- set input_prefix = input_prefix ?? null -%}
+    {%- set input_suffix = input_suffix ?? null -%}
+    {%- if input_prefix is not null or input_suffix is not null -%}
+        <div class="input-group{{ valid ? '' : ' has-validation' }}">
+            {%- if input_prefix is not null %}<span class="input-group-text">{{ input_prefix }}</span>{% endif -%}
+            {{- parent() -}}
+            {%- if input_suffix is not null %}<span class="input-group-text">{{ input_suffix }}</span>{% endif -%}
+        </div>
+    {%- else -%}
+        {{- parent() -}}
+    {%- endif -%}
+{%- endblock form_widget_simple %}
 
 {%- block form_widget_compound -%}
     {%- set attr = attr|merge({class: (attr.class|default('') ~ ' row g-3')|trim}) -%}
