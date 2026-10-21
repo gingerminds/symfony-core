@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Input groups: `input_prefix` / `input_suffix` options on every field (`InputGroupTypeExtension`),
+  texts shown before / after a single line input in a Bootstrap input group (Laravel `prefix` /
+  `suffix` of the basic input component).
 - Nested resources (`path: 'categories/{categoryId}/products'`): `AbstractCrudController::getRouteParameters()`
   (the current route parameters but `id`), kept by the redirects after save and delete and passed to
   the templates as `route_parameters`. `CrudContext` takes the request stack (optional last argument).

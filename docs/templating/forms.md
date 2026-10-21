@@ -30,6 +30,21 @@ $builder
 Compound widgets (the root form included) render as `.row.g-3` grids. When rendering rows one
 by one, wrap them in `<div class="row g-3">`.
 
+## Input groups
+
+`input_prefix` / `input_suffix` (added to every field by `InputGroupTypeExtension`) show a text
+before / after a single line input (`TextType`, `EmailType`, `UrlType`, `NumberType`...), in a
+Bootstrap input group, like the Laravel components' `prefix` / `suffix` props. The texts are not
+translated.
+
+```php
+$builder->add('slug', TextType::class, [
+    'label' => 'page.field.slug',
+    'input_prefix' => '/products/',
+    'input_suffix' => '/',
+]);
+```
+
 ## Form layout and include slots
 
 Lay a resource form out with the core two-column layout, embedded in its `_form.html.twig`
@@ -78,7 +93,7 @@ page uses `profile_form_main` / `profile_form_sidebar`. Pass another name to the
 
 | Laravel `<x-form.inputs.*>` | Symfony |
 |---|---|
-| `basic` (`type=text\|number\|email\|date\|color`) | `TextType`, `NumberType`/`IntegerType`, `EmailType`, `DateType` (`widget: single_text`), `ColorType` — `attr: {min, max, step, placeholder}`, `help`, `required`, `disabled` |
+| `basic` (`type=text\|number\|email\|date\|color`) | `TextType`, `NumberType`/`IntegerType`, `EmailType`, `DateType` (`widget: single_text`), `ColorType` — `attr: {min, max, step, placeholder}`, `help`, `required`, `disabled`, `input_prefix` / `input_suffix` (`prefix` / `suffix`) |
 | `textarea` | `TextareaType` (`attr: {rows: 10}`) |
 | `select` (Select2) | `ChoiceType` / `EnumType` / `EntityType` with `'autocomplete' => true` (UX Autocomplete, Tom Select) |
 | `select` with `ajax-url` | `EntityType` + `'autocomplete' => true` and UX Autocomplete's `#[AsEntityAutocompleteField]`, or `autocomplete_url` pointing at `/admin/_autocomplete/{resource}` |
