@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Gingerminds\CoreBundle\Service\DisplayTimezone;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 
@@ -126,6 +127,15 @@ return static function (DefinitionConfigurator $definition): void {
                         ->scalarNode('template_prefix')->defaultNull()->end()
                         ->enumNode('redirect_after_new')->values(array_column(RedirectTarget::cases(), 'value'))->defaultNull()->end()
                         ->enumNode('redirect_after_edit')->values(array_column(RedirectTarget::cases(), 'value'))->defaultNull()->end()
+                        ->arrayNode('permissions')
+                            ->info('Permission name by voter attribute (VIEW, CREATE, EDIT, DELETE), replacing "view|edit|edit|delete <permission>", e.g. {DELETE: "edit files"}.')
+                            ->useAttributeAsKey('attribute')
+                            ->scalarPrototype()->end()
+                            ->validate()
+                                ->ifTrue(static fn (array $permissions): bool => [] !== array_diff(array_keys($permissions), ResourceVoter::ATTRIBUTES))
+                                ->thenInvalid('The permission keys must be voter attributes: ' . implode(', ', ResourceVoter::ATTRIBUTES) . '; %s given.')
+                            ->end()
+                        ->end()
                     ->end()
                 ->end()
                 ->defaultValue([])

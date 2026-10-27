@@ -306,6 +306,51 @@ final class AdminTest extends ApiTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    public function testRoleAdminRequiresManageRoles(): void
+    {
+        $this->client->loginUser($this->fixtures->user('role-viewer@example.com', ['view roles', 'edit roles']), 'admin');
+        $this->client->request('GET', '/admin/roles');
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->loginUser($this->fixtures->user('role-manager@example.com', ['manage roles']), 'admin');
+        $this->client->request('GET', '/admin/roles');
+        self::assertResponseIsSuccessful();
+        $this->client->request('GET', '/admin/roles/new');
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testUserEditsButCannotDeleteTheirOwnAccount(): void
+    {
+        $user = $this->fixtures->user('own-account@example.com', ['delete users']);
+        $other = $this->fixtures->user('other-account@example.com');
+        $this->client->loginUser($user, 'admin');
+
+        $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+        $this->client->request('GET', '/admin/users/' . $other->getId() . '/edit');
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->request('POST', '/admin/users/' . $user->getId() . '/delete');
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testResourceRegisteredByConfigurationIsSecuredByPermission(): void
+    {
+        $category = new Category('Boots');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($category);
+        $entityManager->flush();
+
+        // `category` has no voter of its own: the core ResourceVoter maps `{VIEW|EDIT} categories`.
+        $this->client->loginUser($this->fixtures->user('category-viewer@example.com', ['view categories']), 'admin');
+        $this->client->request('GET', '/admin/_autocomplete/category');
+        self::assertResponseIsSuccessful();
+
+        $this->client->loginUser($this->fixtures->user('category-none@example.com', ['view products']), 'admin');
+        $this->client->request('GET', '/admin/_autocomplete/category');
+        self::assertResponseStatusCodeSame(403);
+    }
+
     public function testEditAndDeleteResolveTheEntityBeforeCheckingAccess(): void
     {
         $permission = $this->fixtures->permission('view gadgets');

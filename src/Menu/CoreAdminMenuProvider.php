@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Menu;
 
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
-use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 
 /**
  * Core entries. Their weights leave room on both sides: Dashboard -100, Administration 100,
@@ -44,7 +44,7 @@ final readonly class CoreAdminMenuProvider implements AdminMenuProviderInterface
                 $resource->translationKey('name_p'),
                 $resource->route('index'),
                 icon: $icon,
-                permission: AbstractResourceVoter::VIEW,
+                permission: ResourceVoter::VIEW,
                 permissionSubject: $name,
                 translationDomain: $resource->translationDomain,
                 weight: $weight,

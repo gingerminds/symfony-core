@@ -110,13 +110,7 @@ final class SyncPermissionsCommand extends Command
         $names = self::CORE_PERMISSIONS;
 
         foreach ($this->resources->all() as $resource) {
-            if ('role' === $resource->name) {
-                continue;
-            }
-
-            foreach (['view', 'edit', 'delete'] as $action) {
-                $names[] = $action . ' ' . $resource->permission;
-            }
+            $names = [...$names, ...$resource->permissionNames()];
         }
 
         return array_values(array_unique([...$names, ...$this->extraPermissions]));

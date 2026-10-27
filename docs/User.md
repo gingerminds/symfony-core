@@ -56,10 +56,12 @@ $this->denyAccessUnlessGranted('view dashboard');   // PermissionNameVoter
 {% if is_granted('manage roles') %}...{% endif %}
 ```
 
-### Resource voters (Laravel policies)
+### Resource voter (Laravel policies)
 
-`AbstractResourceVoter` implements the convention once, for the attributes `VIEW`, `CREATE`,
-`EDIT`, `DELETE`; the subject is an entity, its class or the resource name:
+One voter, `ResourceVoter`, applies the convention to every registered resource (core,
+bundles, `#[AsCrudController]`, `gingerminds_core.resources`): no voter to write per resource.
+Its attributes are `VIEW`, `CREATE`, `EDIT`, `DELETE`; the subject is an entity, its class or
+the resource name, the entity class being the configured one (an overridden entity included):
 
 ```php
 $this->denyAccessUnlessGranted('EDIT', $product);
@@ -73,26 +75,55 @@ $this->denyAccessUnlessGranted('EDIT', $product);
 #[ApiResource(operations: [new GetCollection(security: "is_granted('VIEW', 'product')")])]
 ```
 
-Override `canView()`, `canCreate()`, `canEdit()`, `canDelete()` for specific rules — e.g. the
-bundle `UserVoter` lets a user view/edit their own account and forbids deleting it,
-`RoleVoter` requires `manage roles` for everything. These methods only run for an authenticated
-user; `canView()` returning `true` opens the resource to every **logged in** user.
+The permission of each attribute is `ResourceDefinition::permissionFor()`: `view|edit|edit|delete
+{permission}`, unless the resource maps another one (`roles` requires `manage roles` for
+everything):
 
-A resource readable by anyone, anonymous API clients included:
+```yaml
+gingerminds_core:
+    resources:
+        file:
+            permissions: { DELETE: 'edit files' }   # deleting a file only needs `edit files`
+```
 
 ```php
-protected function getPublicAttributes(): array
+#[AsCrudController(resource: 'file', entity: File::class, permissions: [ResourceVoter::DELETE => 'edit files'])]
+```
+
+Built-in rules: a user always views and edits their own account and never deletes it; the
+`Super-Admin` is granted everything (`SuperAdminVoter`). Anonymous users are denied.
+
+**More access** (an author editing their own article, a resource readable without token): an
+additional voter, autoconfigured in the project. The access decision strategy is `affirmative`
+(Symfony's default): one voter granting is enough.
+
+```php
+/** @extends Voter<string, Article> */
+final class ArticleAuthorVoter extends Voter
 {
-    return [self::VIEW];
+    protected function supports(string $attribute, mixed $subject): bool
+    {
+        return ResourceVoter::EDIT === $attribute && $subject instanceof Article;
+    }
+
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
+    {
+        return $subject->getAuthor() === $token->getUser();
+    }
 }
 ```
+
+**Less access** despite the permission (a voter cannot veto under `affirmative`): extend
+`ResourceVoter`, override `voteOnResource()`, and set your class on its service
+(`gingerminds_core.security.voter.resource`).
 
 ### Creating permissions
 
 `bin/console gingerminds:permissions:sync` creates, idempotently:
 
 - the core permissions (`access admin`, `view dashboard`, `view settings`, `manage roles`);
-- `view|edit|delete {permission}` for every registered resource;
+- the permissions of every registered resource (`view|edit|delete {permission}` or its
+  `permissions` mapping);
 - the `gingerminds_core.permissions` list;
 - the `Super-Admin` and `Admin` roles.
 

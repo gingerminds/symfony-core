@@ -32,6 +32,7 @@ use Gingerminds\CoreBundle\Repository\Filter\AsFilterHandler;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
 use Gingerminds\CoreBundle\Security\Api\ApiRateLimitListener;
 use Gingerminds\CoreBundle\Security\Api\LoginResponseEnricherInterface;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Symfony\Bundle\MakerBundle\MakerBundle;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
@@ -69,6 +70,12 @@ final class GingermindsCoreBundle extends AbstractBundle
             'form' => RoleType::class,
             'path' => 'roles',
             'permission' => 'roles',
+            'permissions' => [
+                ResourceVoter::VIEW => 'manage roles',
+                ResourceVoter::CREATE => 'manage roles',
+                ResourceVoter::EDIT => 'manage roles',
+                ResourceVoter::DELETE => 'manage roles',
+            ],
         ],
         'permission' => [
             'entity' => Permission::class,
@@ -166,7 +173,8 @@ final class GingermindsCoreBundle extends AbstractBundle
                     'template_prefix' => $attribute->templatePrefix,
                     'redirect_after_new' => $attribute->redirectAfterNew?->value,
                     'redirect_after_edit' => $attribute->redirectAfterEdit?->value,
-                ], static fn (?string $value): bool => null !== $value));
+                    'permissions' => [] !== $attribute->permissions ? $attribute->permissions : null,
+                ], static fn (array|string|null $value): bool => null !== $value));
                 $definition->addTag('controller.service_arguments');
                 $definition->setPublic(true);
             },

@@ -9,7 +9,7 @@ use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
-use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -28,7 +28,7 @@ final class AutocompleteController extends AbstractController
     ) {
     }
 
-    #[IsGranted(AbstractResourceVoter::VIEW, subject: 'resource')]
+    #[IsGranted(ResourceVoter::VIEW, subject: 'resource')]
     public function __invoke(Request $request, string $resource): JsonResponse
     {
         if (!$this->resources->has($resource)) {

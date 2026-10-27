@@ -85,11 +85,6 @@ final readonly class ResourceName
         return $this->class('Controller', 'Controller');
     }
 
-    public function voterClass(): string
-    {
-        return $this->class('Security\\Voter', 'Voter');
-    }
-
     public function providerClass(): string
     {
         return $this->class('State', 'Provider');

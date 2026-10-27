@@ -50,22 +50,27 @@ needs, operation by operation, with its `security` expression. A token is only r
 the voter denies access to the anonymous user, who then gets a 401 (a 403 once authenticated).
 The core resources (users, contributors, roles, permissions) are closed on every operation.
 
-A resource readable without a token, writable only with the permissions:
+A resource readable without a token, writable only with the permissions: an additional voter
+granting `VIEW` (the core `ResourceVoter` denies anonymous users, one voter granting is enough):
 
 ```php
-final class ProductVoter extends AbstractResourceVoter
+/** @extends Voter<string, mixed> */
+final class PublicProductVoter extends Voter
 {
-    // ...
-
-    protected function getPublicAttributes(): array
+    protected function supports(string $attribute, mixed $subject): bool
     {
-        return [self::VIEW];
+        return ResourceVoter::VIEW === $attribute && ('product' === $subject || $subject instanceof Product);
+    }
+
+    protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
+    {
+        return true;
     }
 }
 ```
 
 An operation without `security` is public. `make:gm:resource --api` secures the 5 operations
-with the voter, so a generated resource stays closed until its voter opens it.
+with the resource voter, so a generated resource stays closed until a voter opens it.
 
 ## API authentication (Sanctum equivalent)
 

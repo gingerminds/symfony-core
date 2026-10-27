@@ -119,6 +119,7 @@ Every admin resource is described by a `ResourceDefinition` held in the
 | `template_prefix`    | `@GingermindsCore/pages/<name>`          | `admin/<name>`                |
 | `redirect_after_new` | `redirect_after_save.new` (`index`)      | `redirect_after_save.new` (`index`) |
 | `redirect_after_edit`| `redirect_after_save.edit` (`edit`)      | `redirect_after_save.edit` (`edit`) |
+| `permissions`        | `manage roles` for every attribute of `role` | `{}`: `view\|edit\|edit\|delete <permission>` |
 
 Sources are merged in this order (last wins): core resources, `#[AsCrudController]`
 controllers, `gingerminds_core.resources` configuration. Only the keys you set are overridden.
@@ -173,7 +174,7 @@ The bundle then:
   this replaces the Laravel `ClassHierarchyResourceNameCollectionFactory` hack);
 - resolves `UserInterface` to your class everywhere (`resolve_target_entities`), so every
   relation (`Contributor::$user`, `ApiToken::$user`...) targets it;
-- uses it in forms, commands, voters and repositories.
+- uses it in forms, commands, the resource voter and repositories.
 
 Property mapping, validation constraints and serialization groups **are** inherited from the
 base class; only `#[ORM\Entity]`, `#[ORM\Table]` and `#[ApiResource]` must be restated.

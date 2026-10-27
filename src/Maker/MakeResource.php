@@ -17,7 +17,7 @@ use Symfony\Component\Yaml\Yaml;
 
 /**
  * make:gm:resource Namespace/Name [--api] [--no-controller] (Laravel
- * make:resource): entity, repository, form type, voter, admin CRUD
+ * make:resource): entity, repository, form type, admin CRUD
  * controller + templates + translations and, with `--api`, the API
  * provider/processor and #[ApiResource]. Existing files are skipped.
  */
@@ -30,7 +30,7 @@ final class MakeResource extends AbstractResourceMaker
 
     public static function getCommandDescription(): string
     {
-        return 'Create a full Gingerminds resource: entity, repository, form, voter, admin CRUD and optionally API';
+        return 'Create a full Gingerminds resource: entity, repository, form, admin CRUD and optionally API';
     }
 
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
@@ -67,7 +67,6 @@ final class MakeResource extends AbstractResourceMaker
         $entityGenerated = $resourceGenerator->generateEntity($generator, $io, $resource, $api);
         $resourceGenerator->generateRepository($generator, $io, $resource);
         $resourceGenerator->generateForm($generator, $io, $resource);
-        $resourceGenerator->generateVoter($generator, $io, $resource);
 
         if ($controller) {
             $resourceGenerator->generateCrudController($generator, $io, $resource);
@@ -77,7 +76,7 @@ final class MakeResource extends AbstractResourceMaker
             $resourceGenerator->generateApi($generator, $io, $resource);
         }
 
-        $nextSteps = [...$this->entityNextSteps($resource), ...$this->voterNextSteps($resource)];
+        $nextSteps = [...$this->entityNextSteps($resource), ...$this->permissionNextSteps($resource)];
 
         if ($controller) {
             $nextSteps[] = MakeCrudController::nextSteps($resource)[0];

@@ -22,7 +22,6 @@ use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Gingerminds\CoreBundle\Repository\AbstractRepository;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
-use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 use Symfony\Bundle\MakerBundle\Generator;
@@ -157,17 +156,6 @@ final readonly class ResourceGenerator
                 'field' => ['id' => 'ID'],
             ],
         ]);
-    }
-
-    public function generateVoter(Generator $generator, ConsoleStyle $io, ResourceName $resource): bool
-    {
-        return $this->generateClassFromSkeleton($generator, $io, $resource->voterClass(), $this->skeleton('Voter.tpl.php', $resource, [
-            'resource' => $resource,
-            'entity_class' => self::shortName($resource->entityClass()),
-        ], [
-            AbstractResourceVoter::class,
-            $resource->entityClass(),
-        ]));
     }
 
     /**

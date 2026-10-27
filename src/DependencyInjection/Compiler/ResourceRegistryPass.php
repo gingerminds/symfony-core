@@ -37,6 +37,7 @@ final class ResourceRegistryPass implements CompilerPassInterface
                 'translation_prefix' => $name,
                 'translation_domain' => 'GingermindsCore',
                 'template_prefix' => '@GingermindsCore/pages/' . $name,
+                'permissions' => $core['permissions'] ?? [],
             ];
         }
 
@@ -53,11 +54,11 @@ final class ResourceRegistryPass implements CompilerPassInterface
             }
         }
 
-        /** @var array<string, array<string, string|null>> $configured */
+        /** @var array<string, array<string, array<string, string>|string|null>> $configured */
         $configured = $container->getParameter('gingerminds_core.resources_config');
 
         foreach ($configured as $name => $config) {
-            $resources[$name] = [...$resources[$name] ?? [], ...array_filter($config, static fn (?string $value): bool => null !== $value)];
+            $resources[$name] = [...$resources[$name] ?? [], ...array_filter($config, static fn (array|string|null $value): bool => null !== $value && [] !== $value)];
         }
 
         /** @var array{new: string, edit: string} $redirectAfterSave */
@@ -73,10 +74,10 @@ final class ResourceRegistryPass implements CompilerPassInterface
     }
 
     /**
-     * @param array<string, string|null>       $resource
+     * @param array<string, mixed>             $resource
      * @param array{new: string, edit: string} $redirectAfterSave global defaults
      *
-     * @return array<string, string|null>
+     * @return array<string, mixed>
      */
     private function withDefaults(string $name, array $resource, array $redirectAfterSave): array
     {
@@ -98,6 +99,7 @@ final class ResourceRegistryPass implements CompilerPassInterface
             'template_prefix' => $resource['template_prefix'] ?? 'admin/' . u($name)->snake()->toString(),
             'redirect_after_new' => $resource['redirect_after_new'] ?? $redirectAfterSave['new'],
             'redirect_after_edit' => $resource['redirect_after_edit'] ?? $redirectAfterSave['edit'],
+            'permissions' => $resource['permissions'] ?? [],
         ];
     }
 }

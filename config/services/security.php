@@ -15,12 +15,9 @@ use Gingerminds\CoreBundle\Security\Api\ApiTokenHandler;
 use Gingerminds\CoreBundle\Security\Api\ApiTokenRevocationListener;
 use Gingerminds\CoreBundle\Security\Authentication\AuthorizedDomainListener;
 use Gingerminds\CoreBundle\Security\UserProvider;
-use Gingerminds\CoreBundle\Security\Voter\Permission\PermissionVoter;
 use Gingerminds\CoreBundle\Security\Voter\PermissionNameVoter;
-use Gingerminds\CoreBundle\Security\Voter\Role\RoleVoter;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Gingerminds\CoreBundle\Security\Voter\SuperAdminVoter;
-use Gingerminds\CoreBundle\Security\Voter\User\ContributorVoter;
-use Gingerminds\CoreBundle\Security\Voter\User\UserVoter;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Security\Http\Event\CheckPassportEvent;
 use Symfony\Component\Security\Http\Event\LogoutEvent;
@@ -37,17 +34,9 @@ return static function (ContainerConfigurator $container): void {
     $services->set('gingerminds_core.security.voter.permission_name', PermissionNameVoter::class)
         ->tag('security.voter');
 
-    foreach (
-        [
-            'user' => UserVoter::class,
-            'contributor' => ContributorVoter::class,
-            'role' => RoleVoter::class,
-            'permission' => PermissionVoter::class,
-        ] as $name => $class
-    ) {
-        $services->set('gingerminds_core.security.voter.' . $name, $class)
-            ->tag('security.voter');
-    }
+    $services->set('gingerminds_core.security.voter.resource', ResourceVoter::class)
+        ->args([service('gingerminds_core.resource_registry')])
+        ->tag('security.voter');
 
     $services->set('gingerminds_core.security.user_provider', UserProvider::class)
         ->args([service(UserRepository::class)]);

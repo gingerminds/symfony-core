@@ -27,7 +27,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `AbstractController` + generated per-resource CRUD | `AbstractCrudController` (generic) + `CrudRouteLoader` | A resource controller is usually empty. |
 | `Route::resource()` | generated `{prefix}_index\|new\|edit\|delete` routes | `delete` is a POST with CSRF token. |
 | `throttle:api` middleware, `RateLimiter::for()` | `gingerminds_core.api.rate_limit` (`gingerminds_core_api` limiter), `rate_limiter` operation extra property / `_rate_limiter` route default | 429 + `X-RateLimit-*` / `Retry-After` headers. |
-| Policies + `AbstractResourcePolicy` | Voters + `AbstractResourceVoter` (`VIEW`, `CREATE`, `EDIT`, `DELETE`) | Autoconfigured, no registration. |
+| Policies + `AbstractResourcePolicy` | One `ResourceVoter` for every resource (`VIEW`, `CREATE`, `EDIT`, `DELETE`) | No voter per resource: `permissions` mapping, additional voters for specific rules. |
 | `Gate::before` Super-Admin | `SuperAdminVoter` | |
 | `$user->can('edit users')` | `is_granted('edit users')` (`PermissionNameVoter`) | |
 | `spatie/laravel-permission` | `Role`/`Permission` entities, `user_roles`, `role_permissions` | No direct user permissions (not used by the core). |

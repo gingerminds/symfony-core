@@ -56,6 +56,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   The bundle controllers are service subscribers (`container.service_subscriber`,
   `setContainer()`); `ProfileController` takes Doctrine and the translator, `AuthController` no
   longer takes `Security`, `LoginController` gets `AuthenticationUtils` as an action argument.
+- **BC break** Security: one `ResourceVoter` for every registered resource replaces
+  `AbstractResourceVoter` and its `UserVoter`, `ContributorVoter`, `RoleVoter`, `PermissionVoter`
+  (and the voter each resource had to declare). It reads the resource registry (name, configured
+  entity class, permission) and implements `supportsAttribute()` / `supportsType()` (voter cache).
+  The permission of an attribute is `ResourceDefinition::permissionFor()`, overridable per
+  resource with the new `permissions` key (`resources.*.permissions`,
+  `#[AsCrudController(permissions: ...)]`): `role` maps every attribute to `manage roles`.
+  The own account rules (view/edit always, never delete) are built in; `canView()`...
+  `canDelete()` and `getPublicAttributes()` are gone: an additional voter grants more (open
+  `VIEW` to anonymous users), an override of `ResourceVoter::voteOnResource()` restricts.
+  `make:gm:voter`, `MakeVoter`, the `Voter.tpl.php` skeleton and
+  `ResourceGenerator::generateVoter()` are removed (`make:gm:resource` generates no voter).
+  `gingerminds:permissions:sync` creates `ResourceDefinition::permissionNames()`.
 
 ### Added
 

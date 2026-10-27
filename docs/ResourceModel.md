@@ -116,18 +116,12 @@ class ProductType extends AbstractType
 Validation goes on the entity (`#[Assert\...]`) or on the fields (`constraints`). The `size`
 option (`tiny`, `sm`, `md`, `lg`, `xl`) lays the field out on the admin grid.
 
-## Voter
+## Access
 
-```php
-final class ProductVoter extends AbstractResourceVoter
-{
-    protected function getResourceName(): string { return 'product'; }
-    protected function getSubjectClass(): string { return Product::class; }
-    protected function getPermissionName(): string { return 'products'; }
-}
-```
-
-See [User → Roles & permissions](User.md#roles--permissions).
+No voter to write: the core `ResourceVoter` checks `view|edit|delete products` for every
+registered resource (`is_granted('EDIT', product)`, `is_granted('CREATE', 'product')`). See
+[User → Resource voter](User.md#resource-voter-laravel-policies) for other permissions and
+specific rules.
 
 ## CRUD controller
 

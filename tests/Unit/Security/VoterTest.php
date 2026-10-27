@@ -6,12 +6,16 @@ namespace Gingerminds\CoreBundle\Tests\Unit\Security;
 
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
+use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Entity\User\User;
-use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
+use Gingerminds\CoreBundle\GingermindsCoreBundle;
+use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Gingerminds\CoreBundle\Security\Voter\PermissionNameVoter;
-use Gingerminds\CoreBundle\Security\Voter\Role\RoleVoter;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Gingerminds\CoreBundle\Security\Voter\SuperAdminVoter;
-use Gingerminds\CoreBundle\Security\Voter\User\UserVoter;
+use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
+use Gingerminds\CoreBundle\Tests\Application\Override\User as OverriddenUser;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\Token\NullToken;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
@@ -19,62 +23,97 @@ use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
 final class VoterTest extends TestCase
 {
-    public function testResourceVoterMapsAttributesToPermissions(): void
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
+    public static function crudPermissions(): iterable
     {
-        $voter = new UserVoter();
-        $token = $this->token($this->user(['view users', 'edit users']));
-        $other = new User();
-
-        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, 'user', ['VIEW']));
-        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, User::class, ['CREATE']));
-        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, $other, ['EDIT']));
-        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($token, $other, ['DELETE']));
-        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, 'role', ['VIEW']));
-        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, 'user', ['PUBLISH']));
+        foreach (['user' => 'users', 'contributor' => 'contributors', 'permission' => 'permissions', 'category' => 'categories'] as $resource => $plural) {
+            yield $resource . ' VIEW' => [$resource, 'VIEW', 'view ' . $plural];
+            yield $resource . ' CREATE' => [$resource, 'CREATE', 'edit ' . $plural];
+            yield $resource . ' EDIT' => [$resource, 'EDIT', 'edit ' . $plural];
+            yield $resource . ' DELETE' => [$resource, 'DELETE', 'delete ' . $plural];
+        }
     }
 
-    public function testResourceVoterDeniesAnonymousUsers(): void
+    #[DataProvider('crudPermissions')]
+    public function testEachAttributeRequiresItsPermission(string $resource, string $attribute, string $permission): void
     {
-        self::assertSame(VoterInterface::ACCESS_DENIED, new UserVoter()->vote(new NullToken(), 'user', ['VIEW']));
+        $voter = new ResourceVoter($this->registry());
+        $entityClass = $this->registry()->getEntityClass($resource);
+        $others = array_values(array_filter(
+            ['view', 'edit', 'delete'],
+            static fn (string $action): bool => !str_starts_with($permission, $action . ' '),
+        ));
+        $plural = substr($permission, strpos($permission, ' ') + 1);
+        $withOthers = $this->token($this->user(array_map(static fn (string $action): string => $action . ' ' . $plural, $others)));
+        $with = $this->token($this->user([$permission]));
+
+        foreach ([$resource, $entityClass, new $entityClass()] as $subject) {
+            self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($with, $subject, [$attribute]));
+            self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($withOthers, $subject, [$attribute]));
+            self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote(new NullToken(), $subject, [$attribute]));
+        }
     }
 
-    public function testPublicAttributesAreGrantedWithoutAuthentication(): void
+    public function testRolesRequireManageRoles(): void
     {
-        $voter = new class extends AbstractResourceVoter {
-            protected function getResourceName(): string
-            {
-                return 'user';
-            }
+        $voter = new ResourceVoter($this->registry());
 
-            protected function getSubjectClass(): string
-            {
-                return User::class;
-            }
+        foreach (ResourceVoter::ATTRIBUTES as $attribute) {
+            self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->token($this->user(['view roles', 'edit roles', 'delete roles'])), 'role', [$attribute]));
+            self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($this->token($this->user(['manage roles'])), new Role(), [$attribute]));
+        }
 
-            protected function getPermissionName(): string
-            {
-                return 'users';
-            }
-
-            protected function getPublicAttributes(): array
-            {
-                return [self::VIEW];
-            }
-        };
-
-        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote(new NullToken(), 'user', ['VIEW']));
-        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote(new NullToken(), new User(), ['VIEW']));
-        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote(new NullToken(), 'user', ['CREATE']));
-        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->token($this->user([])), new User(), ['EDIT']));
-        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote(new NullToken(), 'role', ['VIEW']));
+        self::assertSame(['manage roles'], $this->registry()->get('role')->permissionNames());
+        self::assertSame(['view users', 'edit users', 'delete users'], $this->registry()->get('user')->permissionNames());
     }
 
-    public function testRoleVoterRequiresManageRoles(): void
+    public function testUserViewsAndEditsButNeverDeletesTheirOwnAccount(): void
     {
-        $voter = new RoleVoter();
+        $voter = new ResourceVoter($this->registry());
+        $self = $this->user([], 1);
+        $other = $this->user([], 2);
+        $token = $this->token($self);
 
-        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->token($this->user(['view roles'])), 'role', ['VIEW']));
-        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($this->token($this->user(['manage roles'])), new Role(), ['DELETE']));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, $self, ['VIEW']));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, $self, ['EDIT']));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($token, $other, ['EDIT']));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $voter->vote($this->token($this->user(['delete users'], 1)), $self, ['DELETE']));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($this->token($this->user(['delete users'], 1)), $other, ['DELETE']));
+    }
+
+    public function testAbstainsOutsideTheResources(): void
+    {
+        $voter = new ResourceVoter($this->registry());
+        $token = $this->token($this->user(['view users']));
+
+        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, 'unknown', ['VIEW']));
+        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, new \stdClass(), ['VIEW']));
+        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, 'user', ['view users']));
+        self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, null, ['VIEW']));
+
+        // CacheableVoterInterface: the access decision manager skips the voter by attribute / subject type.
+        self::assertTrue($voter->supportsAttribute('EDIT'));
+        self::assertFalse($voter->supportsAttribute('view users'));
+        self::assertTrue($voter->supportsType('string'));
+        self::assertTrue($voter->supportsType(Category::class));
+        self::assertFalse($voter->supportsType(\stdClass::class));
+        self::assertFalse($voter->supportsType('null'));
+    }
+
+    public function testOverriddenEntityIsTheResourceSubject(): void
+    {
+        $registry = $this->registry(['user' => OverriddenUser::class]);
+        $voter = new ResourceVoter($registry);
+        $token = $this->token($this->user(['edit users']));
+
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, new OverriddenUser(), ['EDIT']));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, OverriddenUser::class, ['CREATE']));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $voter->vote($token, 'user', ['CREATE']));
+        self::assertTrue($voter->supportsType(OverriddenUser::class));
+        // The bundle class is no resource entity any more.
+        self::assertFalse($voter->supportsType(User::class));
     }
 
     public function testPermissionVoterOnlySupportsPermissionNames(): void
@@ -103,9 +142,34 @@ final class VoterTest extends TestCase
     }
 
     /**
+     * The core resources and the test `category`, as ResourceRegistryPass registers them.
+     *
+     * @param array<string, class-string> $entities entity overrides
+     */
+    private function registry(array $entities = []): ResourceRegistry
+    {
+        $resources = [];
+
+        foreach ([...GingermindsCoreBundle::CORE_RESOURCES, 'category' => ['entity' => Category::class, 'permission' => 'categories']] as $name => $resource) {
+            $resources[$name] = [
+                'entity' => $entities[$name] ?? $resource['entity'],
+                'path' => $name,
+                'permission' => $resource['permission'],
+                'route_prefix' => 'admin_' . $name,
+                'translation_prefix' => $name,
+                'translation_domain' => 'messages',
+                'template_prefix' => 'admin/' . $name,
+                'permissions' => $resource['permissions'] ?? [],
+            ];
+        }
+
+        return new ResourceRegistry($resources);
+    }
+
+    /**
      * @param list<string> $permissions
      */
-    private function user(array $permissions): User
+    private function user(array $permissions, ?int $id = null): User
     {
         $role = new Role();
         $role->setName('Test');
@@ -119,6 +183,7 @@ final class VoterTest extends TestCase
         $user = new User();
         $user->setEmail('test@example.com');
         $user->addRoleEntity($role);
+        new \ReflectionProperty(BaseUser::class, 'id')->setValue($user, $id);
 
         return $user;
     }

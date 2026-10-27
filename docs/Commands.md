@@ -13,7 +13,6 @@ namespace becomes the sub-folder/sub-namespace, the name the class name.
 | `make:gm:repository` | `App\Repository\<Ns>\<Name>Repository` extending `AbstractRepository` | `make:repository` |
 | `make:gm:form` | `App\Form\<Ns>\<Name>Type` | `make:form-request` |
 | `make:gm:crud-controller` | `App\Controller\<Ns>\<Name>Controller` (`#[AsCrudController]`) + templates `admin/<name>/*` + translations | `make:controller-full` |
-| `make:gm:voter` | `App\Security\Voter\<Ns>\<Name>Voter` extending `AbstractResourceVoter` | `make:policy` |
 | `make:gm:api` | `App\State\<Ns>\<Name>Provider` + `<Name>Processor` | `make:api-provider` + `make:state-processor` |
 
 Existing files are never overwritten: they are skipped and reported.
@@ -26,7 +25,7 @@ bin/console make:gm:resource Catalog/Product [--api] [--no-controller]
 
 | Option | Effect |
 |---|---|
-| `--api` | Also generates the API provider/processor and the `#[ApiResource]` (5 operations secured by the voter, `deserialize: false`, serialization groups). |
+| `--api` | Also generates the API provider/processor and the `#[ApiResource]` (5 operations secured by the resource voter, `deserialize: false`, serialization groups). |
 | `--no-controller` | No admin controller, templates nor translations (API-only resource). |
 
 Generated tree for `Catalog/Product --api`:
@@ -35,7 +34,6 @@ Generated tree for `Catalog/Product --api`:
 src/Entity/Catalog/Product.php
 src/Repository/Catalog/ProductRepository.php
 src/Form/Catalog/ProductType.php
-src/Security/Voter/Catalog/ProductVoter.php
 src/Controller/Catalog/ProductController.php
 src/State/Catalog/ProductProvider.php
 src/State/Catalog/ProductProcessor.php
@@ -51,15 +49,12 @@ bin/console doctrine:migrations:diff && bin/console doctrine:migrations:migrate
 bin/console gingerminds:permissions:sync       # view|edit|delete products
 ```
 
+No voter is generated: the core `ResourceVoter` secures every registered resource (Laravel's
+`make:policy` has no equivalent to run, see [User](User.md#resource-voter-laravel-policies)).
+
 The resource is available at `/admin/products` (routes `admin_product_index|new|edit|delete`)
 and, with `--api`, at `/api/products`. No configuration is needed: `#[AsCrudController]`
 registers it (see [Configuration](Configuration.md#adding-a-new-resource)).
-
-### `make:gm:voter`
-
-Generates the voter (`view|edit|delete {plural}` permissions). Voters are autoconfigured:
-nothing to register (unlike Laravel policies and `AuthServiceProvider`). Remember to run
-`gingerminds:permissions:sync`.
 
 ### `make:gm:api`
 

@@ -126,10 +126,13 @@ abstract class AbstractResourceMaker extends AbstractMaker implements InputAware
     /**
      * @return list<string>
      */
-    protected function voterNextSteps(ResourceName $resource): array
+    protected function permissionNextSteps(ResourceName $resource): array
     {
         return [
-            \sprintf('Create the <comment>view|edit|delete %s</comment> permissions: <fg=yellow>bin/console gingerminds:permissions:sync</>.', $resource->snakePlural),
+            \sprintf(
+                'Create the <comment>view|edit|delete %s</comment> permissions checked by the core resource voter: <fg=yellow>bin/console gingerminds:permissions:sync</>.',
+                $resource->snakePlural,
+            ),
         ];
     }
 

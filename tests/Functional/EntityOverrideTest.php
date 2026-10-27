@@ -7,6 +7,7 @@ namespace Gingerminds\CoreBundle\Tests\Functional;
 use ApiPlatform\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Entity\User\Contributor;
 use Gingerminds\CoreBundle\Entity\User\User as CoreUser;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
@@ -15,6 +16,7 @@ use Gingerminds\CoreBundle\Tests\Application\Kernel;
 use Gingerminds\CoreBundle\Tests\Application\Override\User;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
 /**
  * A project overriding the bundle User entity (`override` environment).
@@ -66,6 +68,20 @@ final class EntityOverrideTest extends TestCase
         self::assertContains(User::class, $resources);
         self::assertNotContains(CoreUser::class, $resources);
         self::assertContains(Contributor::class, $resources);
+    }
+
+    public function testTheResourceVoterTargetsTheProjectEntity(): void
+    {
+        $decisionManager = self::$kernel->getContainer()->get('test.service_container')->get('security.access.decision_manager');
+        $user = new User();
+        $user->setEmail('voter@example.com');
+        new \ReflectionProperty(BaseUser::class, 'id')->setValue($user, 42);
+        $token = new UsernamePasswordToken($user, 'admin', $user->getRoles());
+
+        // The user's own account: granted by the core ResourceVoter on the project class.
+        self::assertTrue($decisionManager->decide($token, ['VIEW'], $user));
+        self::assertFalse($decisionManager->decide($token, ['DELETE'], new User()));
+        self::assertFalse($decisionManager->decide($token, ['CREATE'], 'user'));
     }
 
     private function entityManager(): EntityManagerInterface

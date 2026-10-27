@@ -16,7 +16,7 @@ use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Gingerminds\CoreBundle\Resource\ResourceDefinition;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
-use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
+use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormInterface;
@@ -49,7 +49,7 @@ abstract class AbstractCrudController extends AbstractController
         ];
     }
 
-    #[IsGranted(AbstractResourceVoter::VIEW, subject: new Expression(self::RESOURCE_SUBJECT))]
+    #[IsGranted(ResourceVoter::VIEW, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function index(Request $request): Response
     {
         $query = $this->createListQuery($request);
@@ -64,7 +64,7 @@ abstract class AbstractCrudController extends AbstractController
         ]);
     }
 
-    #[IsGranted(AbstractResourceVoter::CREATE, subject: new Expression(self::RESOURCE_SUBJECT))]
+    #[IsGranted(ResourceVoter::CREATE, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function new(Request $request): Response
     {
         $entity = $this->createEntity();
@@ -88,7 +88,7 @@ abstract class AbstractCrudController extends AbstractController
         ]);
     }
 
-    #[IsGranted(AbstractResourceVoter::EDIT, subject: 'entity')]
+    #[IsGranted(ResourceVoter::EDIT, subject: 'entity')]
     public function edit(Request $request, #[ValueResolver(ResourceEntityValueResolver::class)] object $entity): Response
     {
         $form = $this->createResourceForm($entity, false);
@@ -110,7 +110,7 @@ abstract class AbstractCrudController extends AbstractController
         ]);
     }
 
-    #[IsGranted(AbstractResourceVoter::DELETE, subject: 'entity')]
+    #[IsGranted(ResourceVoter::DELETE, subject: 'entity')]
     #[IsCsrfTokenValid(new Expression('"delete-" ~ request.attributes.get("id")'))]
     public function delete(#[ValueResolver(ResourceEntityValueResolver::class)] object $entity): Response
     {
