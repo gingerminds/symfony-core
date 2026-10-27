@@ -133,9 +133,22 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
         return $this->user;
     }
 
+    /**
+     * Keeps both sides in sync: the user left loses this contributor, the new one gets it.
+     */
     public function setUser(?UserInterface $user): void
     {
+        if ($this->user === $user) {
+            return;
+        }
+
+        $previous = $this->user;
         $this->user = $user;
+
+        if ($previous?->getContributor() === $this) {
+            $previous->setContributor(null);
+        }
+
         $user?->setContributor($this);
     }
 

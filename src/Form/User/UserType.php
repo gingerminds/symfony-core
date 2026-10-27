@@ -166,7 +166,6 @@ class UserType extends AbstractType
             return;
         }
 
-        $current = $user->getContributor();
         $contributorClass = $this->resources->getEntityClass('contributor');
         // A new contributor is persisted with the user (cascade persist of BaseUser::$contributor).
         $contributor = self::NEW_CONTRIBUTOR === $selector ? new $contributorClass() : $this->contributors->find($selector);
@@ -175,12 +174,8 @@ class UserType extends AbstractType
             return;
         }
 
-        if ($current instanceof ContributorInterface && $current !== $contributor) {
-            $current->setUser(null);
-        }
-
         $this->fillContributor($contributor, $form);
-        $contributor->setUser($user);
+        // Releases the contributor left (BaseUser::setContributor()).
         $user->setContributor($contributor);
     }
 

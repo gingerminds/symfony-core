@@ -44,20 +44,14 @@ class RoleRepository extends AbstractRepository
     }
 
     /**
-     * In a transaction when flushed: a failed flush never leaves the audience without its
-     * previous default role, and concurrent saves of a default role are serialized.
+     * In a transaction: a failed flush never leaves the audience without its previous default
+     * role, and concurrent saves of a default role are serialized.
      *
      * @param RoleInterface $entity
      */
-    public function save(object $entity, bool $flush = true): void
+    public function saveWith(object $entity, \Closure $write): mixed
     {
-        if (!$flush) {
-            parent::save($entity, false);
-
-            return;
-        }
-
-        $this->getEntityManager()->wrapInTransaction(fn () => parent::save($entity));
+        return $this->getEntityManager()->wrapInTransaction(fn (): mixed => parent::saveWith($entity, $write));
     }
 
     /**

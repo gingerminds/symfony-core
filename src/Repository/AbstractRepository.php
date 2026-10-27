@@ -127,26 +127,49 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
 
     public function save(object $entity, bool $flush = true): void
     {
-        $this->beforeSave($entity);
+        if (!$flush) {
+            $this->beforeSave($entity);
+            $this->getEntityManager()->persist($entity);
+            $this->afterSave($entity);
 
-        $this->getEntityManager()->persist($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
+            return;
         }
 
+        $this->saveWith($entity, function () use ($entity): void {
+            $this->getEntityManager()->persist($entity);
+            $this->getEntityManager()->flush();
+        });
+    }
+
+    public function saveWith(object $entity, \Closure $write): mixed
+    {
+        $this->beforeSave($entity);
+        $result = $write();
         $this->afterSave($entity);
+
+        return $result;
     }
 
     public function remove(object $entity, bool $flush = true): void
     {
+        if (!$flush) {
+            $this->beforeRemove($entity);
+            $this->getEntityManager()->remove($entity);
+
+            return;
+        }
+
+        $this->removeWith($entity, function () use ($entity): void {
+            $this->getEntityManager()->remove($entity);
+            $this->getEntityManager()->flush();
+        });
+    }
+
+    public function removeWith(object $entity, \Closure $write): mixed
+    {
         $this->beforeRemove($entity);
 
-        $this->getEntityManager()->remove($entity);
-
-        if ($flush) {
-            $this->getEntityManager()->flush();
-        }
+        return $write();
     }
 
     private function createEagerLoader(): EagerLoader

@@ -140,9 +140,26 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, \Strin
         return $this->contributor;
     }
 
+    /**
+     * Keeps both sides in sync: the contributor left is released (its user, the owning side,
+     * set to null), the new one is given this user.
+     */
     public function setContributor(?ContributorInterface $contributor): void
     {
+        if ($this->contributor === $contributor) {
+            return;
+        }
+
+        $previous = $this->contributor;
         $this->contributor = $contributor;
+
+        if ($previous?->getUser() === $this) {
+            $previous->setUser(null);
+        }
+
+        if ($contributor instanceof ContributorInterface && $contributor->getUser() !== $this) {
+            $contributor->setUser($this);
+        }
     }
 
     /**
