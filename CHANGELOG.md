@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `$translations` for `translations.language`), read by `EagerLoads` (parents and traits
   included). The `eager_loads` variable of the `Entity.tpl.php` maker skeleton is removed: a
   trait added through `traits` marks its own associations.
+- **BC break** Twig: `GingermindsCoreExtension` (built with all its dependencies on every
+  render) is split into `ResourceExtension`, `AdminExtension` and `ListExtension`, plain services
+  whose methods carry `#[AsTwigFunction]`: Twig runtimes, instantiated on the first call of one of
+  their functions. The `gm_*` function names are unchanged; the `gingerminds_core.twig.extension`
+  service is replaced by `gingerminds_core.twig.resource`, `.admin` and `.list`.
 
 ### Added
 
