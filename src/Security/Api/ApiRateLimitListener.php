@@ -34,13 +34,27 @@ final readonly class ApiRateLimitListener
     ) {
     }
 
+    /**
+     * The API login is answered by the firewall itself (ApiLoginAuthenticator, priority 8),
+     * the regular listener (7) would never see it: limit it just before. Anonymous by
+     * nature, its key is the client IP either way.
+     */
+    public function onKernelRequestBeforeFirewall(RequestEvent $event): void
+    {
+        if (ApiLoginAuthenticator::ROUTE === $event->getRequest()->attributes->get('_route')) {
+            $this->onKernelRequest($event);
+        }
+    }
+
     public function onKernelRequest(RequestEvent $event): void
     {
-        if (!$event->isMainRequest()) {
+        $request = $event->getRequest();
+
+        // Already limited before the firewall (onKernelRequestBeforeFirewall).
+        if (!$event->isMainRequest() || $request->attributes->has(self::RATE_LIMIT_ATTRIBUTE)) {
             return;
         }
 
-        $request = $event->getRequest();
         $name = $this->limiterName($request);
 
         if (null === $name) {

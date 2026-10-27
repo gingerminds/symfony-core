@@ -16,8 +16,6 @@ use Gingerminds\CoreBundle\Controller\Security\LogoutController;
 use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\ProfileController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
 
 /*
  * Admin, security and API controllers.
@@ -75,16 +73,7 @@ return static function (ContainerConfigurator $container): void {
         ->tag('controller.service_arguments')
         ->public();
     $services->set('gingerminds_core.controller.api.auth', AuthController::class)
-        ->args([
-            service(UserRepository::class),
-            service(ApiTokenRepository::class),
-            service('security.user_password_hasher'),
-            service('limiter.gingerminds_core_api_login'),
-            service('security.helper'),
-            tagged_iterator('gingerminds_core.login_response_enricher'),
-            param('gingerminds_core.api.token_ttl'),
-            service('translator'),
-        ])
+        ->args([service('security.helper'), service('translator')])
         ->tag('controller.service_arguments')
         ->public();
 };

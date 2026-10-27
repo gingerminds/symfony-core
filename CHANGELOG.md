@@ -55,6 +55,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** — the API login/logout go through Symfony Security instead of a hand-made
+  controller (same URLs, routes, payloads, responses, status codes and rate limit headers):
+  `POST /api/login` is the `gingerminds_core.security.api_login_authenticator` custom
+  authenticator (success/failure handlers, native `login_throttling` fed by
+  `gingerminds_core.api.login_throttling`), `POST /api/logout` dispatches `LogoutEvent`
+  through `Security::logout()` (token revoked by `ApiTokenRevocationListener`).
+  `LoginSuccessEvent` / `LoginFailureEvent` / `LogoutEvent` are now the extension points;
+  `LoginResponseEnricherInterface` is kept. Projects must add the `api_login` firewall (before
+  `api`) to `security.yaml`, see Installation.md; without it `/api/login` throws a
+  `LogicException`. `AuthController` constructor changed (only `Security` + translator).
 - The API is open by default: the recommended `security.yaml` no longer has the `^/api`
   `IS_AUTHENTICATED` rule, each operation is closed by its `security` expression (voter).
 - `make:gm:resource` / `make:gm:entity`: the generated entity only has an `id` (no `name`
