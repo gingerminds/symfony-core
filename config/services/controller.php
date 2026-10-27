@@ -17,6 +17,7 @@ use Gingerminds\CoreBundle\Controller\Security\LogoutController;
 use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\ProfileController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
+use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceDefinitionValueResolver;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
 use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
 use Gingerminds\CoreBundle\Repository\User\UserRepository;
@@ -55,6 +56,10 @@ return static function (ContainerConfigurator $container): void {
         ->args([service('gingerminds_core.resource_registry'), service('doctrine')])
         ->tag('controller.targeted_value_resolver', ['name' => ResourceEntityValueResolver::class]);
 
+    $services->set('gingerminds_core.value_resolver.resource_definition', ResourceDefinitionValueResolver::class)
+        ->args([service('gingerminds_core.resource_registry')])
+        ->tag('controller.targeted_value_resolver', ['name' => ResourceDefinitionValueResolver::class]);
+
     // Before the #[IsGranted] / #[IsCsrfTokenValid] checks: an entity of another parent is a 404.
     $services->set('gingerminds_core.listener.resource_entity_route', ResourceEntityRouteListener::class)
         ->tag('kernel.event_listener', ['event' => KernelEvents::CONTROLLER_ARGUMENTS, 'priority' => ResourceEntityRouteListener::PRIORITY]);
@@ -68,7 +73,7 @@ return static function (ContainerConfigurator $container): void {
     $controller('gingerminds_core.controller.admin.profile', ProfileController::class)
         ->args([service('doctrine'), service('translator')]);
     $controller('gingerminds_core.controller.admin.autocomplete', AutocompleteController::class)
-        ->args([service('gingerminds_core.resource_registry'), service('doctrine')]);
+        ->args([service('doctrine')]);
     $controller('gingerminds_core.controller.security.login', LoginController::class)
         ->args([service('security.authentication_utils')]);
     $controller('gingerminds_core.controller.security.logout', LogoutController::class);

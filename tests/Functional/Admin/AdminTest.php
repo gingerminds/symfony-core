@@ -633,6 +633,10 @@ final class AdminTest extends ApiTestCase
 
         $this->client->request('GET', '/admin/_autocomplete/role?query=a');
         self::assertResponseStatusCodeSame(403);
+
+        // ResourceDefinitionValueResolver, before #[IsGranted]: an unknown resource is a 404.
+        $this->client->request('GET', '/admin/_autocomplete/unknown?query=a');
+        self::assertResponseStatusCodeSame(404);
     }
 
     public function testSuperAdminRoleCannotBeDeletedFromTheAdmin(): void

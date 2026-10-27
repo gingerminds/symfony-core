@@ -60,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   passed to `render()` as `FormInterface` (422 on an invalid submission by `AbstractController`).
   The bundle controllers are service subscribers (`container.service_subscriber`,
   `setContainer()`); `ProfileController` takes Doctrine and the translator, `AuthController` no
-  longer takes `Security`.
+  longer takes `Security`. `AutocompleteController` only takes Doctrine: its resource is resolved
+  by `ResourceDefinitionValueResolver` (404 for an unknown resource, before the access check).
 - **BC break** Security: one `ResourceVoter` for every registered resource replaces
   `AbstractResourceVoter` and its `UserVoter`, `ContributorVoter`, `RoleVoter`, `PermissionVoter`
   (and the voter each resource had to declare). It reads the resource registry (name, configured
