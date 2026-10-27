@@ -11,6 +11,8 @@
         <ini name="display_errors" value="1"/>
         <ini name="error_reporting" value="-1"/>
         <ini name="memory_limit" value="-1"/>
+        <!-- Not UTC: storage and API output must not depend on the PHP default timezone. -->
+        <ini name="date.timezone" value="Europe/Paris"/>
         <server name="APP_ENV" value="test" force="true"/>
         <server name="KERNEL_CLASS" value="Gingerminds\CoreBundle\Tests\Application\Kernel"/>
         <server name="SHELL_VERBOSITY" value="-1"/>

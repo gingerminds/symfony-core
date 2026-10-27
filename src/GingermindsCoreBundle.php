@@ -41,6 +41,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ConfigurationExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 final class GingermindsCoreBundle extends AbstractBundle
 {
@@ -102,12 +103,6 @@ final class GingermindsCoreBundle extends AbstractBundle
 
         $container->addCompilerPass(new ResourceRegistryPass());
         $container->addCompilerPass(new OverriddenEntityPass());
-    }
-
-    public function boot(): void
-    {
-        // Every date of the system is UTC (`new \DateTimeImmutable()`, logs...): only displays use the display timezone.
-        date_default_timezone_set('UTC');
     }
 
     /**
@@ -246,6 +241,10 @@ final class GingermindsCoreBundle extends AbstractBundle
             ],
             'asset_mapper' => [
                 'paths' => [$this->getPath() . '/assets' => 'gingerminds-core'],
+            ],
+            // The API outputs every date in UTC, whatever the PHP default timezone.
+            'serializer' => [
+                'default_context' => [DateTimeNormalizer::TIMEZONE_KEY => 'UTC'],
             ],
         ]);
 
