@@ -6,7 +6,7 @@ namespace Gingerminds\CoreBundle\Tests\Unit\ApiPlatform;
 
 use ApiPlatform\Metadata\HeaderParameter;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterRegistry;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use PHPUnit\Framework\TestCase;
 
@@ -16,7 +16,7 @@ final class HeaderParameterRegistryTest extends TestCase
     {
         $registry = new HeaderParameterRegistry();
         $registry->register(TimestampableTrait::class, new HeaderParameter(key: 'X-Site-Id'));
-        $registry->register(SearchableInterface::class, new HeaderParameter(key: 'Accept-Language'));
+        $registry->register(FilterableInterface::class, new HeaderParameter(key: 'Accept-Language'));
 
         $keys = array_map(
             static fn (HeaderParameter $parameter): ?string => $parameter->getKey(),

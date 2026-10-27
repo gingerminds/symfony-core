@@ -15,7 +15,7 @@ use Symfony\Component\Console\Input\InputOption;
 
 /**
  * make:gm:entity Namespace/Name [--api]: `App\Entity\Namespace\Name`, a
- * resource entity (sortable, searchable, timestampable) with only an `id`.
+ * resource entity (timestampable) with only an `id` (#[Sortable]).
  * `--api` adds the #[ApiResource] wired to the generated
  * provider/processor and secured by the resource voter.
  */

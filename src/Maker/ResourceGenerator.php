@@ -18,7 +18,6 @@ use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Maker\Extension\SkeletonTemplate;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
@@ -76,7 +75,6 @@ final readonly class ResourceGenerator
             'Doctrine\\ORM\\Mapping as ORM',
             $resource->repositoryClass(),
             ResourceInterface::class,
-            SearchableInterface::class,
             Sortable::class,
             TimestampableInterface::class,
             TimestampableTrait::class,

@@ -14,7 +14,8 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | Eloquent model | Doctrine entity | Core entities: `Entity/<Type>/` holds the interface, the mapped superclass `Base*` and the concrete entity. |
 | `ResourceModelInterface` | `ResourceInterface` | |
 | `SortableModelInterface` (`$sortable`) | `#[Sortable]` on the properties | Sort paths are the marked properties only. |
-| `SearchableModelInterface`, `FilterableModelInterface`, `EagerLoadableModelInterface` | `SearchableInterface`, `FilterableInterface`, `EagerLoadableInterface` | Same contracts. Filter keys are whitelisted against Doctrine metadata. |
+| `SearchableModelInterface` (`$searchable`) | `#[Searchable]` on the properties | Searched paths are the marked properties only. |
+| `FilterableModelInterface`, `EagerLoadableModelInterface` | `FilterableInterface`, `EagerLoadableInterface` | Same contracts. Filter keys are whitelisted against Doctrine metadata. |
 | `CacheableResourceInterface`, `CacheCascadeInterface` | same names | Cache stores API responses, see [Cache](Cache.md). |
 | timestamps | `TimestampableInterface`/`Trait` | Doctrine listener. Soft deletes are not ported: deletions are real. |
 | `AbstractRepository::get(Request)` | `AbstractRepository::paginate(ListQuery)` | `ListQuery::fromRequest()`; repositories no longer read the request. |

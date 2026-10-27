@@ -74,6 +74,19 @@ final class AdminTest extends ApiTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testSearchFieldOfASearchableResource(): void
+    {
+        $this->client->loginUser($this->fixtures->user('search@example.com', superAdmin: true), 'admin');
+
+        $emails = fn (string $search): array => $this->client->request('GET', '/admin/users?filters[search]=' . $search)
+            ->filter('tbody tr td:nth-child(2)')->each(static fn ($td): string => trim($td->text()));
+
+        self::assertSame(['search@example.com'], $emails('SEARCH@'));
+        self::assertCount(1, $this->client->getCrawler()->filter('input[name="filters[search]"]'));
+        // `email` is `#[Searchable]`, not the contributor firstname of the user (`First`).
+        self::assertSame([], $emails('first'));
+    }
+
     public function testOnlySortableColumnsLinkToASort(): void
     {
         $this->client->loginUser($this->fixtures->user('sort@example.com', superAdmin: true), 'admin');

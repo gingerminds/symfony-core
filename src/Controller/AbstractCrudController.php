@@ -6,7 +6,7 @@ namespace Gingerminds\CoreBundle\Controller;
 
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\SearchableFields;
 use Gingerminds\CoreBundle\Model\SortableFields;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\ListQuery;
@@ -219,7 +219,7 @@ abstract class AbstractCrudController
             'resource' => $resource,
             'route_parameters' => $this->getRouteParameters(),
             'entity_class' => $resource->entity,
-            'is_searchable' => is_subclass_of($resource->entity, SearchableInterface::class),
+            'is_searchable' => [] !== SearchableFields::of($resource->entity),
             'is_filterable' => is_subclass_of($resource->entity, FilterableInterface::class),
             'sortable_fields' => SortableFields::of($resource->entity),
             'filter_configs' => is_subclass_of($resource->entity, FilterableInterface::class) ? $resource->entity::getFilters() : [],

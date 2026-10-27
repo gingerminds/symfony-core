@@ -15,7 +15,7 @@ use Gingerminds\CoreBundle\Model\CacheableResourceInterface;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\CacheableResourceTrait;
@@ -39,7 +39,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     paginationClientItemsPerPage: true,
 )]
-class Product implements ResourceInterface, SearchableInterface, FilterableInterface, EagerLoadableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
+class Product implements ResourceInterface, FilterableInterface, EagerLoadableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
 {
     use CacheableResourceTrait;
     use TimestampableTrait;
@@ -54,6 +54,7 @@ class Product implements ResourceInterface, SearchableInterface, FilterableInter
     #[Assert\NotBlank]
     #[Groups(['product:list'])]
     #[Sortable]
+    #[Searchable]
     private string $name = '';
 
     #[ORM\Column(type: Types::FLOAT)]
@@ -76,6 +77,7 @@ class Product implements ResourceInterface, SearchableInterface, FilterableInter
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['product:list'])]
     #[Sortable(paths: ['name'])]
+    #[Searchable(paths: ['name'])]
     private ?Category $category = null;
 
     /**
@@ -106,11 +108,6 @@ class Product implements ResourceInterface, SearchableInterface, FilterableInter
             'tags' => ['type' => 'select-entity', 'label' => 'product.field.tags', 'entity' => Category::class, 'multiple' => true],
             'name' => ['type' => 'select', 'label' => 'product.field.name', 'disabled_for_back' => true],
         ];
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['name', 'category.name'];
     }
 
     public static function getEagerLoads(): array

@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `#[Sortable]` properties (`sortable_fields` template variable instead of `is_sortable`,
   `sortable: false` to opt a column out). `RoleRepository::save()` runs in a transaction: a
   failed flush keeps the previous default role.
+- **BC break** Search: `SearchableInterface::getSearchableFields()` is replaced by the
+  `#[Searchable]` property attribute (`#[Searchable(paths: ['name'])]` on an association searches
+  `relation.name`), read by `SearchableFields`. `filters[search]` only matches the marked
+  properties; `is_searchable` (admin search field) is true when the entity has at least one; the
+  generated entities no longer implement `SearchableInterface`.
 
 ### Added
 

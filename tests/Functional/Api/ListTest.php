@@ -70,6 +70,17 @@ final class ListTest extends ApiTestCase
         self::assertSame(['Cable', 'Mouse'], $this->names($this->api('GET', '/api/products?filters[search]=accessor&sortBy=name', $this->token)));
     }
 
+    public function testAFieldWithoutSearchableIsNotSearched(): void
+    {
+        // `status` (Archived: Tablet) and `tags.name` (Tag: Laptop, Tablet) are not `#[Searchable]`.
+        foreach (['archived', 'tag'] as $search) {
+            $data = $this->api('GET', '/api/products?filters[search]=' . $search, $this->token);
+
+            $this->assertStatus(200);
+            self::assertSame([], $this->names($data), $search);
+        }
+    }
+
     /**
      * @param list<string> $expected
      */

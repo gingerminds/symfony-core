@@ -86,8 +86,8 @@ kept as an alias of this type.
 Filters on related ids through a to-one **or** to-many association (`filters[category]=3`,
 `filters[tags][]=1&filters[tags][]=2`); `null` matches rows without relation, `all` disables
 it. In the admin it renders a Tom Select (UX Autocomplete): remote search through
-`/admin/_autocomplete/{resource}` when `resource` is set (the resource must be registered and
-the entity `SearchableInterface`), otherwise a local list of the entities. `select-model` is
+`/admin/_autocomplete/{resource}` when `resource` is set (the resource must be registered and its
+entity have a `#[Searchable]` property), otherwise a local list of the entities. `select-model` is
 kept as an alias; the Livewire `SelectModel` component is replaced by the autocomplete endpoint.
 
 ## Custom filter types

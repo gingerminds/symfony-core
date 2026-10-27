@@ -33,7 +33,7 @@ All of them live under `Gingerminds\CoreBundle\Model`.
 | Interface | Effect |
 |---|---|
 | `#[Sortable]` (property attribute) | Enables `?sortBy=&sort=asc\|desc` (admin column headers and API) on that property, or on `relation.field` with `#[Sortable(paths: ['field'])]` on a to-one association; any other path is ignored. See [Sorting](Sorting.md). |
-| `SearchableInterface` | Enables `filters[search]`: case-insensitive `LIKE` on `getSearchableFields()` (supports `relation.field`). |
+| `#[Searchable]` (property attribute) | Enables `filters[search]` (and the admin search field): case-insensitive `LIKE` on the marked properties, or on `relation.field` with `#[Searchable(paths: ['field'])]` on an association; any other field is not searched. `SearchableFields::of(Product::class)` returns the paths (parent classes included). |
 | `FilterableInterface` | Enables the filters panel and `filters[...]` on the API, from `getFilters()`. See [Filters](partials/filters.md) and [Facets](partials/facets.md). |
 | `EagerLoadableInterface` | `getEagerLoads()` associations are loaded with the entities on every repository read (lists, API reads, admin edit page). Fixes N+1 at the source. To-one paths are fetch-joined; on paginated lists, a path going through a collection is loaded after the page, one `WHERE IN` query per path (joining it would paginate through `DISTINCT` subqueries over the whole table). |
 | `CacheableResourceInterface` | Caches the API responses of the resource. See [Cache](Cache.md). |

@@ -10,7 +10,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\Trait\UserRolesTrait;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
@@ -20,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['email'])]
-abstract class BaseUser implements UserInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseUser implements UserInterface, TimestampableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
     use UserRolesTrait;
@@ -50,6 +50,7 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Search
         BaseContributor::GROUP_READ,
     ])]
     #[Sortable]
+    #[Searchable]
     protected ?string $email = null;
 
     #[ORM\Column(nullable: true)]
@@ -136,11 +137,6 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Search
     public function setContributor(?ContributorInterface $contributor): void
     {
         $this->contributor = $contributor;
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['email'];
     }
 
     /**

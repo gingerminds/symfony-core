@@ -8,7 +8,7 @@ use ApiPlatform\Metadata\ApiProperty;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Enum\Civility;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
-abstract class BaseContributor implements ContributorInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseContributor implements ContributorInterface, TimestampableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -48,17 +48,20 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     #[Assert\Length(max: 255)]
     #[Groups(self::PROFILE_GROUPS)]
     #[Sortable]
+    #[Searchable]
     protected ?string $lastname = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     #[Groups(self::PROFILE_GROUPS)]
+    #[Searchable]
     protected ?string $firstname = null;
 
     #[ORM\Column(length: 3, nullable: true)]
     #[Assert\Length(max: 3)]
     #[Groups(self::PROFILE_GROUPS)]
+    #[Searchable]
     protected ?string $trigram = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -143,11 +146,6 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     public static function getEagerLoads(): array
     {
         return ['user'];
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['firstname', 'lastname', 'trigram'];
     }
 
     public function __toString(): string

@@ -11,7 +11,7 @@ namespace <?= $namespace ?>;
 // Index the default sort and the sortable / filtered columns once the table can grow:
 // #[ORM\Index(name: '<?= $resource->snakePlural ?>_name_idx', fields: ['name'])]
 <?php if ($api): include $skeleton_directory . '/ApiResource.tpl.php'; endif ?>
-class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'SearchableInterface', 'TimestampableInterface', ...$interfaces, ...([] !== $eager_loads ? ['EagerLoadableInterface'] : []), '\Stringable']) ?>
+class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'TimestampableInterface', ...$interfaces, ...([] !== $eager_loads ? ['EagerLoadableInterface'] : []), '\Stringable']) ?>
 
 {
     use TimestampableTrait;
@@ -34,15 +34,12 @@ class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'Sea
 <?php endif ?>
     private ?int $id = null;
 
+    // TODO: mark the fields matched by `filters[search]` with #[Searchable]
+    // (#[Searchable(paths: ['name'])] on an association searches `relation.name`).
+
     public function __toString(): string
     {
         return (string) $this->id;
-    }
-
-    public static function getSearchableFields(): array
-    {
-        // TODO: list the fields matched by `filters[search]` (`relation.field` supported).
-        return [];
     }
 
 <?php if ([] !== $eager_loads): ?>

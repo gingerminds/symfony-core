@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
@@ -23,7 +23,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['name'])]
-abstract class BaseRole implements RoleInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseRole implements RoleInterface, TimestampableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -43,6 +43,7 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Search
     #[Assert\Length(max: 255)]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT, BaseUser::GROUP_LIST, BaseUser::GROUP_READ])]
     #[Sortable]
+    #[Searchable]
     protected ?string $name = null;
 
     #[ORM\Column(name: 'is_external', options: ['default' => false])]
@@ -147,11 +148,6 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Search
         $slug = new AsciiSlugger()->slug((string) $this->name, '_')->upper()->toString();
 
         return 'ROLE_' . $slug;
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['name'];
     }
 
     /**

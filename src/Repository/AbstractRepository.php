@@ -9,7 +9,7 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator as DoctrinePaginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\SearchableFields;
 use Gingerminds\CoreBundle\Model\SortableFields;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerRegistry;
@@ -234,10 +234,9 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
      */
     protected function applySearch(QueryBuilderHelper $helper, array $filters): void
     {
-        $entityClass = $this->getEntityClass();
         $search = $filters[ListQuery::SEARCH_FILTER] ?? null;
 
-        if (!is_subclass_of($entityClass, SearchableInterface::class) || !\is_string($search) || '' === trim($search)) {
+        if (!\is_string($search) || '' === trim($search)) {
             return;
         }
 
@@ -246,7 +245,8 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         $conditions = [];
         $placeholder = null;
 
-        foreach ($entityClass::getSearchableFields() as $path) {
+        // Only the `#[Searchable]` paths.
+        foreach (SearchableFields::of($this->getEntityClass()) as $path) {
             $field = $helper->resolveField($path);
 
             if (null === $field) {
