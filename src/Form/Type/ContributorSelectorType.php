@@ -15,7 +15,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Contributor of the user form: "new contributor" or an existing contributor id
- * (string, see UserRepository::handleContributor()), searched remotely through
+ * (string, see UserType::submitContributor()), searched remotely through
  * `gingerminds_core_autocomplete` instead of listing every contributor.
  *
  * @extends AbstractType<string|null>

@@ -29,6 +29,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   whose methods carry `#[AsTwigFunction]`: Twig runtimes, instantiated on the first call of one of
   their functions. The `gm_*` function names are unchanged; the `gingerminds_core.twig.extension`
   service is replaced by `gingerminds_core.twig.resource`, `.admin` and `.list`.
+- **BC break** Repositories no longer know the forms: `RepositoryInterface::save(object $entity,
+  bool $flush = true)` (no `?FormInterface $form`), `beforeSave(object $entity)` and
+  `afterSave(object $entity)`. The user password is hashed on flush by the
+  `UserPasswordListener` Doctrine entity listener (`preFlush`), no longer by
+  `UserRepository::beforeSave()` nor `CreateUserCommand` (which loses its password hasher
+  argument). The contributor of the user form (`contributorId`, `contributor*` fields) is applied
+  by `UserType::submitContributor()` (`POST_SUBMIT`, valid form only, `fillContributor()` moved
+  from `UserRepository` too); `BaseUser::$contributor` cascades `persist`.
+  `UserRepository::NEW_CONTRIBUTOR` becomes `UserType::NEW_CONTRIBUTOR`; `UserRepository` takes
+  only the registry and the entity class.
 
 ### Added
 

@@ -20,7 +20,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `CacheableResourceInterface`, `CacheCascadeInterface` | same names | Cache stores API responses, see [Cache](Cache.md). |
 | timestamps | `TimestampableInterface`/`Trait` | Doctrine listener. Soft deletes are not ported: deletions are real. |
 | `AbstractRepository::get(Request)` | `AbstractRepository::paginate(ListQuery)` | `ListQuery::fromRequest()`; repositories no longer read the request. |
-| `AbstractRepository::update(FormRequest, Model)` | `save(entity, ?form)` + `beforeSave()` hook | Mapping is done by the form. |
+| `AbstractRepository::update(FormRequest, Model)` | form + `save(entity)` (`beforeSave()` hook) | Mapping, unmapped fields included, is done by the form (event listeners); the repository only persists. |
 | `FormRequest` (+ `FormRequestInterface`) | Symfony form type + validator constraints | One form for admin and API. |
 | `Date/DecimalConverterTrait` | form types (`DateType`, `NumberType` with `scale`) | Conversion is a form concern. |
 | `DisplayTimezone` + `ConvertsDisplayDatetimesToUtc` | `DisplayTimezone` service + UTC Doctrine `datetime` types, `DateTimeType` extension, Twig `date.timezone` | `gingerminds_core.display_timezone` (default `Europe/Paris`, Laravel falls back to `app.timezone`). No per-request field list: every `DateTimeType` converts. |

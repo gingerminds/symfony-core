@@ -68,7 +68,7 @@ class ResourceProcessor implements ProcessorInterface
             throw new ValidationException($this->toViolations($form, $entity));
         }
 
-        $this->repository->save($entity, $form);
+        $this->repository->save($entity);
 
         return $entity;
     }

@@ -6,7 +6,6 @@ namespace Gingerminds\CoreBundle\Repository;
 
 use Doctrine\ORM\QueryBuilder;
 use Gingerminds\CoreBundle\Pagination\Paginator;
-use Symfony\Component\Form\FormInterface;
 
 /**
  * @template T of object
@@ -39,10 +38,9 @@ interface RepositoryInterface
     public function findOneForRead(int|string $id, ?ListQuery $query = null): ?object;
 
     /**
-     * @param T                         $entity
-     * @param FormInterface<mixed>|null $form   the submitted form the entity comes from, if any
+     * @param T $entity
      */
-    public function save(object $entity, ?FormInterface $form = null, bool $flush = true): void;
+    public function save(object $entity, bool $flush = true): void;
 
     /**
      * @param T $entity

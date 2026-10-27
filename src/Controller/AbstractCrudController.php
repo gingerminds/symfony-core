@@ -54,7 +54,7 @@ abstract class AbstractCrudController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->getRepository()->save($entity, $form);
+            $this->getRepository()->save($entity);
             $this->addResourceFlash($request, 'flash.created', $this->getLabel($entity));
 
             return $this->redirectAfterSave($entity, true);
@@ -79,7 +79,7 @@ abstract class AbstractCrudController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->getRepository()->save($entity, $form);
+            $this->getRepository()->save($entity);
             $this->addResourceFlash($request, 'flash.updated', $this->getLabel($entity));
 
             return $this->redirectAfterSave($entity, false);

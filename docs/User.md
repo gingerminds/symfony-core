@@ -13,8 +13,15 @@ Same model as the Laravel core:
 Any feature needing "who is this" data should reference the contributor, not the user.
 
 The user form links the account to an existing contributor or creates one
-(`contributorId = "__new__"` + `contributorFirstname`, `contributorLastname`, ...), exactly
-like the Laravel core, through `UserRepository::beforeSave()`.
+(`contributorId = "__new__"` (`UserType::NEW_CONTRIBUTOR`) + `contributorFirstname`,
+`contributorLastname`, ...), exactly like the Laravel core: `UserType::submitContributor()`, a
+`POST_SUBMIT` listener of the form (admin and API), applies them once the form is valid; a new
+contributor is persisted with the user (cascade persist).
+
+The plain password (`plainPassword`, the `password` field of the form, `--password` of
+`gingerminds:create:user`) is hashed into `password` on flush by `UserPasswordListener`, a
+Doctrine entity listener of the user entity (`preFlush`: it also runs when only the unmapped
+plain password changed).
 
 ## Roles & permissions
 

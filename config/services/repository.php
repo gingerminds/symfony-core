@@ -16,19 +16,9 @@ use Gingerminds\CoreBundle\Repository\User\UserRepository;
 return static function (ContainerConfigurator $container): void {
     $services = $container->services();
 
-    $services->set(UserRepository::class)
-        ->args([
-            service('doctrine'),
-            param('gingerminds_core.resource.user.entity'),
-            service('security.user_password_hasher'),
-            param('gingerminds_core.resource.contributor.entity'),
-        ])
-        ->call('setFilterHandlerRegistry', [service('gingerminds_core.filter_handler_registry')])
-        ->tag('doctrine.repository_service');
-    $services->alias('gingerminds_core.repository.user', UserRepository::class);
-
     foreach (
         [
+            'user' => UserRepository::class,
             'contributor' => ContributorRepository::class,
             'role' => RoleRepository::class,
             'permission' => PermissionRepository::class,

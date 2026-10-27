@@ -43,7 +43,7 @@ class ProfileController
             $repository = $this->context->doctrine->getRepository($user::class);
 
             if ($repository instanceof RepositoryInterface) {
-                $repository->save($user, $form);
+                $repository->save($user);
             }
 
             $this->addFlash($request, 'success', $this->trans('flash.profile_updated'));

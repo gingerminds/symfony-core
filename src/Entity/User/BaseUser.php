@@ -57,7 +57,7 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, \Strin
     protected ?string $password = null;
 
     /**
-     * Never persisted: hashed into $password by UserRepository::beforeSave().
+     * Never persisted: hashed into $password on flush by UserPasswordListener.
      */
     #[Assert\Length(min: 8, max: 4096)]
     protected ?string $plainPassword = null;
@@ -67,9 +67,10 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, \Strin
 
     /**
      * Eager loaded: shown by the admin list and the `user:list` group, and the inverse side of a
-     * one-to-one, which Doctrine can't lazy load (one query per user otherwise).
+     * one-to-one, which Doctrine can't lazy load (one query per user otherwise). A new
+     * contributor given to the user (user form) is persisted with it.
      */
-    #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user')]
+    #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user', cascade: ['persist'])]
     #[Groups([self::GROUP_LIST, self::GROUP_READ])]
     #[Sortable(paths: ['lastname'])]
     #[EagerLoad]

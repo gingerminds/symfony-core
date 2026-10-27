@@ -66,7 +66,7 @@ That is all: pagination, sorting, search, filters and eager loads come from `Abs
 | `findForList(ListQuery $query): array` | Same query, no pagination. |
 | `createListQueryBuilder(ListQuery $query, array $excludedFilters = []): QueryBuilder` | The underlying query, to build on. |
 | `findOneForRead(int\|string $id, ?ListQuery $query = null): ?object` | Single item honouring context filters and eager loads (API item reads, admin edit page). |
-| `save(object $entity, ?FormInterface $form = null, bool $flush = true)` | Write entry point (admin + API). |
+| `save(object $entity, bool $flush = true)` | Write entry point (admin, API, commands). |
 | `remove(object $entity, bool $flush = true)` | Delete entry point. |
 
 Hooks to override:
@@ -74,8 +74,8 @@ Hooks to override:
 | Hook | Use |
 |---|---|
 | `configureListQueryBuilder(QueryBuilder $qb, ListQuery $query)` | Joins/conditions every read needs (a scope, a context such as the current site). |
-| `beforeSave(object $entity, ?FormInterface $form)` | Write-side business logic — the Laravel `update()` method. Unmapped form fields are read from `$form`. |
-| `afterSave(...)`, `beforeRemove(...)` | Side effects. |
+| `beforeSave(object $entity)` | Write-side business logic on the entity — the Laravel `update()` method. The input that is not an entity field (unmapped form fields) is handled by the form type, in a form event listener (see `UserType::submitContributor()`); a hash or a value derived on every write belongs in a Doctrine listener (see `UserPasswordListener`). |
+| `afterSave(object $entity)`, `beforeRemove(object $entity)` | Side effects. |
 
 Properties: `$itemsPerPage` (default 10), `$maxItemsPerPage` (default 200, caps `itemsPerPage`).
 

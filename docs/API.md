@@ -13,7 +13,7 @@ validation as the admin**:
   `filters[search]`, eager loads. The API Platform Doctrine filters are not needed.
 - **Writes** — `Gingerminds\CoreBundle\ApiPlatform\State\ResourceProcessor` submits the JSON
   payload to the resource **form type** (POST/PUT with `clearMissing`, PATCH partial) and
-  calls `RepositoryInterface::save()` (so `beforeSave()` business logic runs). Form errors
+  calls `RepositoryInterface::save()` (so the form event listeners and `beforeSave()` run). Form errors
   become a standard `422` with `violations`. DELETE calls `RepositoryInterface::remove()`.
 
 Operations must declare `deserialize: false` (the form maps the payload, not the serializer).

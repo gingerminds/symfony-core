@@ -7,11 +7,14 @@ namespace Gingerminds\CoreBundle\Tests\Functional\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
+use Gingerminds\CoreBundle\Entity\User\User;
+use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
 use Gingerminds\CoreBundle\Tests\Functional\Fixtures;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AdminTest extends ApiTestCase
 {
@@ -379,6 +382,48 @@ final class AdminTest extends ApiTestCase
         self::assertResponseRedirects('/admin/profile');
         $this->client->followRedirect();
         self::assertInputValueSame('profile[contributorLastname]', 'Updated');
+    }
+
+    public function testProfilePasswordChangeAloneIsHashed(): void
+    {
+        $this->client->loginUser($this->fixtures->user('password@example.com'), 'admin');
+
+        // Only the unmapped plain password changes: hashed on flush all the same.
+        $crawler = $this->client->request('GET', '/admin/profile');
+        $form = $crawler->filter('form[name="profile"]')->form();
+        $form['profile[password][first]'] = 'changed-password';
+        $form['profile[password][second]'] = 'changed-password';
+        $this->client->submit($form);
+        self::assertResponseRedirects('/admin/profile');
+
+        $user = self::getContainer()->get(EntityManagerInterface::class)->getRepository(User::class)->findOneBy(['email' => 'password@example.com']);
+        self::assertInstanceOf(User::class, $user);
+        self::assertNull($user->getPlainPassword());
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'changed-password'));
+    }
+
+    public function testUserFormCreatesTheUserWithANewContributor(): void
+    {
+        $this->client->loginUser($this->fixtures->user('admin-contributor@example.com', superAdmin: true), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/users/new');
+        $form = $crawler->filter('form[name="user"]')->form();
+        $form['user[email]'] = 'grace@example.com';
+        $form['user[password][first]'] = 'grace-password';
+        $form['user[password][second]'] = 'grace-password';
+        $form['user[contributorId]']->setValue(UserType::NEW_CONTRIBUTOR);
+        $form['user[contributorFirstname]'] = 'Grace';
+        $form['user[contributorLastname]'] = 'Hopper';
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $user = $entityManager->getRepository(User::class)->findOneBy(['email' => 'grace@example.com']);
+
+        self::assertInstanceOf(User::class, $user);
+        self::assertSame('Grace Hopper', $user->getContributor()?->getFullName());
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'grace-password'));
     }
 
     public function testAutocompleteEndpoint(): void

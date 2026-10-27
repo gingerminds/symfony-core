@@ -8,7 +8,6 @@ use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Entity\Role\RoleInterface;
 use Gingerminds\CoreBundle\Repository\AbstractRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\Form\FormInterface;
 
 /**
  * @extends AbstractRepository<RoleInterface>
@@ -50,21 +49,21 @@ class RoleRepository extends AbstractRepository
      *
      * @param RoleInterface $entity
      */
-    public function save(object $entity, ?FormInterface $form = null, bool $flush = true): void
+    public function save(object $entity, bool $flush = true): void
     {
         if (!$flush) {
-            parent::save($entity, $form, false);
+            parent::save($entity, false);
 
             return;
         }
 
-        $this->getEntityManager()->wrapInTransaction(fn () => parent::save($entity, $form));
+        $this->getEntityManager()->wrapInTransaction(fn () => parent::save($entity));
     }
 
     /**
      * @param RoleInterface $entity
      */
-    protected function beforeSave(object $entity, ?FormInterface $form): void
+    protected function beforeSave(object $entity): void
     {
         if (!$entity->isDefault()) {
             return;

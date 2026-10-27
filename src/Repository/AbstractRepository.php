@@ -15,7 +15,6 @@ use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerRegistry;
 use Gingerminds\CoreBundle\Repository\Query\EagerLoader;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
-use Symfony\Component\Form\FormInterface;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
@@ -126,9 +125,9 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         return $result[0] ?? null;
     }
 
-    public function save(object $entity, ?FormInterface $form = null, bool $flush = true): void
+    public function save(object $entity, bool $flush = true): void
     {
-        $this->beforeSave($entity, $form);
+        $this->beforeSave($entity);
 
         $this->getEntityManager()->persist($entity);
 
@@ -136,7 +135,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
             $this->getEntityManager()->flush();
         }
 
-        $this->afterSave($entity, $form);
+        $this->afterSave($entity);
     }
 
     public function remove(object $entity, bool $flush = true): void
@@ -186,18 +185,16 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     }
 
     /**
-     * @param T                         $entity
-     * @param FormInterface<mixed>|null $form
+     * @param T $entity
      */
-    protected function beforeSave(object $entity, ?FormInterface $form): void
+    protected function beforeSave(object $entity): void
     {
     }
 
     /**
-     * @param T                         $entity
-     * @param FormInterface<mixed>|null $form
+     * @param T $entity
      */
-    protected function afterSave(object $entity, ?FormInterface $form): void
+    protected function afterSave(object $entity): void
     {
     }
 
