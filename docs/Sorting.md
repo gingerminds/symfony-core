@@ -2,22 +2,31 @@
 
 Two unrelated features.
 
-## 1. Column sorting (`SortableInterface`)
+## 1. Column sorting (`#[Sortable]`)
 
-Marker interface enabling `?sortBy=property&sort=asc|desc`, on admin lists and API
-collections:
+`?sortBy=property&sort=asc|desc`, on admin lists and API collections, only on the properties
+marked `#[Sortable]`; on a to-one association, `paths` lists the sortable fields of the related
+entity (the join is added automatically):
 
 ```php
-class Product implements ResourceInterface, SortableInterface {}
+use Gingerminds\CoreBundle\Model\Sortable;
+
+#[ORM\Column]
+#[Sortable]
+private string $name = '';
+
+#[ORM\ManyToOne]
+#[Sortable(paths: ['name'])] // sortBy=category.name
+private ?Category $category = null;
 ```
 
-`sortBy` accepts a mapped field or `relation.field` through a to-one association
-(`category.name`); the join is added automatically. Anything else is ignored: the path is
-checked against the Doctrine metadata, never injected into DQL. Every list also ends its
-ordering with the identifier, so pagination stays stable.
+Any other path is ignored, even a mapped one (`password`, `category.id`): a list never sorts
+on a field nobody chose, nor joins at will. Every list also ends its ordering with the
+identifier, so pagination stays stable. `SortableFields::of(Product::class)` returns the
+allowed paths (parent classes included).
 
-In `crud/list.html.twig`, a column declared with `property` and `sortable: true` renders a
-sort link (`gm_sort_path()`), toggling the direction on each click.
+In `crud/list.html.twig`, a column whose `property` is a sortable path renders a sort link
+(`gm_sort_path()`), toggling the direction on each click; `sortable: false` opts a column out.
 
 ## 2. Drag & drop reordering (`crud/list_tree.html.twig`)
 

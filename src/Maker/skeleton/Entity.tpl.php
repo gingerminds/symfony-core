@@ -11,7 +11,7 @@ namespace <?= $namespace ?>;
 // Index the default sort and the sortable / filtered columns once the table can grow:
 // #[ORM\Index(name: '<?= $resource->snakePlural ?>_name_idx', fields: ['name'])]
 <?php if ($api): include $skeleton_directory . '/ApiResource.tpl.php'; endif ?>
-class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'SearchableInterface', 'SortableInterface', 'TimestampableInterface', ...$interfaces, ...([] !== $eager_loads ? ['EagerLoadableInterface'] : []), '\Stringable']) ?>
+class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'SearchableInterface', 'TimestampableInterface', ...$interfaces, ...([] !== $eager_loads ? ['EagerLoadableInterface'] : []), '\Stringable']) ?>
 
 {
     use TimestampableTrait;
@@ -28,6 +28,7 @@ class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'Sea
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Sortable]
 <?php if ($api): ?>
     #[Groups([self::GROUP_LIST, self::GROUP_READ])]
 <?php endif ?>

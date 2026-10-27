@@ -16,7 +16,7 @@ use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\CacheableResourceTrait;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
@@ -39,7 +39,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     paginationClientItemsPerPage: true,
 )]
-class Product implements ResourceInterface, SortableInterface, SearchableInterface, FilterableInterface, EagerLoadableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
+class Product implements ResourceInterface, SearchableInterface, FilterableInterface, EagerLoadableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
 {
     use CacheableResourceTrait;
     use TimestampableTrait;
@@ -53,6 +53,7 @@ class Product implements ResourceInterface, SortableInterface, SearchableInterfa
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Groups(['product:list'])]
+    #[Sortable]
     private string $name = '';
 
     #[ORM\Column(type: Types::FLOAT)]
@@ -74,6 +75,7 @@ class Product implements ResourceInterface, SortableInterface, SearchableInterfa
     #[ORM\ManyToOne(targetEntity: Category::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     #[Groups(['product:list'])]
+    #[Sortable(paths: ['name'])]
     private ?Category $category = null;
 
     /**

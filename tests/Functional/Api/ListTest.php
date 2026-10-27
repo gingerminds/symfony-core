@@ -47,6 +47,16 @@ final class ListTest extends ApiTestCase
         self::assertSame(['Laptop', 'Tablet', 'Mouse', 'Cable', 'Phone'], $this->names($data));
     }
 
+    public function testAMappedFieldWithoutSortableIsIgnored(): void
+    {
+        // `price` and `category.id` are mapped, not `#[Sortable]`: id order.
+        foreach (['price', 'category.id'] as $path) {
+            $data = $this->api('GET', '/api/products?sort=desc&sortBy=' . $path, $this->token);
+
+            self::assertSame(['Laptop', 'Tablet', 'Phone', 'Mouse', 'Cable'], $this->names($data), $path);
+        }
+    }
+
     public function testUnknownSortPropertyIsIgnored(): void
     {
         $this->api('GET', '/api/products?sortBy=unknown); DROP TABLE products; --', $this->token);
