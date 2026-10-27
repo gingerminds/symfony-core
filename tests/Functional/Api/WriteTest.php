@@ -152,4 +152,24 @@ final class WriteTest extends ApiTestCase
         $this->assertStatus(200);
         self::assertSame('Profile', $data['contributor']['lastname']);
     }
+
+    public function testUserContributorIsReplacedByANewOne(): void
+    {
+        $user = $this->fixtures->user('api-replaced@example.com');
+        $oldId = $user->getContributor()?->getId();
+
+        $data = $this->api('PATCH', '/api/users/' . $user->getId(), $this->token, [
+            'contributorId' => '__new__',
+            'contributorFirstname' => 'Mary',
+            'contributorLastname' => 'Jackson',
+        ], 'application/merge-patch+json');
+
+        $this->assertStatus(200);
+        self::assertSame('Jackson', $data['contributor']['lastname']);
+        self::assertNotSame($oldId, $data['contributor']['id']);
+
+        $old = $this->api('GET', '/api/contributors/' . $oldId, $this->token);
+        $this->assertStatus(200);
+        self::assertArrayNotHasKey('user', $old);
+    }
 }

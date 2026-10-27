@@ -7,6 +7,7 @@ namespace Gingerminds\CoreBundle\Tests\Functional\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
+use Gingerminds\CoreBundle\Entity\User\Contributor;
 use Gingerminds\CoreBundle\Entity\User\User;
 use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
@@ -506,6 +507,50 @@ final class AdminTest extends ApiTestCase
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'grace-password'));
     }
 
+    public function testUserFormReplacesTheContributorByANewOne(): void
+    {
+        $this->client->loginUser($this->fixtures->user('admin-replace@example.com', superAdmin: true), 'admin');
+        $user = $this->fixtures->user('replaced@example.com');
+        $oldId = $user->getContributor()?->getId();
+
+        // contributors.user_id is unique: the old contributor is released before the new one is inserted.
+        $crawler = $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        $form = $crawler->filter('form[name="user"]')->form();
+        $form['user[contributorId]']->setValue(UserType::NEW_CONTRIBUTOR);
+        $form['user[contributorFirstname]'] = 'Katherine';
+        $form['user[contributorLastname]'] = 'Johnson';
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $this->assertContributorReplaced($user->getId(), $oldId, 'Katherine Johnson');
+    }
+
+    public function testUserFormReplacesTheContributorByAnotherExistingOne(): void
+    {
+        $this->client->loginUser($this->fixtures->user('admin-swap@example.com', superAdmin: true), 'admin');
+        $user = $this->fixtures->user('swapped@example.com');
+        $oldId = $user->getContributor()?->getId();
+        $free = new Contributor();
+        $free->setFirstname('Dorothy');
+        $free->setLastname('Vaughan');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($free);
+        $entityManager->flush();
+
+        $crawler = $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        // A remote autocomplete: the options are loaded by search, the submitted id is checked server side.
+        $form = $crawler->filter('form[name="user"]')->form()->disableValidation();
+        $form['user[contributorId]']->setValue((string) $free->getId());
+        // The contributor fields are applied to the selected contributor.
+        $form['user[contributorFirstname]'] = 'Dorothy';
+        $form['user[contributorLastname]'] = 'Vaughan';
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $this->assertContributorReplaced($user->getId(), $oldId, 'Dorothy Vaughan');
+        self::assertSame($free->getId(), self::getContainer()->get(EntityManagerInterface::class)->find(User::class, $user->getId())?->getContributor()?->getId());
+    }
+
     public function testAutocompleteEndpoint(): void
     {
         $this->client->loginUser($this->fixtures->user('autocomplete@example.com', ['view categories']), 'admin');
@@ -538,6 +583,23 @@ final class AdminTest extends ApiTestCase
 
         self::assertResponseRedirects('/admin/roles');
         self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Role::class, $role->getId()));
+    }
+
+    /**
+     * The user now has the $fullName contributor; the previous one is kept, without user.
+     */
+    private function assertContributorReplaced(?int $userId, ?int $oldContributorId, string $fullName): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $user = $entityManager->find(User::class, $userId);
+        $old = $entityManager->find(Contributor::class, $oldContributorId);
+
+        self::assertInstanceOf(User::class, $user);
+        self::assertSame($fullName, $user->getContributor()?->getFullName());
+        self::assertNotSame($oldContributorId, $user->getContributor()->getId());
+        self::assertInstanceOf(Contributor::class, $old, 'The previous contributor is kept.');
+        self::assertNull($old->getUser());
     }
 
     /**

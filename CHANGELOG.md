@@ -200,6 +200,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Replacing the contributor of a user who already has one (user form, admin or API: a new one
+  or another existing one) no longer fails with a 500 on the unique `contributors.user_id`: a
+  flush inserts the new contributor before it updates the old one. `UserRepository::save()`
+  releases the contributors the user leaves (`user_id` NULL, DQL `UPDATE`) before the flush, in
+  one transaction. The previous contributor is kept, without user.
 - No `sidebar_bottom` separator when its templates render nothing (e.g. a conditional switcher).
 - Required fields show a `*` after their label again (`.form-label.required`), as the Laravel
   core components did.

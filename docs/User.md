@@ -16,7 +16,9 @@ The user form links the account to an existing contributor or creates one
 (`contributorId = "__new__"` (`UserType::NEW_CONTRIBUTOR`) + `contributorFirstname`,
 `contributorLastname`, ...), exactly like the Laravel core: `UserType::submitContributor()`, a
 `POST_SUBMIT` listener of the form (admin and API), applies them once the form is valid; a new
-contributor is persisted with the user (cascade persist).
+contributor is persisted with the user (cascade persist). The contributor a user leaves is kept,
+without user: `UserRepository::save()` releases it before inserting or linking the new one
+(`contributors.user_id` is unique).
 
 The plain password (`plainPassword`, the `password` field of the form, `--password` of
 `gingerminds:create:user`) is hashed into `password` on flush by `UserPasswordListener`, a
