@@ -10,7 +10,7 @@ use Doctrine\ORM\Tools\Pagination\Paginator as DoctrinePaginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\SortableFields;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerRegistry;
 use Gingerminds\CoreBundle\Repository\Query\EagerLoader;
@@ -289,7 +289,8 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     {
         $qb = $helper->getQueryBuilder();
 
-        if (null !== $query->sortBy && is_subclass_of($this->getEntityClass(), SortableInterface::class)) {
+        // Only the `#[Sortable]` paths: never an arbitrary mapped field (`password`) or join.
+        if (null !== $query->sortBy && SortableFields::allows($this->getEntityClass(), $query->sortBy)) {
             $field = $helper->resolveField($query->sortBy);
 
             if (null !== $field) {

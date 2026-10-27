@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\Trait\UserRolesTrait;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -20,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['email'])]
-abstract class BaseUser implements UserInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseUser implements UserInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
     use UserRolesTrait;
@@ -49,6 +49,7 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
         BaseContributor::GROUP_LIST,
         BaseContributor::GROUP_READ,
     ])]
+    #[Sortable]
     protected ?string $email = null;
 
     #[ORM\Column(nullable: true)]
@@ -65,6 +66,7 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
 
     #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user')]
     #[Groups([self::GROUP_LIST, self::GROUP_READ])]
+    #[Sortable(paths: ['lastname'])]
     protected ?ContributorInterface $contributor = null;
 
     public function __construct()

@@ -74,6 +74,16 @@ final class AdminTest extends ApiTestCase
         self::assertResponseIsSuccessful();
     }
 
+    public function testOnlySortableColumnsLinkToASort(): void
+    {
+        $this->client->loginUser($this->fixtures->user('sort@example.com', superAdmin: true), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/users');
+
+        self::assertSame(['email', 'contributor.lastname'], $crawler->filter('th.sortable')->each(static fn ($th): ?string => $th->attr('data-sort')));
+        self::assertStringContainsString('sortBy=email', (string) $crawler->filter('th[data-sort="email"] a')->attr('href'));
+    }
+
     public function testListHeadHasPaginationLinks(): void
     {
         $this->client->loginUser($this->fixtures->user('rel-a@example.com', superAdmin: true), 'admin');

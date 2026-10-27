@@ -63,7 +63,7 @@ final class MakerExtensionTest extends TestCase
 
         $entity = (string) file_get_contents($this->directory . '/src/Entity/Catalog/Product.php');
         self::assertStringContainsString('use Countable;', $entity);
-        self::assertStringContainsString('implements ResourceInterface, SearchableInterface, SortableInterface, TimestampableInterface, Countable, EagerLoadableInterface, \Stringable' . "\n{", $entity);
+        self::assertStringContainsString('implements ResourceInterface, SearchableInterface, TimestampableInterface, Countable, EagerLoadableInterface, \Stringable' . "\n{", $entity);
         self::assertStringContainsString('use Gingerminds\CoreBundle\Model\EagerLoadableInterface;', $entity);
         self::assertStringContainsString("return ['category'];", $entity);
 

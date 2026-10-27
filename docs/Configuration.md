@@ -77,8 +77,11 @@ Every date of the system is UTC; only what a user types or reads uses `display_t
 (default `Europe/Paris`, `'%env(APP_DISPLAY_TIMEZONE)%'` works):
 
 - storage: the `datetime` and `datetime_immutable` Doctrine types are replaced by UTC ones
-  (written in UTC whatever the timezone of the instance, hydrated as UTC) and the bundle sets
-  the PHP default timezone to UTC (`new \DateTimeImmutable()`, logs, API output);
+  (written in UTC whatever the timezone of the instance, hydrated as UTC);
+- API output: the serializer writes every date in UTC (prepended
+  `framework.serializer.default_context.datetime_timezone`);
+- the bundle does not change the PHP default timezone (`new \DateTimeImmutable()`, logs): set
+  `date.timezone` in your `php.ini` (`UTC` recommended), storage and API output do not depend on it;
 - display: the Twig `date` filter (and `format_date*`) uses the display timezone
   (prepended `twig.date.timezone`);
 - forms: `DateTimeType` defaults to `model_timezone: UTC` and `view_timezone: <display>`.

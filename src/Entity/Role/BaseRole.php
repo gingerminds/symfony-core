@@ -12,7 +12,7 @@ use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -23,7 +23,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['name'])]
-abstract class BaseRole implements RoleInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseRole implements RoleInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -42,6 +42,7 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Sortab
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT, BaseUser::GROUP_LIST, BaseUser::GROUP_READ])]
+    #[Sortable]
     protected ?string $name = null;
 
     #[ORM\Column(name: 'is_external', options: ['default' => false])]

@@ -9,14 +9,14 @@ use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Enum\Civility;
 use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
-abstract class BaseContributor implements ContributorInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseContributor implements ContributorInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -47,6 +47,7 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     #[Groups(self::PROFILE_GROUPS)]
+    #[Sortable]
     protected ?string $lastname = null;
 
     #[ORM\Column(length: 255)]

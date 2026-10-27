@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **BC break** Sorting: `SortableInterface` is replaced by the `#[Sortable]` property attribute
+  (`#[Sortable(paths: ['name'])]` on a to-one association). `?sortBy=` only accepts the marked
+  paths, no longer any mapped field (`password`) or join; the admin column headers link the
+  `#[Sortable]` properties (`sortable_fields` template variable instead of `is_sortable`,
+  `sortable: false` to opt a column out). `RoleRepository::save()` runs in a transaction: a
+  failed flush keeps the previous default role.
+
 ### Added
 
 - Input groups: `input_prefix` / `input_suffix` options on every field (`InputGroupTypeExtension`),
@@ -22,7 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   the `make:gm:*` form template, `gm_form_includes(name, column)`.
 - Dates are stored in UTC and displayed in `gingerminds_core.display_timezone` (default
   `Europe/Paris`): `datetime` / `datetime_immutable` Doctrine types written and read in UTC,
-  PHP default timezone set to UTC, Twig `date` filter and `DateTimeType` fields
+  API dates serialized in UTC (`framework.serializer.default_context`), the PHP default
+  timezone left to `php.ini`, Twig `date` filter and `DateTimeType` fields
   (`model_timezone: UTC`, `view_timezone`) in the display timezone, `date` filters and date
   facets on the days of the display timezone. `DisplayTimezone` service (`toUtc()`,
   `toDisplay()`, `dayRange()`, `dayRangeToUtc()`).
