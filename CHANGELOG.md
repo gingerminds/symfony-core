@@ -53,7 +53,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (set by the CRUD route loader): `getResourceName()` and its loop over the registry are removed,
   `getResource()` is not cached any more. `edit()` / `delete()` receive the entity, resolved by
   `ResourceEntityValueResolver` (`#[ValueResolver(ResourceEntityValueResolver::class)]`, 404
-  before the access check), instead of a `string $id`; `findEntity()` is removed. Forms are
+  before the access check), instead of a `string $id`; `findEntity()` is removed: an entity of
+  another parent (nested resource) is refused by `entityBelongsToRoute()`, a public method checked
+  by `ResourceEntityRouteListener` before the access check (404), by default for each `{xxxId}`
+  route parameter naming a to-one association `xxx` of the entity. Forms are
   passed to `render()` as `FormInterface` (422 on an invalid submission by `AbstractController`).
   The bundle controllers are service subscribers (`container.service_subscriber`,
   `setContainer()`); `ProfileController` takes Doctrine and the translator, `AuthController` no

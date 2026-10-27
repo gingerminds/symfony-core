@@ -218,6 +218,44 @@ final class AdminTest extends ApiTestCase
         self::assertNull($entityManager->find(Product::class, $product->getId()));
     }
 
+    public function testNestedResourceRefusesAnEntityOfAnotherParent(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $tractors = new Category('Tractors');
+        $boats = new Category('Boats');
+        $product = new Product();
+        $product->setName('T-800');
+        $product->setCategory($tractors);
+        $entityManager->persist($tractors);
+        $entityManager->persist($boats);
+        $entityManager->persist($product);
+        $entityManager->flush();
+        $this->client->loginUser($this->fixtures->user('parent@example.com', superAdmin: true), 'admin');
+        $own = '/admin/categories/' . $tractors->getId() . '/products/' . $product->getId();
+        $foreign = '/admin/categories/' . $boats->getId() . '/products/' . $product->getId();
+
+        $this->client->request('GET', $own . '/edit');
+        self::assertResponseIsSuccessful();
+        // A valid token: the 404 is not the CSRF check.
+        $token = $this->deleteToken('/admin/categories/' . $tractors->getId() . '/products', $own . '/delete');
+
+        // AbstractCrudController::entityBelongsToRoute(): {categoryId} must be the product's category.
+        $this->client->request('GET', $foreign . '/edit');
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('POST', $foreign . '/edit', ['category_product' => ['name' => 'Hijacked']]);
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('POST', $foreign . '/delete', ['_token' => $token]);
+        self::assertResponseStatusCodeSame(404);
+
+        // Before the access check: a user without the permission gets the same 404.
+        $this->client->loginUser($this->fixtures->user('parent-none@example.com', ['view categories']), 'admin');
+        $this->client->request('GET', $foreign . '/edit');
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->clear();
+        self::assertSame('T-800', $entityManager->find(Product::class, $product->getId())?->getName());
+    }
+
     public function testInvalidDeleteTokenRedirectsBackWithAFlash(): void
     {
         $role = $this->fixtures->role('Editors');

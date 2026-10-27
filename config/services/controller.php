@@ -7,6 +7,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 use Gingerminds\CoreBundle\Controller\AutocompleteController;
 use Gingerminds\CoreBundle\Controller\Dashboard\DashboardController;
 use Gingerminds\CoreBundle\Controller\EventListener\InvalidCsrfTokenListener;
+use Gingerminds\CoreBundle\Controller\EventListener\ResourceEntityRouteListener;
 use Gingerminds\CoreBundle\Controller\HealthController;
 use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
@@ -53,6 +54,10 @@ return static function (ContainerConfigurator $container): void {
     $services->set('gingerminds_core.value_resolver.resource_entity', ResourceEntityValueResolver::class)
         ->args([service('gingerminds_core.resource_registry'), service('doctrine')])
         ->tag('controller.targeted_value_resolver', ['name' => ResourceEntityValueResolver::class]);
+
+    // Before the #[IsGranted] / #[IsCsrfTokenValid] checks: an entity of another parent is a 404.
+    $services->set('gingerminds_core.listener.resource_entity_route', ResourceEntityRouteListener::class)
+        ->tag('kernel.event_listener', ['event' => KernelEvents::CONTROLLER_ARGUMENTS, 'priority' => ResourceEntityRouteListener::PRIORITY]);
 
     // Before the firewall's ExceptionListener (priority 1), which sends to the login page.
     $services->set('gingerminds_core.listener.invalid_csrf_token', InvalidCsrfTokenListener::class)

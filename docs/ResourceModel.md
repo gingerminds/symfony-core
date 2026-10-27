@@ -182,8 +182,23 @@ the redirects after save and delete keep them, and the templates get them as `ro
 (list, tree, form and row action links). Filter the list on the parent in the repository or with
 `createListQuery()` and set it on new entities in `createEntity()`. The entity of `edit()` and
 `delete()` is loaded by `ResourceEntityValueResolver` (the repository's `findOneForRead()`, 404
-when missing); to refuse one of another parent, override the action (re-declare its attributes,
-PHP does not inherit them) and throw `createNotFoundException()`.
+when missing), then must belong to the route: `entityBelongsToRoute(object $entity, array
+$routeParameters): bool` returning false is a 404, checked before `#[IsGranted]` and
+`#[IsCsrfTokenValid]` (`ResourceEntityRouteListener`) for every argument of that resolver,
+including your own actions. By default, a `{xxxId}` parameter naming a to-one association `xxx` of
+the entity must be its identifier: `categories/{categoryId}/products` refuses a product whose
+`category` is another one, with no code. Override it when the association is named otherwise or
+for another rule:
+
+```php
+public function entityBelongsToRoute(object $entity, array $routeParameters): bool
+{
+    // The menu of the route must be one of the current site (getMenu() throws a 404 otherwise).
+    return $entity instanceof MenuItemInterface
+        && $entity->getMenu() === $this->getMenu()
+        && parent::entityBelongsToRoute($entity, $routeParameters);
+}
+```
 
 ### Controller services
 

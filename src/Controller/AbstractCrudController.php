@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller;
 
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
@@ -37,7 +38,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  * with the `_resource` default naming the resource. A subclass adds its own actions the same way
  * (`#[Route('/reorder', name: 'reorder')]` serves `/{admin_prefix}/{path}/reorder`, route
  * `{route_prefix}_reorder`). The entity of edit/delete is resolved by ResourceEntityValueResolver
- * (404 before the access check).
+ * and must belong to the route (entityBelongsToRoute(), the parent of a nested resource): 404
+ * before the access check.
  */
 abstract class AbstractCrudController extends AbstractController
 {
@@ -251,6 +253,54 @@ abstract class AbstractCrudController extends AbstractController
         unset($parameters['id'], $parameters['_resource']);
 
         return $parameters;
+    }
+
+    /**
+     * Whether the entity of the route's `{id}` (resolved by ResourceEntityValueResolver) belongs to
+     * the route's other parameters: false is a 404, checked by ResourceEntityRouteListener before
+     * the access and CSRF checks, for every action argument of that resolver (edit, delete, a
+     * subclass' own action).
+     *
+     * By default, each `{xxxId}` parameter naming a to-one association `xxx` of the entity must
+     * be the identifier of that association (`categories/{categoryId}/products`: the product's
+     * `category`); the other parameters are not checked. Override it for another rule (an
+     * association named otherwise, a parent restricted to the current site...), keeping the
+     * convention with `parent::entityBelongsToRoute()` if it applies.
+     *
+     * It is public for the listener: it is not an action (no #[Route]).
+     *
+     * @param array<string, mixed> $routeParameters the parameters of the route but `id` (getRouteParameters())
+     */
+    public function entityBelongsToRoute(object $entity, array $routeParameters): bool
+    {
+        $manager = $this->getDoctrine()->getManagerForClass($entity::class);
+        $metadata = $manager?->getClassMetadata($entity::class);
+
+        if (null === $manager || !$metadata instanceof ClassMetadata) {
+            return true;
+        }
+
+        foreach ($routeParameters as $name => $value) {
+            $association = str_ends_with($name, 'Id') ? substr($name, 0, -2) : '';
+
+            if ('' === $association || !\is_scalar($value) || !$metadata->isSingleValuedAssociation($association)) {
+                continue;
+            }
+
+            $parent = $metadata->getFieldValue($entity, $association);
+
+            if (!\is_object($parent)) {
+                return false;
+            }
+
+            $identifier = array_values($manager->getClassMetadata($parent::class)->getIdentifierValues($parent));
+
+            if (1 !== \count($identifier) || !\is_scalar($identifier[0]) || (string) $identifier[0] !== (string) $value) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function getDeleteError(object $entity): ?string
