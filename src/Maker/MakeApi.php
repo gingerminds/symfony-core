@@ -14,9 +14,9 @@ use Symfony\Component\Console\Input\InputInterface;
 
 /**
  * make:gm:api Namespace/Name (Laravel make:api-provider + make:state-processor):
- * `App\State\Namespace\NameProvider` (ResourceProvider) and
- * `App\State\Namespace\NameProcessor` (ResourceProcessor submitting the
- * payload to the resource form type).
+ * `App\State\Namespace\NameProvider` (ResourceProvider). No processor: writes are
+ * deserialized and validated by API Platform, persisted by its Doctrine processor through
+ * the repository save hooks.
  */
 final class MakeApi extends AbstractResourceMaker
 {
@@ -27,7 +27,7 @@ final class MakeApi extends AbstractResourceMaker
 
     public static function getCommandDescription(): string
     {
-        return 'Create the API Platform state provider and processor of a Gingerminds resource';
+        return 'Create the API Platform state provider of a Gingerminds resource';
     }
 
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
@@ -48,7 +48,7 @@ final class MakeApi extends AbstractResourceMaker
         $this->generatorFor($input)->generateApi($generator, $io, $resource);
 
         $this->finish($generator, $io, [
-            \sprintf('They require <comment>%s</comment> and <comment>%s</comment>.', $resource->repositoryClass(), $resource->formClass()),
+            \sprintf('It requires <comment>%s</comment>.', $resource->repositoryClass()),
         ], $input, $resource);
 
         $this->writeApiResourceSnippet($io, $resource);

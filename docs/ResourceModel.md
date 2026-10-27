@@ -1,7 +1,7 @@
 # Resource model
 
 A resource is the combination of an **entity**, its **repository**, its **form type**, a
-**voter**, and optionally a **CRUD controller** (admin) and an **API provider/processor**.
+**voter**, and optionally a **CRUD controller** (admin) and an **API provider**.
 `bin/console make:gm:resource Namespace/Name [--api]` generates all of it (see [Commands](Commands.md)).
 
 ## Entity
@@ -163,7 +163,8 @@ public function new(Request $request): Response
 ```
 
 Templates and hooks: see [Layouts](templating/layouts.md). Useful hooks: `createEntity()`, `getFormOptions()`,
-`getIndexParameters()`, `getFormParameters()`, `getDeleteError()`, `redirectAfterSave()`,
+`getIndexParameters()`, `getFormParameters()`, `getDeleteError()` (by default the first violation of
+the `{resource}:delete` validation group, shared with the API `Delete`), `redirectAfterSave()`,
 `createListQuery()` (force a filter on the admin list). The redirect after a save is
 configurable without code: see [Redirect after save](Configuration.md#redirect-after-save).
 

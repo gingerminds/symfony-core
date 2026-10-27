@@ -90,6 +90,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   would silently lose its route or its access check. Route names and URLs are unchanged. The dashboard, login, logout, profile,
   autocomplete, health and API login/logout routes are `#[Route]` attributes too, imported by
   `config/routes/*.php` (names and paths unchanged); the bundle controllers are aliased by class.
+- **BC break** API writes are native API Platform: no Symfony Form any more. `ResourceProcessor`,
+  `RoleProcessor`, the `gingerminds_core.api.processor.{user,contributor,role,permission}` services,
+  the `Processor.tpl.php` maker skeleton, `ResourceName::processorClass()` and the
+  `api.error.invalid_json` translation are removed; the operations lose `deserialize: false` and
+  `processor:`. The payload is deserialized with the `denormalizationContext` groups (now real:
+  `user:create`, `user:edit`, `role:edit` with `permissions`...), validated by the entity
+  constraints, persisted by `api_platform.doctrine.orm.state.persist_processor` /
+  `remove_processor`, decorated by `RepositoryProcessor` to run inside the new
+  `RepositoryInterface::saveWith()` / `removeWith()` (the repository hooks and transactions of the
+  admin: unique default role, contributor released). `make:gm:api` / `--api` generate the provider
+  and an `#[ApiResource]` without processor. New API contract:
+  - relations by id (`"roles": [3, "4"]`, `"contributor": 12`) or by IRI (`"/api/roles/3"`), through
+    the generic `RelationIdDenormalizer`; an unknown id is a `400`. Reads keep embedding the related
+    objects with their `id`;
+  - `plainPassword` (write only, required on creation by the `user:create` validation group) instead
+    of `password: {first, second}`;
+  - the user contributor is the `contributor` relation: an id/IRI links an existing one, a nested
+    document creates one on `POST` (merged into the current one on `PATCH`, JSON Merge Patch); a new
+    contributor replacing the current one is `POST /api/contributors` with `user`.
+    `contributorId` / `__new__` / `contributor*` are admin form fields only;
+  - errors are the native `422` + `violations`, the Super-Admin role deletion included (a violation
+    on `name`, `Delete` with `validate: true` and the new `role:delete` group,
+    `BaseRole::GROUP_DELETE`) instead of a `422` with `detail`; the message moves to the
+    `validators` domain (`role.super_admin_delete`).
+
+  `AbstractCrudController::getDeleteError()` returns by default the first violation of the
+  `{resource}:delete` validation group (`RoleController::getDeleteError()` is removed);
+  `UserType` requires the password through the `user:create` validation group instead of a field
+  constraint. `UserRepository::save()` / `RoleRepository::save()` overrides become `saveWith()`
+  ones; the contributor release moves to `ContributorRepository::writeUserLinks()`, run by the
+  user and the contributor saves. `BaseUser::setContributor()` and `BaseContributor::setUser()`
+  keep both sides in sync (the side left is released). `BaseUser::$contributor` is
+  `#[Assert\Valid]`.
 
 ### Added
 

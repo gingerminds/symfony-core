@@ -30,6 +30,9 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
         self::GROUP_EDIT,
         BaseUser::GROUP_LIST,
         BaseUser::GROUP_READ,
+        // A new contributor written as a nested document of the user.
+        BaseUser::GROUP_CREATE,
+        BaseUser::GROUP_EDIT,
     ];
 
     #[ORM\Id]

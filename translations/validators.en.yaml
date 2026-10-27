@@ -1,3 +1,5 @@
 user:
     password:
         mismatch: The passwords do not match.
+role:
+    super_admin_delete: The Super-Admin role cannot be deleted.

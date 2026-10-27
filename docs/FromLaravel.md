@@ -37,7 +37,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `gingerminds-core.auth` + `EnsureAdminAreaIsAuthenticated` | firewall `access_control ^/admin` | |
 | Sanctum | `access_token` authenticator + `ApiToken` entity | Hashed, revocable, optional TTL. |
 | `LoginResponseEnricherInterface` (tag) | same, autoconfigured | |
-| `AbstractApiProvider` / `BaseStateProcessor` | `ResourceProvider` / `ResourceProcessor` | Generic: core resources need no class. |
+| `AbstractApiProvider` / `BaseStateProcessor` | `ResourceProvider` / native API Platform writes | Generic: core resources need no class. Writes are deserialized, validated and persisted by API Platform (Doctrine processor run inside the repository save hooks), no form. |
 | `addFilters()` | `configureListQuery()` | |
 | `ClassHierarchyResourceNameCollectionFactory` | not needed | An overridden bundle entity is excluded from the Doctrine mapping and API resources. |
 | `ApiHeaderParameterRegistry` | `HeaderParameterRegistry` + `HeaderParameterProviderInterface` | |
@@ -58,8 +58,11 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
   the Laravel core only required a token.
 - **User deletion from the admin** requires `delete users` (the Laravel controller did not
   check it) and a user can never delete their own account.
-- **API payloads**: field names follow the form (`isExternal`, `isDefault`, `roles` as role
-  ids, `password: {first, second}`, `contributorId`/`contributorFirstname`...).
+- **API payloads**: native API Platform: the serialized names of the entity (`isExternal`,
+  `isDefault`, `roles`), relations by id (`"roles": [3]`, `"contributor": 12`) or IRI, a new
+  contributor as a nested document (`"contributor": {"firstname": ..., "lastname": ...}`), a
+  single `plainPassword` (no confirmation). Validation errors are a `422` with `violations`; the
+  Super-Admin role deletion too (a violation on `name`). See [API](API.md#relations-by-id-or-by-iri).
 - **Number filter**: `0` is a valid bound (the Laravel handler ignored it).
 - **Lists** always end their ordering with the identifier, so pagination is stable.
 - **`itemsPerPage`** is capped by `AbstractRepository::$maxItemsPerPage` (200).

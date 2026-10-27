@@ -7,6 +7,9 @@ namespace Gingerminds\CoreBundle\Tests\Functional;
 use ApiPlatform\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
+use Doctrine\ORM\Tools\SchemaTool;
+use Gingerminds\CoreBundle\Entity\Role\Role;
+use Gingerminds\CoreBundle\Entity\Security\ApiToken;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Entity\User\Contributor;
 use Gingerminds\CoreBundle\Entity\User\User as CoreUser;
@@ -15,6 +18,7 @@ use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Gingerminds\CoreBundle\Tests\Application\Kernel;
 use Gingerminds\CoreBundle\Tests\Application\Override\User;
 use PHPUnit\Framework\TestCase;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken;
 
@@ -82,6 +86,61 @@ final class EntityOverrideTest extends TestCase
         self::assertTrue($decisionManager->decide($token, ['VIEW'], $user));
         self::assertFalse($decisionManager->decide($token, ['DELETE'], new User()));
         self::assertFalse($decisionManager->decide($token, ['CREATE'], 'user'));
+    }
+
+    /**
+     * The bundle write behavior applies to the project entity: native deserialization with
+     * relations by id, validation (password required on creation), password hashing and
+     * contributor link written by the repository hooks.
+     */
+    public function testTheProjectUserIsWrittenThroughTheApi(): void
+    {
+        $entityManager = $this->entityManager();
+        $schemaTool = new SchemaTool($entityManager);
+        $schemaTool->dropDatabase();
+        $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
+
+        $superAdmin = new Role();
+        $superAdmin->setName(UserInterface::SUPER_ADMIN_ROLE);
+        $member = new Role();
+        $member->setName('Member');
+        $admin = new User();
+        $admin->setEmail('admin@example.com');
+        $admin->addRoleEntity($superAdmin);
+        $token = ApiToken::generatePlainToken();
+
+        foreach ([$superAdmin, $member, $admin, new ApiToken($admin, 'test', $token)] as $entity) {
+            $entityManager->persist($entity);
+        }
+
+        $entityManager->flush();
+
+        $client = new KernelBrowser(self::$kernel);
+        $server = ['HTTP_ACCEPT' => 'application/ld+json', 'HTTP_AUTHORIZATION' => 'Bearer ' . $token, 'CONTENT_TYPE' => 'application/json'];
+
+        $client->request('POST', '/api/users', server: $server, content: json_encode(['email' => 'no-password@example.com'], \JSON_THROW_ON_ERROR));
+        self::assertSame(422, $client->getResponse()->getStatusCode());
+
+        $client->request('POST', '/api/users', server: $server, content: json_encode([
+            'email' => 'project@example.com',
+            'plainPassword' => 'secret-password',
+            'phone' => '0102030405',
+            'roles' => [$member->getId()],
+            'contributor' => ['firstname' => 'Ada', 'lastname' => 'Lovelace'],
+        ], \JSON_THROW_ON_ERROR));
+
+        self::assertSame(201, $client->getResponse()->getStatusCode(), (string) $client->getResponse()->getContent());
+        $data = json_decode((string) $client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame('0102030405', $data['phone']);
+        self::assertSame('Member', $data['roles'][0]['name']);
+        self::assertSame('Lovelace', $data['contributor']['lastname']);
+
+        $entityManager->clear();
+        $user = $entityManager->getRepository(User::class)->find($data['id']);
+        self::assertInstanceOf(User::class, $user);
+        self::assertNotNull($user->getPassword());
+        self::assertNotSame('secret-password', $user->getPassword());
+        self::assertSame('Lovelace', $user->getContributor()?->getLastname());
     }
 
     private function entityManager(): EntityManagerInterface

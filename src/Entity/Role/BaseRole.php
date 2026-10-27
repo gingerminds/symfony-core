@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
+use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Model\EagerLoad;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
@@ -31,6 +32,11 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, \Strin
     public const string GROUP_READ = 'role:read';
     public const string GROUP_EDIT = 'role:edit';
 
+    /**
+     * Validation group of a deletion (admin and API Delete).
+     */
+    public const string GROUP_DELETE = 'role:delete';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -41,6 +47,7 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, \Strin
     #[ORM\Column(length: 255, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
+    #[Assert\NotEqualTo(value: UserInterface::SUPER_ADMIN_ROLE, message: 'role.super_admin_delete', groups: [self::GROUP_DELETE])]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT, BaseUser::GROUP_LIST, BaseUser::GROUP_READ])]
     #[Sortable]
     #[Searchable]
@@ -66,7 +73,7 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, \Strin
     #[ORM\JoinTable(name: 'role_permissions')]
     #[ORM\JoinColumn(name: 'role_id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'permission_id', onDelete: 'CASCADE')]
-    #[Groups([self::GROUP_READ])]
+    #[Groups([self::GROUP_READ, self::GROUP_EDIT])]
     #[EagerLoad]
     protected Collection $permissions;
 

@@ -57,9 +57,12 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, \Strin
     protected ?string $password = null;
 
     /**
-     * Never persisted: hashed into $password on flush by UserPasswordListener.
+     * Never persisted: hashed into $password on flush by UserPasswordListener. Write only,
+     * required on creation.
      */
+    #[Assert\NotBlank(groups: [self::GROUP_CREATE])]
     #[Assert\Length(min: 8, max: 4096)]
+    #[Groups([self::GROUP_CREATE, self::GROUP_EDIT])]
     protected ?string $plainPassword = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
@@ -68,10 +71,12 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, \Strin
     /**
      * Eager loaded: shown by the admin list and the `user:list` group, and the inverse side of a
      * one-to-one, which Doctrine can't lazy load (one query per user otherwise). A new
-     * contributor given to the user (user form) is persisted with it.
+     * contributor given to the user (user form, nested API document) is persisted with it.
+     * Written as an existing contributor (id or IRI) or a new one (nested document).
      */
     #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user', cascade: ['persist'])]
-    #[Groups([self::GROUP_LIST, self::GROUP_READ])]
+    #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_CREATE, self::GROUP_EDIT])]
+    #[Assert\Valid]
     #[Sortable(paths: ['lastname'])]
     #[EagerLoad]
     protected ?ContributorInterface $contributor = null;

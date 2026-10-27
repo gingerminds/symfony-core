@@ -15,13 +15,17 @@ Any feature needing "who is this" data should reference the contributor, not the
 The user form links the account to an existing contributor or creates one
 (`contributorId = "__new__"` (`UserType::NEW_CONTRIBUTOR`) + `contributorFirstname`,
 `contributorLastname`, ...), exactly like the Laravel core: `UserType::submitContributor()`, a
-`POST_SUBMIT` listener of the form (admin and API), applies them once the form is valid; a new
-contributor is persisted with the user (cascade persist). The contributor a user leaves is kept,
-without user: `UserRepository::save()` releases it before inserting or linking the new one
-(`contributors.user_id` is unique).
+`POST_SUBMIT` listener of the admin form, applies them once the form is valid. The API writes the
+`contributor` relation natively: an id or IRI links an existing contributor, a nested document
+creates one (see [API](API.md#relations-by-id-or-by-iri)). Either way a new contributor is
+persisted with the user (cascade persist), and `BaseUser::setContributor()` /
+`BaseContributor::setUser()` keep both sides in sync. The contributor a user leaves is kept,
+without user: `ContributorRepository::writeUserLinks()` (run by the user and contributor
+`saveWith()`) releases it before inserting or linking the new one (`contributors.user_id` is
+unique).
 
-The plain password (`plainPassword`, the `password` field of the form, `--password` of
-`gingerminds:create:user`) is hashed into `password` on flush by `UserPasswordListener`, a
+The plain password (`plainPassword` in the API, required on creation by the `user:create`
+validation group, the `password` field of the form, `--password` of `gingerminds:create:user`) is hashed into `password` on flush by `UserPasswordListener`, a
 Doctrine entity listener of the user entity (`preFlush`: it also runs when only the unmapped
 plain password changed).
 

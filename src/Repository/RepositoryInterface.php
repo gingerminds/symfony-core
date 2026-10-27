@@ -44,8 +44,8 @@ interface RepositoryInterface
 
     /**
      * Saves the entity with $write, which persists and flushes it, run between the save hooks
-     * (and in the transaction the repository needs). save() writes through it, so can another
-     * writer (e.g. an API Platform processor): same hooks for both.
+     * (and in the transaction the repository needs). save() writes through it, so does the
+     * API Platform Doctrine persist processor (RepositoryProcessor): same hooks for both.
      *
      * @template R
      *

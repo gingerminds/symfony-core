@@ -11,7 +11,6 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use Doctrine\Persistence\ManagerRegistry;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProcessor;
 use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
 use Gingerminds\CoreBundle\Controller\AbstractCrudController;
 use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
@@ -27,7 +26,6 @@ use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -87,7 +85,6 @@ final readonly class ResourceGenerator
             $uses[] = Post::class;
             $uses[] = Groups::class;
             $uses[] = $resource->providerClass();
-            $uses[] = $resource->processorClass();
         }
 
         $skeleton = $this->skeleton('Entity.tpl.php', $resource, [
@@ -95,7 +92,6 @@ final readonly class ResourceGenerator
             'api' => $api,
             'repository_class' => self::shortName($resource->repositoryClass()),
             'provider_class' => self::shortName($resource->providerClass()),
-            'processor_class' => self::shortName($resource->processorClass()),
             // Extra implemented interfaces / used traits (short names, imported with `uses`).
             'interfaces' => [],
             'traits' => [],
@@ -159,7 +155,8 @@ final readonly class ResourceGenerator
     }
 
     /**
-     * API Platform state provider and processor.
+     * API Platform state provider. Writes need no processor: API Platform deserializes and
+     * validates the entity, the Doctrine processor persists it through the repository save hooks.
      */
     public function generateApi(Generator $generator, ConsoleStyle $io, ResourceName $resource): void
     {
@@ -172,19 +169,6 @@ final readonly class ResourceGenerator
             $resource->repositoryClass(),
             RequestStack::class,
         ]));
-
-        $this->generateClassFromSkeleton($generator, $io, $resource->processorClass(), $this->skeleton('Processor.tpl.php', $resource, [
-            'entity_class' => self::shortName($resource->entityClass()),
-            'repository_class' => self::shortName($resource->repositoryClass()),
-            'form_class' => self::shortName($resource->formClass()),
-        ], [
-            ResourceProcessor::class,
-            $resource->entityClass(),
-            $resource->formClass(),
-            $resource->repositoryClass(),
-            FormFactoryInterface::class,
-            RequestStack::class,
-        ]));
     }
 
     public function apiResourceSnippet(ResourceName $resource): string
@@ -192,7 +176,6 @@ final readonly class ResourceGenerator
         return $this->render($this->skeletonDirectory . '/ApiResource.tpl.php', [
             'resource' => $resource,
             'provider_class' => self::shortName($resource->providerClass()),
-            'processor_class' => self::shortName($resource->processorClass()),
         ]);
     }
 

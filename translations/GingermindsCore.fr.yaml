@@ -174,8 +174,6 @@ role:
     form:
         resource: Ressource
         check_all: Tout cocher
-    error:
-        super_admin_delete: Le rôle Super-Admin ne peut pas être supprimé.
     message:
         no_items: Aucun rôle
 
@@ -193,10 +191,6 @@ permission:
         name: 'Convention « action ressource », par exemple « edit users » : la permission est regroupée par ressource sur le formulaire des rôles.'
     message:
         no_items: Aucune permission
-
-api:
-    error:
-        invalid_json: Le contenu JSON de la requête est invalide.
 
 admin:
     title: Administration

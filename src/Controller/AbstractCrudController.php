@@ -29,6 +29,7 @@ use Symfony\Component\HttpKernel\Attribute\ValueResolver;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
@@ -58,6 +59,7 @@ abstract class AbstractCrudController extends AbstractController
             ResourceRegistry::class => ResourceRegistry::class,
             'doctrine' => ManagerRegistry::class,
             'translator' => TranslatorInterface::class,
+            'validator' => ValidatorInterface::class,
         ];
     }
 
@@ -304,9 +306,19 @@ abstract class AbstractCrudController extends AbstractController
         return true;
     }
 
+    /**
+     * Why the entity cannot be deleted, null when it can: by default the first violation of
+     * its `{resource}:delete` validation group, the group its API Delete operation validates
+     * too (`validate: true`), e.g. the Super-Admin role.
+     */
     protected function getDeleteError(object $entity): ?string
     {
-        return null;
+        $validator = $this->container->get('validator');
+        \assert($validator instanceof ValidatorInterface);
+
+        $violations = $validator->validate($entity, null, [$this->getResource()->name . ':delete']);
+
+        return 0 === \count($violations) ? null : (string) $violations->get(0)->getMessage();
     }
 
     protected function getLabel(object $entity): string

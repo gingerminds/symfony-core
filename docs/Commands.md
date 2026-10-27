@@ -13,7 +13,7 @@ namespace becomes the sub-folder/sub-namespace, the name the class name.
 | `make:gm:repository` | `App\Repository\<Ns>\<Name>Repository` extending `AbstractRepository` | `make:repository` |
 | `make:gm:form` | `App\Form\<Ns>\<Name>Type` | `make:form-request` |
 | `make:gm:crud-controller` | `App\Controller\<Ns>\<Name>Controller` (`#[AsCrudController]`) + templates `admin/<name>/*` + translations | `make:controller-full` |
-| `make:gm:api` | `App\State\<Ns>\<Name>Provider` + `<Name>Processor` | `make:api-provider` + `make:state-processor` |
+| `make:gm:api` | `App\State\<Ns>\<Name>Provider` (writes: native processor) | `make:api-provider` + `make:state-processor` |
 
 Existing files are never overwritten: they are skipped and reported.
 
@@ -25,7 +25,7 @@ bin/console make:gm:resource Catalog/Product [--api] [--no-controller]
 
 | Option | Effect |
 |---|---|
-| `--api` | Also generates the API provider/processor and the `#[ApiResource]` (5 operations secured by the resource voter, `deserialize: false`, serialization groups). |
+| `--api` | Also generates the API provider and the `#[ApiResource]` (5 operations secured by the resource voter, serialization groups; writes deserialized, validated and persisted natively). |
 | `--no-controller` | No admin controller, templates nor translations (API-only resource). |
 
 Generated tree for `Catalog/Product --api`:
@@ -36,7 +36,6 @@ src/Repository/Catalog/ProductRepository.php
 src/Form/Catalog/ProductType.php
 src/Controller/Catalog/ProductController.php
 src/State/Catalog/ProductProvider.php
-src/State/Catalog/ProductProcessor.php
 templates/admin/product/{index,new,edit,_form}.html.twig
 translations/admin.{fr,en}.yaml        (merged, existing keys kept)
 ```
@@ -58,7 +57,7 @@ registers it (see [Configuration](Configuration.md#adding-a-new-resource)).
 
 ### `make:gm:api`
 
-Generates the provider/processor of an existing entity, and prints the `#[ApiResource]`
+Generates the provider of an existing entity, and prints the `#[ApiResource]`
 snippet to paste when the entity does not declare one yet. See [API](API.md).
 
 ### Extending the makers

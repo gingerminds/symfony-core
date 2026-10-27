@@ -19,7 +19,7 @@ use Symfony\Component\Yaml\Yaml;
  * make:gm:resource Namespace/Name [--api] [--no-controller] (Laravel
  * make:resource): entity, repository, form type, admin CRUD
  * controller + templates + translations and, with `--api`, the API
- * provider/processor and #[ApiResource]. Existing files are skipped.
+ * provider and #[ApiResource]. Existing files are skipped.
  */
 final class MakeResource extends AbstractResourceMaker
 {
@@ -38,7 +38,7 @@ final class MakeResource extends AbstractResourceMaker
         $this->addNameArgument($command);
         $this->configureExtensions($command);
         $command
-            ->addOption('api', null, InputOption::VALUE_NONE, 'Also expose the resource with API Platform (provider, processor, #[ApiResource])')
+            ->addOption('api', null, InputOption::VALUE_NONE, 'Also expose the resource with API Platform (provider, #[ApiResource])')
             ->addOption('no-controller', null, InputOption::VALUE_NONE, 'Do not generate the admin CRUD controller, templates and translations');
     }
 

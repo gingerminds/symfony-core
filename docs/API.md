@@ -2,25 +2,67 @@
 
 The API layer runs on API Platform 4 (Symfony integration, Doctrine ORM).
 
-## Principle: one repository, one form
-
-Like the Laravel core, API reads and writes go through the **same repository and the same
-validation as the admin**:
+## Principle: native API Platform, the admin's repository
 
 - **Reads** — `Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider` calls
   `RepositoryInterface::paginate()` / `findOneForRead()` with a `ListQuery` built from the
   request: pagination (`page`, `itemsPerPage`), `sortBy`/`sort`, `filters[...]`,
   `filters[search]`, eager loads. The API Platform Doctrine filters are not needed.
-- **Writes** — `Gingerminds\CoreBundle\ApiPlatform\State\ResourceProcessor` submits the JSON
-  payload to the resource **form type** (POST/PUT with `clearMissing`, PATCH partial) and
-  calls `RepositoryInterface::save()` (so the form event listeners and `beforeSave()` run). Form errors
-  become a standard `422` with `violations`. DELETE calls `RepositoryInterface::remove()`.
+- **Writes** — plain API Platform: the payload is **deserialized** into the entity (the
+  `denormalizationContext` groups), **validated** by the entity constraints (`#[Assert\...]`,
+  `#[UniqueEntity]`, validation groups in `validationContext`), then **persisted by the Doctrine
+  processor** (`api_platform.doctrine.orm.state.persist_processor` / `remove_processor`). No form
+  type, no processor to write. An invalid payload is a `422` with `violations`
+  (`propertyPath`, `message`); a malformed one (unknown relation, wrong type) a `400`.
+- **Repository hooks** — `RepositoryProcessor` decorates the two Doctrine processors: when the
+  entity's repository is a bundle `RepositoryInterface`, the native write runs inside
+  `saveWith()` / `removeWith()`, so `beforeSave()`, `afterSave()`, `beforeRemove()` and the
+  transactions of the repository run exactly as for the admin (`save()` / `remove()`). Put the
+  business logic shared by the admin and the API there (or in a Doctrine listener, like the
+  password hashing), not in a processor.
+- **Deletion rules** — a `Delete` with `validate: true` validates the `{resource}:delete` group
+  (`BaseRole::GROUP_DELETE`: the Super-Admin role cannot be deleted, `422`); the admin checks the
+  same group (`AbstractCrudController::getDeleteError()`).
 
-Operations must declare `deserialize: false` (the form maps the payload, not the serializer).
+### Relations: by id or by IRI
+
+A relation is written by its **id** (`3` or `"3"`) or by its **IRI** (`"/api/roles/3"`), to one
+or to many; a nested document (an object) creates the related entity when the property's groups
+allow it (the contributor of a user). An unknown id is a `400`, like an unknown IRI.
+`RelationIdDenormalizer` turns the ids of the relations of a resource payload into IRIs of the
+target resource (the project entity when the bundle one is overridden), then the native
+denormalizer takes over: nothing to declare per entity.
+
+Reads embed the related objects with their `id` (and the JSON-LD `@id`): a client never needs
+to parse an IRI.
+
+```http
+POST /api/users
+{
+    "email": "ada@example.com",
+    "plainPassword": "secret-password",
+    "roles": [3, "4", "/api/roles/5"],
+    "contributor": {"firstname": "Ada", "lastname": "Lovelace"}
+}
+```
+
+```http
+PATCH /api/users/12                       (Content-Type: application/merge-patch+json)
+{"contributor": 7}                        → links the existing contributor 7, the previous one is kept without user
+{"contributor": {"lastname": "Byron"}}    → merged into the current contributor (JSON Merge Patch)
+```
+
+A new contributor replacing the current one is created on its own resource:
+`POST /api/contributors {"firstname": "Ada", "lastname": "Lovelace", "user": 12}`.
+
+The plain password is write only (`plainPassword`, required on `POST` by the `user:create`
+validation group), hashed on flush by `UserPasswordListener`. The admin form keeps its
+confirmation field (`RepeatedType`); the API takes the password once.
 
 ## Wiring a resource
 
-`bin/console make:gm:resource Catalog/Product --api` generates everything. By hand:
+`bin/console make:gm:resource Catalog/Product --api` generates everything. By hand, a provider
+(the processor is the native one):
 
 ```php
 namespace App\State\Catalog;
@@ -35,17 +77,6 @@ final class ProductProvider extends ResourceProvider
         parent::__construct($repository, $requestStack);
     }
 }
-
-/**
- * @extends ResourceProcessor<Product>
- */
-final class ProductProcessor extends ResourceProcessor
-{
-    public function __construct(ProductRepository $repository, FormFactoryInterface $formFactory, RequestStack $requestStack)
-    {
-        parent::__construct($repository, $formFactory, $requestStack, ProductType::class);
-    }
-}
 ```
 
 ```php
@@ -56,23 +87,26 @@ final class ProductProcessor extends ResourceProcessor
             security: "is_granted('VIEW', 'product')",
         ),
         new Get(security: "is_granted('VIEW', object)"),
-        new Post(security: "is_granted('CREATE', 'product')", deserialize: false),
-        new Patch(security: "is_granted('EDIT', object)", deserialize: false),
+        new Post(security: "is_granted('CREATE', 'product')"),
+        new Patch(security: "is_granted('EDIT', object)"),
         new Delete(security: "is_granted('DELETE', object)"),
     ],
     normalizationContext: ['groups' => ['product:read']],
     denormalizationContext: ['groups' => ['product:edit']],
     provider: ProductProvider::class,
-    processor: ProductProcessor::class,
     paginationClientItemsPerPage: true,
 )]
 class Product implements ResourceInterface { /* ... */ }
 ```
 
-Everything shared by the operations (provider, processor, serialization contexts) is declared
-once on `#[ApiResource]` and inherited by every operation; an operation only overrides what
-differs (`security`, the list group of `GetCollection`). `deserialize` is an operation-level
-option in API Platform, hence its repetition on `Post`/`Patch`.
+Everything shared by the operations (provider, serialization contexts) is declared once on
+`#[ApiResource]` and inherited by every operation; an operation only overrides what differs
+(`security`, the list group of `GetCollection`, the groups of a creation that differs from an
+edition: `denormalizationContext` + `validationContext` on `Post`, see `User`).
+
+A rule specific to the API (an input DTO, a side effect after the write) is a processor
+decorating the native one, declared with `processor:` on the operation; it stays thin and calls
+the decorated processor.
 
 > Change from the Laravel core: core resources declare `security` expressions on every
 > operation (the Laravel core only required a Sanctum token, whatever the permissions).
@@ -106,8 +140,10 @@ Class attributes are not inherited, so a project entity overriding `User` (see
 the Doctrine mapping and the API resources as soon as it is overridden, there is never a duplicate resource (no equivalent of the
 Laravel `ClassHierarchyResourceNameCollectionFactory` is needed).
 
-Serialization groups, on the other hand, are declared on the base class **properties** and are
-inherited. Reuse the bundle services as provider/processor:
+Serialization groups, validation constraints, the repository hooks and the relation ids, on the
+other hand, live on the base class **properties**, the repository and global services: they are
+inherited. Restate the bundle `#[ApiResource]` (operations, groups, `validationContext`) and
+reuse its provider service; a read-only exposure:
 
 ```php
 #[ApiResource(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Form\User;
 
+use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Entity\User\ContributorInterface;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Enum\Civility;
@@ -21,6 +22,7 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Form\FormInterface;
+use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -56,7 +58,6 @@ class UserType extends AbstractType
                 'first_options' => ['label' => 'user.field.password', 'size' => 'md', 'always_empty' => true],
                 'second_options' => ['label' => 'user.field.password_confirmation', 'size' => 'md', 'always_empty' => true],
                 'invalid_message' => 'user.password.mismatch',
-                'constraints' => $options['password_required'] ? [new Assert\NotBlank()] : [],
             ])
             ->add('roles', EntityType::class, [
                 'label' => 'user.field.roles',
@@ -108,6 +109,8 @@ class UserType extends AbstractType
             'data_class' => $this->resources->getEntityClass('user'),
             'translation_domain' => 'GingermindsCore',
             'password_required' => false,
+            // The password is required on creation (BaseUser::GROUP_CREATE), as on the API.
+            'validation_groups' => static fn (Options $options): array => $options['password_required'] ? ['Default', BaseUser::GROUP_CREATE] : ['Default'],
         ]);
         $resolver->setAllowedTypes('password_required', 'bool');
     }

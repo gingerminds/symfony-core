@@ -107,5 +107,5 @@ embedded forms or `CollectionType`.
 
 ## Passwords
 
-`RepeatedType` rows (password + confirmation) are rendered side by side. The API expects the
-same structure: `"password": {"first": "...", "second": "..."}`.
+`RepeatedType` rows (password + confirmation) are rendered side by side. The confirmation is
+admin only: the API takes a single `"plainPassword": "..."`.

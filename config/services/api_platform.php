@@ -9,43 +9,40 @@ use Gingerminds\CoreBundle\ApiPlatform\Filter\InjectComputedFiltersListener;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\ContextHeaderParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\CoreResourceNameCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterRegistry;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProcessor;
+use Gingerminds\CoreBundle\ApiPlatform\Serializer\RelationIdDenormalizer;
+use Gingerminds\CoreBundle\ApiPlatform\State\RepositoryProcessor;
 use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
-use Gingerminds\CoreBundle\ApiPlatform\State\Role\RoleProcessor;
-use Gingerminds\CoreBundle\Form\Permission\PermissionType;
-use Gingerminds\CoreBundle\Form\Role\RoleType;
-use Gingerminds\CoreBundle\Form\User\ContributorType;
-use Gingerminds\CoreBundle\Form\User\UserType;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /*
- * API Platform state providers/processors and metadata decorators.
+ * API Platform state providers, write processors, relation denormalizer and metadata decorators.
  */
 return static function (ContainerConfigurator $container): void {
     $services = $container->services();
 
-    foreach (
-        [
-            'user' => [ResourceProcessor::class, UserType::class],
-            'contributor' => [ResourceProcessor::class, ContributorType::class],
-            'role' => [RoleProcessor::class, RoleType::class],
-            'permission' => [ResourceProcessor::class, PermissionType::class],
-        ] as $name => [$processorClass, $formType]
-    ) {
+    foreach (['user', 'contributor', 'role', 'permission'] as $name) {
         $services->set('gingerminds_core.api.provider.' . $name, ResourceProvider::class)
             ->args([service('gingerminds_core.repository.' . $name), service('request_stack')])
             ->tag('api_platform.state_provider');
-
-        $services->set('gingerminds_core.api.processor.' . $name, $processorClass)
-            ->args([
-                service('gingerminds_core.repository.' . $name),
-                service('form.factory'),
-                service('request_stack'),
-                $formType,
-            ])
-            ->call('setTranslator', [service('translator')])
-            ->tag('api_platform.state_processor');
     }
+
+    // Writes: the native Doctrine processors, run inside the repository save / remove hooks.
+    foreach (['persist', 'remove'] as $write) {
+        $services->set('gingerminds_core.api.processor.' . $write, RepositoryProcessor::class)
+            ->decorate('api_platform.doctrine.orm.state.' . $write . '_processor')
+            ->args([service('.inner'), service('doctrine')]);
+    }
+
+    // Relations written by id as well as by IRI, before the API Platform item denormalizers.
+    $services->set('gingerminds_core.api.relation_id_denormalizer', RelationIdDenormalizer::class)
+        ->args([
+            service('api_platform.resource_class_resolver'),
+            service('api_platform.metadata.resource.metadata_collection_factory'),
+            service('api_platform.metadata.property.metadata_factory'),
+            service('api_platform.iri_converter'),
+            service('serializer.name_converter.metadata_aware')->nullOnInvalid(),
+        ])
+        ->tag('serializer.normalizer', ['priority' => -880]);
 
     $services->set('gingerminds_core.api.metadata.core_resource_names', CoreResourceNameCollectionFactory::class)
         ->decorate('api_platform.metadata.resource.name_collection_factory')
