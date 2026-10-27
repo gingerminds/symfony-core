@@ -13,11 +13,6 @@ use Symfony\Component\Form\FormInterface;
 
 class RoleController extends AbstractCrudController
 {
-    protected function getResourceName(): string
-    {
-        return 'role';
-    }
-
     protected function getDeleteError(object $entity): ?string
     {
         if ($entity instanceof RoleInterface && UserInterface::SUPER_ADMIN_ROLE === $entity->getName()) {
@@ -29,7 +24,7 @@ class RoleController extends AbstractCrudController
 
     protected function getFormParameters(object $entity, FormInterface $form, bool $isNew): array
     {
-        $repository = $this->context->doctrine->getRepository($this->context->resources->getEntityClass('permission'));
+        $repository = $this->getDoctrine()->getRepository($this->getResourceRegistry()->getEntityClass('permission'));
         $groups = [];
 
         if ($repository instanceof PermissionRepository) {

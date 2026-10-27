@@ -207,8 +207,9 @@ final class AdminTest extends ApiTestCase
         $deleteUrl = $base . '/' . $product->getId() . '/delete';
         $token = (string) $crawler->filter(\sprintf('[data-gm-delete-url="%s"]', $deleteUrl))->attr('data-gm-delete-token');
 
+        // #[IsCsrfTokenValid]: an InvalidCsrfTokenException, the firewall's entry point.
         $this->client->request('POST', $deleteUrl, ['_token' => 'invalid']);
-        self::assertResponseRedirects($base);
+        self::assertResponseRedirects('/admin/login');
 
         $this->client->request('POST', $deleteUrl, ['_token' => $token]);
         self::assertResponseRedirects($base);
@@ -305,6 +306,39 @@ final class AdminTest extends ApiTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    public function testEditAndDeleteResolveTheEntityBeforeCheckingAccess(): void
+    {
+        $permission = $this->fixtures->permission('view gadgets');
+        $this->client->loginUser($this->fixtures->user('reader@example.com', ['view permissions']), 'admin');
+
+        // ResourceEntityValueResolver: an unknown id is a 404, whatever the permissions.
+        $this->client->request('GET', '/admin/permissions/999999/edit');
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('POST', '/admin/permissions/999999/delete');
+        self::assertResponseStatusCodeSame(404);
+
+        // #[IsGranted('EDIT'|'DELETE', subject: 'entity')] on the resolved entity, before the CSRF check.
+        $this->client->request('GET', '/admin/permissions/' . $permission->getId() . '/edit');
+        self::assertResponseStatusCodeSame(403);
+        $this->client->request('POST', '/admin/permissions/' . $permission->getId() . '/delete', ['_token' => 'invalid']);
+        self::assertResponseStatusCodeSame(403);
+        self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Permission::class, $permission->getId()));
+    }
+
+    public function testEditPageOfAnAuthorizedUser(): void
+    {
+        $permission = $this->fixtures->permission('view widgets');
+        $this->client->loginUser($this->fixtures->user('editor@example.com', ['view permissions', 'edit permissions']), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/permissions/' . $permission->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+
+        $this->client->submit($crawler->filter('form[name="permission"]')->form(['permission[name]' => 'view gizmos']));
+        self::assertResponseStatusCodeSame(303);
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.alert-success', 'view gizmos');
+    }
+
     public function testCreateRole(): void
     {
         $this->client->loginUser($this->fixtures->user('creator@example.com', superAdmin: true), 'admin');
@@ -359,8 +393,9 @@ final class AdminTest extends ApiTestCase
         $this->client->loginUser($this->fixtures->user('deleter@example.com', superAdmin: true), 'admin');
         $role = $this->fixtures->role('To delete');
 
+        // #[IsCsrfTokenValid]: an InvalidCsrfTokenException, the firewall's entry point.
         $this->client->request('POST', '/admin/roles/' . $role->getId() . '/delete', ['_token' => 'invalid']);
-        self::assertResponseRedirects('/admin/roles');
+        self::assertResponseRedirects('/admin/login');
         self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Role::class, $role->getId()));
 
         $csrf = $this->deleteToken('/admin/roles', '/admin/roles/' . $role->getId() . '/delete');

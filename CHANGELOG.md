@@ -39,6 +39,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   from `UserRepository` too); `BaseUser::$contributor` cascades `persist`.
   `UserRepository::NEW_CONTRIBUTOR` becomes `UserType::NEW_CONTRIBUTOR`; `UserRepository` takes
   only the registry and the entity class.
+- **BC break** Controllers extend Symfony's `AbstractController`: `ControllerTrait` (copies of
+  `render()`, `redirectToRoute()`, `denyAccessUnlessGranted()`, `isCsrfTokenValid()`,
+  `addFlash()`), `ResourceControllerTrait` and `CrudContext` are removed. `AbstractCrudController`
+  has no constructor (a subclass injects its own services) and subscribes to the resource
+  registry, Doctrine and the translator (`getResourceRegistry()`, `getDoctrine()`, `trans()`);
+  `$this->context` is gone, `addFlash()` loses its `Request` argument. Access is declared with
+  `#[IsGranted]` on the actions, the delete token with `#[IsCsrfTokenValid]`: an invalid token is
+  an `InvalidCsrfTokenException` (the firewall sends to the login page) instead of a flash, the
+  `flash.invalid_csrf` message is removed. The resource is the `_resource` default of the route
+  (set by the CRUD route loader): `getResourceName()` and its loop over the registry are removed,
+  `getResource()` is not cached any more. `edit()` / `delete()` receive the entity, resolved by
+  `ResourceEntityValueResolver` (`#[ValueResolver(ResourceEntityValueResolver::class)]`, 404
+  before the access check), instead of a `string $id`; `findEntity()` is removed. Forms are
+  passed to `render()` as `FormInterface` (422 on an invalid submission by `AbstractController`).
+  The bundle controllers are service subscribers (`container.service_subscriber`,
+  `setContainer()`); `ProfileController` takes Doctrine and the translator, `AuthController` no
+  longer takes `Security`, `LoginController` gets `AuthenticationUtils` as an action argument.
 
 ### Added
 

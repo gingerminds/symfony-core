@@ -18,6 +18,8 @@ use Symfony\Component\Routing\RouteCollection;
  * | {prefix}_new      | /{path}/new            | GET, POST |
  * | {prefix}_edit     | /{path}/{id}/edit      | GET, POST |
  * | {prefix}_delete   | /{path}/{id}/delete    | POST      |
+ *
+ * The resource name is the `_resource` default of each route (AbstractCrudController::getResource()).
  */
 final class CrudRouteLoader extends Loader
 {
@@ -41,11 +43,12 @@ final class CrudRouteLoader extends Loader
 
             $path = '/' . trim($definition->path, '/');
             $controller = $definition->controller;
+            $defaults = static fn (string $action): array => ['_controller' => $controller . '::' . $action, '_resource' => $definition->name];
 
-            $routes->add($definition->route('index'), new Route($path, ['_controller' => $controller . '::index'], methods: ['GET']));
-            $routes->add($definition->route('new'), new Route($path . '/new', ['_controller' => $controller . '::new'], methods: ['GET', 'POST']));
-            $routes->add($definition->route('edit'), new Route($path . '/{id}/edit', ['_controller' => $controller . '::edit'], ['id' => '[^/]+'], methods: ['GET', 'POST']));
-            $routes->add($definition->route('delete'), new Route($path . '/{id}/delete', ['_controller' => $controller . '::delete'], ['id' => '[^/]+'], methods: ['POST']));
+            $routes->add($definition->route('index'), new Route($path, $defaults('index'), methods: ['GET']));
+            $routes->add($definition->route('new'), new Route($path . '/new', $defaults('new'), methods: ['GET', 'POST']));
+            $routes->add($definition->route('edit'), new Route($path . '/{id}/edit', $defaults('edit'), ['id' => '[^/]+'], methods: ['GET', 'POST']));
+            $routes->add($definition->route('delete'), new Route($path . '/{id}/delete', $defaults('delete'), ['id' => '[^/]+'], methods: ['POST']));
         }
 
         return $routes;

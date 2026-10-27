@@ -157,8 +157,31 @@ The route loader generates `/admin/categories/{categoryId}/products[/new|/{id}/e
 `getRouteParameters()` returns the parameters of the current route but `id` (`['categoryId' => '7']`):
 the redirects after save and delete keep them, and the templates get them as `route_parameters`
 (list, tree, form and row action links). Filter the list on the parent in the repository or with
-`createListQuery()`, set it on new entities in `createEntity()`, and check that an edited entity
-belongs to it in `findEntity()`.
+`createListQuery()` and set it on new entities in `createEntity()`. The entity of `edit()` and
+`delete()` is loaded by `ResourceEntityValueResolver` (the repository's `findOneForRead()`, 404
+when missing); to refuse one of another parent, override the action (re-declare its attributes,
+PHP does not inherit them) and throw `createNotFoundException()`.
+
+### Controller services
+
+`AbstractCrudController` extends Symfony's `AbstractController`: `render()`, `redirectToRoute()`,
+`addFlash()`, `createForm()`, `isGranted()`... are the framework's. Access is checked by
+attributes on the actions: `#[IsGranted('VIEW'|'CREATE', subject: <the route's _resource>)]`,
+`#[IsGranted('EDIT'|'DELETE', subject: 'entity')]` and `#[IsCsrfTokenValid('delete-{id}')]` on
+`delete()` (an invalid token is an `InvalidCsrfTokenException`, handled by the firewall). It
+subscribes to the resource registry, Doctrine and the translator (`getResourceRegistry()`,
+`getDoctrine()`, `trans()`); any other service goes in the constructor of your controller,
+autowired (the parent has none):
+
+```php
+#[AsCrudController(resource: 'category_product', entity: Product::class, path: 'categories/{categoryId}/products')]
+final class CategoryProductController extends AbstractCrudController
+{
+    public function __construct(private readonly EntityManagerInterface $entityManager)
+    {
+    }
+}
+```
 
 ## List performance
 

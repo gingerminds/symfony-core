@@ -50,7 +50,6 @@ flash:
     created: '%resource% « %label% » créé(e) avec succès.'
     updated: '%resource% « %label% » mis(e) à jour avec succès.'
     deleted: '%resource% « %label% » supprimé(e) avec succès.'
-    invalid_csrf: 'Jeton de sécurité invalide, veuillez réessayer.'
     profile_updated: Votre profil a été mis à jour.
 
 modal:

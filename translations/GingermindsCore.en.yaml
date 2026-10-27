@@ -49,7 +49,6 @@ flash:
     created: '%resource% "%label%" successfully created.'
     updated: '%resource% "%label%" successfully updated.'
     deleted: '%resource% "%label%" successfully deleted.'
-    invalid_csrf: 'Invalid security token, please try again.'
     profile_updated: Your profile has been updated.
 
 modal:

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller\Security;
 
-final class LogoutController
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+final class LogoutController extends AbstractController
 {
     public function __invoke(): never
     {

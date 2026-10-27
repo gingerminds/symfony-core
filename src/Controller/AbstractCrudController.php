@@ -4,38 +4,58 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller;
 
+use Doctrine\Persistence\ManagerRegistry;
+use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\SearchableFields;
 use Gingerminds\CoreBundle\Model\SortableFields;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\ListQuery;
+use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
+use Gingerminds\CoreBundle\Resource\ResourceDefinition;
+use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Attribute\ValueResolver;
+use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
-abstract class AbstractCrudController
+/**
+ * Admin CRUD of a resource. The resource is the `_resource` default of the current route;
+ * the entity of edit/delete is resolved by ResourceEntityValueResolver (404 before the access check).
+ */
+abstract class AbstractCrudController extends AbstractController
 {
-    use ControllerTrait;
-    use ResourceControllerTrait;
+    /**
+     * The resource name of the current route, subject of the list/create access checks.
+     */
+    protected const string RESOURCE_SUBJECT = 'request.attributes.get("_resource")';
 
-    public function __construct(
-        protected readonly CrudContext $context,
-    ) {
+    public static function getSubscribedServices(): array
+    {
+        return [
+            ...parent::getSubscribedServices(),
+            ResourceRegistry::class => ResourceRegistry::class,
+            'doctrine' => ManagerRegistry::class,
+            'translator' => TranslatorInterface::class,
+        ];
     }
 
+    #[IsGranted(AbstractResourceVoter::VIEW, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function index(Request $request): Response
     {
-        $resource = $this->getResource();
-        $this->denyAccessUnlessGranted(AbstractResourceVoter::VIEW, $resource->name);
-
         $query = $this->createListQuery($request);
         $items = $this->getRepository()->paginate($query);
 
-        return $this->render($resource->template('index'), [
+        return $this->render($this->getResource()->template('index'), [
             ...$this->getCommonParameters(),
             'items' => $items,
             'list_query' => $query,
@@ -44,95 +64,123 @@ abstract class AbstractCrudController
         ]);
     }
 
+    #[IsGranted(AbstractResourceVoter::CREATE, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function new(Request $request): Response
     {
-        $resource = $this->getResource();
-        $this->denyAccessUnlessGranted(AbstractResourceVoter::CREATE, $resource->name);
-
         $entity = $this->createEntity();
         $form = $this->createResourceForm($entity, true);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getRepository()->save($entity);
-            $this->addResourceFlash($request, 'flash.created', $this->getLabel($entity));
+            $this->addResourceFlash('flash.created', $this->getLabel($entity));
 
             return $this->redirectAfterSave($entity, true);
         }
 
-        return $this->render($resource->template('new'), [
+        // AbstractController::render() answers 422 for a submitted invalid form.
+        return $this->render($this->getResource()->template('new'), [
             ...$this->getCommonParameters(),
             'entity' => $entity,
-            'form' => $form->createView(),
+            'form' => $form,
             'is_new' => true,
             ...$this->getFormParameters($entity, $form, true),
-        ], new Response(status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
+        ]);
     }
 
-    public function edit(Request $request, string $id): Response
+    #[IsGranted(AbstractResourceVoter::EDIT, subject: 'entity')]
+    public function edit(Request $request, #[ValueResolver(ResourceEntityValueResolver::class)] object $entity): Response
     {
-        $resource = $this->getResource();
-        $entity = $this->findEntity($id);
-        $this->denyAccessUnlessGranted(AbstractResourceVoter::EDIT, $entity);
-
         $form = $this->createResourceForm($entity, false);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->getRepository()->save($entity);
-            $this->addResourceFlash($request, 'flash.updated', $this->getLabel($entity));
+            $this->addResourceFlash('flash.updated', $this->getLabel($entity));
 
             return $this->redirectAfterSave($entity, false);
         }
 
-        return $this->render($resource->template('edit'), [
+        return $this->render($this->getResource()->template('edit'), [
             ...$this->getCommonParameters(),
             'entity' => $entity,
-            'form' => $form->createView(),
+            'form' => $form,
             'is_new' => false,
             ...$this->getFormParameters($entity, $form, false),
-        ], new Response(status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
+        ]);
     }
 
-    public function delete(Request $request, string $id): Response
+    #[IsGranted(AbstractResourceVoter::DELETE, subject: 'entity')]
+    #[IsCsrfTokenValid(new Expression('"delete-" ~ request.attributes.get("id")'))]
+    public function delete(#[ValueResolver(ResourceEntityValueResolver::class)] object $entity): Response
     {
-        $resource = $this->getResource();
-        $entity = $this->findEntity($id);
-        $this->denyAccessUnlessGranted(AbstractResourceVoter::DELETE, $entity);
-
-        if (!$this->isCsrfTokenValid('delete-' . $id, $request->getPayload()->getString('_token'))) {
-            $this->addFlash($request, 'danger', $this->trans('flash.invalid_csrf'));
-
-            return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
-        }
-
         $error = $this->getDeleteError($entity);
 
         if (null !== $error) {
-            $this->addFlash($request, 'danger', $error);
-
-            return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
+            $this->addFlash('danger', $error);
+        } else {
+            $label = $this->getLabel($entity);
+            $this->getRepository()->remove($entity);
+            $this->addResourceFlash('flash.deleted', $label);
         }
 
-        $label = $this->getLabel($entity);
-        $this->getRepository()->remove($entity);
-
-        $this->addResourceFlash($request, 'flash.deleted', $label);
-
-        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
+        return $this->redirectToRoute($this->getResource()->route('index'), $this->getRouteParameters(), Response::HTTP_SEE_OTHER);
     }
 
     /**
-     * Success flash naming the resource and the entity label (flash.created, flash.updated, flash.deleted).
+     * The resource of the current route (its `_resource` default).
      */
-    private function addResourceFlash(Request $request, string $message, string $label): void
+    protected function getResource(): ResourceDefinition
     {
-        $resource = $this->getResource();
+        $name = $this->getRequestStack()->getCurrentRequest()?->attributes->get('_resource');
 
-        $this->addFlash($request, 'success', $this->trans($message, [
-            '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
-            '%label%' => $label,
-        ]));
+        if (!\is_string($name)) {
+            throw new \LogicException(\sprintf('The current route has no "_resource" default: "%s" only serves resource routes.', static::class));
+        }
+
+        return $this->getResourceRegistry()->get($name);
+    }
+
+    /**
+     * @return RepositoryInterface<object>
+     */
+    protected function getRepository(): RepositoryInterface
+    {
+        $entityClass = $this->getResource()->entity;
+        $repository = $this->getDoctrine()->getRepository($entityClass);
+
+        if (!$repository instanceof RepositoryInterface) {
+            throw new \LogicException(\sprintf('The repository of "%s" must implement "%s" (extend AbstractRepository).', $entityClass, RepositoryInterface::class));
+        }
+
+        return $repository;
+    }
+
+    protected function getResourceRegistry(): ResourceRegistry
+    {
+        $resources = $this->container->get(ResourceRegistry::class);
+        \assert($resources instanceof ResourceRegistry);
+
+        return $resources;
+    }
+
+    protected function getDoctrine(): ManagerRegistry
+    {
+        $doctrine = $this->container->get('doctrine');
+        \assert($doctrine instanceof ManagerRegistry);
+
+        return $doctrine;
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    protected function trans(string $key, array $parameters = [], string $domain = 'GingermindsCore'): string
+    {
+        $translator = $this->container->get('translator');
+        \assert($translator instanceof TranslatorInterface);
+
+        return $translator->trans($key, $parameters, $domain);
     }
 
     protected function createListQuery(Request $request): ListQuery
@@ -147,12 +195,6 @@ abstract class AbstractCrudController
         return new $class();
     }
 
-    protected function findEntity(string $id): object
-    {
-        return $this->getRepository()->findOneForRead($id)
-            ?? throw new NotFoundHttpException(\sprintf('%s "%s" not found.', $this->getResource()->name, $id));
-    }
-
     /**
      * @return FormInterface<mixed>
      */
@@ -161,7 +203,7 @@ abstract class AbstractCrudController
         $formType = $this->getResource()->form
             ?? throw new \LogicException(\sprintf('No form is configured for the resource "%s".', $this->getResource()->name));
 
-        return $this->context->formFactory->create($formType, $entity, $this->getFormOptions($entity, $isNew));
+        return $this->createForm($formType, $entity, $this->getFormOptions($entity, $isNew));
     }
 
     /**
@@ -177,10 +219,10 @@ abstract class AbstractCrudController
         $resource = $this->getResource();
 
         if (RedirectTarget::Edit === $resource->redirectAfterSave($isNew) && $entity instanceof ResourceInterface) {
-            return $this->redirectToRoute($resource->route('edit'), [...$this->getRouteParameters(), 'id' => $entity->getId()]);
+            return $this->redirectToRoute($resource->route('edit'), [...$this->getRouteParameters(), 'id' => $entity->getId()], Response::HTTP_SEE_OTHER);
         }
 
-        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters());
+        return $this->redirectToRoute($resource->route('index'), $this->getRouteParameters(), Response::HTTP_SEE_OTHER);
     }
 
     /**
@@ -191,9 +233,9 @@ abstract class AbstractCrudController
      */
     protected function getRouteParameters(): array
     {
-        $parameters = $this->context->requestStack?->getCurrentRequest()?->attributes->get('_route_params', []);
+        $parameters = $this->getRequestStack()->getCurrentRequest()?->attributes->get('_route_params', []);
         $parameters = \is_array($parameters) ? $parameters : [];
-        unset($parameters['id']);
+        unset($parameters['id'], $parameters['_resource']);
 
         return $parameters;
     }
@@ -246,5 +288,26 @@ abstract class AbstractCrudController
     protected function getFormParameters(object $entity, FormInterface $form, bool $isNew): array
     {
         return [];
+    }
+
+    /**
+     * Success flash naming the resource and the entity label (flash.created, flash.updated, flash.deleted).
+     */
+    private function addResourceFlash(string $message, string $label): void
+    {
+        $resource = $this->getResource();
+
+        $this->addFlash('success', $this->trans($message, [
+            '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
+            '%label%' => $label,
+        ]));
+    }
+
+    private function getRequestStack(): RequestStack
+    {
+        $requestStack = $this->container->get('request_stack');
+        \assert($requestStack instanceof RequestStack);
+
+        return $requestStack;
     }
 }

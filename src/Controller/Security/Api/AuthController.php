@@ -4,48 +4,133 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller\Security\Api;
 
-use Gingerminds\CoreBundle\Security\Api\ApiLoginAuthenticator;
-use Symfony\Bundle\SecurityBundle\Security;
+use Gingerminds\CoreBundle\Entity\User\UserInterface;
+use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
+use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Security\Api\LoginResponseEnricherInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\LimiterInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final readonly class AuthController
+final class AuthController extends AbstractController
 {
+    /**
+     * @param iterable<LoginResponseEnricherInterface> $enrichers
+     */
     public function __construct(
-        private Security $security,
-        private TranslatorInterface $translator,
+        private readonly UserRepository $users,
+        private readonly ApiTokenRepository $tokens,
+        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly RateLimiterFactoryInterface $loginLimiter,
+        private readonly iterable $enrichers,
+        private readonly ?int $tokenTtl,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
-    /**
-     * The login is answered by ApiLoginAuthenticator, on the firewall of the route.
-     */
-    public function login(): never
+    public function login(Request $request): JsonResponse
     {
-        throw new \LogicException(\sprintf(
-            'The "%s" route is handled by the "gingerminds_core.security.api_login_authenticator" custom authenticator: '
-            . 'declare it on a firewall matching the route (see docs/Installation.md).',
-            ApiLoginAuthenticator::ROUTE,
-        ));
+        try {
+            $payload = $request->toArray();
+        } catch (\Throwable) {
+            $payload = [];
+        }
+
+        $email = \is_string($payload['email'] ?? null) ? trim($payload['email']) : '';
+        $password = \is_string($payload['password'] ?? null) ? $payload['password'] : '';
+
+        $rejection = $this->rejectAttempt($request, $email, $password);
+
+        if ($rejection instanceof JsonResponse) {
+            return $rejection;
+        }
+
+        $user = $this->users->loadUserByIdentifier($email);
+
+        if (!$user instanceof UserInterface || !$this->passwordHasher->isPasswordValid($user, $password)) {
+            return $this->message('security.api.invalid_credentials', Response::HTTP_UNAUTHORIZED);
+        }
+
+        $this->limiter($request, $email)->reset();
+
+        return $this->issueToken($user);
     }
 
-    /**
-     * Native logout of the API firewall: LogoutEvent listeners revoke the token
-     * (ApiTokenRevocationListener) and may set the response.
-     */
-    public function logout(): Response
+    public function logout(Request $request): JsonResponse
     {
-        if (!$this->security->getUser() instanceof UserInterface) {
+        $user = $this->getUser();
+
+        if (!$user instanceof UserInterface) {
             return $this->message('security.api.unauthenticated', Response::HTTP_UNAUTHORIZED);
         }
 
-        return $this->security->logout(false) ?? $this->message('security.api.logged_out');
+        try {
+            $revokeAll = true === ($request->toArray()['revoke_all'] ?? false);
+        } catch (\Throwable) {
+            $revokeAll = false;
+        }
+
+        if ($revokeAll) {
+            $this->tokens->revokeAll($user);
+        } elseif (null !== $token = $this->bearerToken($request)) {
+            $this->tokens->revoke($token);
+        }
+
+        return $this->message('security.api.logged_out');
+    }
+
+    /**
+     * The error response of a login attempt rejected before checking the password
+     * (missing credentials, too many attempts), null when the attempt may proceed.
+     */
+    private function rejectAttempt(Request $request, string $email, string $password): ?JsonResponse
+    {
+        if ('' === $email || '' === $password) {
+            return $this->message('security.api.credentials_required', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        if (!$this->limiter($request, $email)->consume()->isAccepted()) {
+            return $this->message('security.api.too_many_attempts', Response::HTTP_TOO_MANY_REQUESTS);
+        }
+
+        return null;
+    }
+
+    private function limiter(Request $request, string $email): LimiterInterface
+    {
+        return $this->loginLimiter->create(mb_strtolower($email) . '|' . $request->getClientIp());
+    }
+
+    private function issueToken(UserInterface $user): JsonResponse
+    {
+        $expiresAt = null !== $this->tokenTtl ? new \DateTimeImmutable('+' . $this->tokenTtl . ' seconds') : null;
+        $data = [
+            'token' => $this->tokens->createToken($user, 'api-token', $expiresAt),
+            'token_type' => 'Bearer',
+            'expires_at' => $expiresAt?->format(\DATE_ATOM),
+        ];
+
+        foreach ($this->enrichers as $enricher) {
+            $data = $enricher->enrich($user, $data);
+        }
+
+        return $this->json($data);
     }
 
     private function message(string $key, int $status = Response::HTTP_OK): JsonResponse
     {
-        return new JsonResponse(['message' => $this->translator->trans($key, [], 'security')], $status);
+        return $this->json(['message' => $this->translator->trans($key, [], 'security')], $status);
+    }
+
+    private function bearerToken(Request $request): ?string
+    {
+        $header = (string) $request->headers->get('Authorization', '');
+
+        return str_starts_with($header, 'Bearer ') ? trim(substr($header, 7)) : null;
     }
 }

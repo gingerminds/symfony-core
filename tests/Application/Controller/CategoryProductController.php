@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Tests\Application\Controller;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Controller\AbstractCrudController;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
@@ -23,13 +24,18 @@ use Gingerminds\CoreBundle\Tests\Application\Form\CategoryProductType;
 )]
 final class CategoryProductController extends AbstractCrudController
 {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+    ) {
+    }
+
     protected function createEntity(): Product
     {
         $product = new Product();
         $categoryId = $this->getRouteParameters()['categoryId'] ?? null;
 
         if (is_numeric($categoryId)) {
-            $product->setCategory($this->context->doctrine->getManager()->find(Category::class, (int) $categoryId));
+            $product->setCategory($this->entityManager->find(Category::class, (int) $categoryId));
         }
 
         return $product;

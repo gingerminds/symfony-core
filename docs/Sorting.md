@@ -70,17 +70,15 @@ the CSRF token in the `X-CSRF-Token` header:
 ```
 
 The endpoint, in your `AbstractCrudController` subclass (its `#[Route]` attributes are loaded
-by your usual `config/routes.yaml` controllers import):
+by your usual `config/routes.yaml` controllers import; the `_resource` default names the resource
+of `getRepository()`):
 
 ```php
-#[Route('/admin/categories/reorder', name: 'admin_category_reorder', methods: ['POST'])]
+#[Route('/admin/categories/reorder', name: 'admin_category_reorder', methods: ['POST'], defaults: ['_resource' => 'category'])]
+#[IsCsrfTokenValid('reorder-category', tokenKey: 'X-CSRF-Token', tokenSource: IsCsrfTokenValid::SOURCE_HEADER)]
 public function reorder(Request $request): JsonResponse
 {
     $this->denyAccessUnlessGranted('EDIT', 'category');
-
-    if (!$this->isCsrfTokenValid('reorder-category', $request->headers->get('X-CSRF-Token'))) {
-        throw new AccessDeniedHttpException('Invalid CSRF token.');
-    }
 
     $repository = $this->getRepository();
 
@@ -88,9 +86,9 @@ public function reorder(Request $request): JsonResponse
         $repository->findOneForRead($id)?->setPosition($position);
     }
 
-    $this->context->doctrine->getManager()->flush();
+    $this->getDoctrine()->getManager()->flush();
 
-    return new JsonResponse(['success' => true]);
+    return $this->json(['success' => true]);
 }
 ```
 
