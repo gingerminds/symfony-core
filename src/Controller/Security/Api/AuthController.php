@@ -8,6 +8,7 @@ use Gingerminds\CoreBundle\Security\Api\ApiLoginAuthenticator;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final readonly class AuthController
@@ -36,7 +37,7 @@ final readonly class AuthController
      */
     public function logout(): Response
     {
-        if (null === $this->security->getUser()) {
+        if (!$this->security->getUser() instanceof UserInterface) {
             return $this->message('security.api.unauthenticated', Response::HTTP_UNAUTHORIZED);
         }
 
