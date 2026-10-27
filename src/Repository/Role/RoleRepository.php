@@ -45,6 +45,23 @@ class RoleRepository extends AbstractRepository
     }
 
     /**
+     * In a transaction when flushed: a failed flush never leaves the audience without its
+     * previous default role, and concurrent saves of a default role are serialized.
+     *
+     * @param RoleInterface $entity
+     */
+    public function save(object $entity, ?FormInterface $form = null, bool $flush = true): void
+    {
+        if (!$flush) {
+            parent::save($entity, $form, false);
+
+            return;
+        }
+
+        $this->getEntityManager()->wrapInTransaction(fn () => parent::save($entity, $form));
+    }
+
+    /**
      * @param RoleInterface $entity
      */
     protected function beforeSave(object $entity, ?FormInterface $form): void
