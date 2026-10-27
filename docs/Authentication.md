@@ -18,7 +18,7 @@ controller. Compared to the Laravel core `AuthService`:
 
 | Laravel core | Symfony bundle |
 |---|---|
-| `RateLimiter` 5 attempts per `email\|ip` | firewall `login_throttling` (per username + IP, 5 attempts / 5 minutes) |
+| `RateLimiter` 5 attempts per `email\|ip` | firewall `login_throttling` (per username + IP, 5 attempts / 5 minutes; also on the API login) |
 | `Auth::attempt(..., $remember)` | `remember_me` (checkbox `_remember_me`) |
 | `Origin` check against `auth.authorized_domains` (skipped in `local`) | `AuthorizedDomainListener`, driven by `gingerminds_core.security.authorized_domains` — an empty list disables it (typically in dev) |
 | redirect to `route('dashboard')` | `default_target_path` (`gingerminds_core_dashboard` by default) |
@@ -89,7 +89,43 @@ POST /api/logout                      # revokes the current token
 POST /api/logout {"revoke_all": true} # revokes every token of the user
 ```
 
-Login attempts are rate limited (`gingerminds_core.api.login_throttling`, 429 when exceeded).
+Everything goes through Symfony Security, no hand-made authentication:
+
+| Step | Symfony piece | Bundle service |
+|---|---|---|
+| `POST /api/login` | custom authenticator (`Passport` + `UserBadge` + `PasswordCredentials`) on the `api_login` firewall | `gingerminds_core.security.api_login_authenticator` |
+| token response | `AuthenticationSuccessHandlerInterface` | `gingerminds_core.security.api_login_success_handler` |
+| login errors (401 / 422 / 429) | `AuthenticationFailureHandlerInterface` | `gingerminds_core.security.api_login_failure_handler` |
+| login throttling | firewall `login_throttling` (429 when exceeded) | `gingerminds_core.security.api_login_rate_limiter`, from `gingerminds_core.api.login_throttling` |
+| `Authorization: Bearer` | `access_token` authenticator + `AccessTokenHandlerInterface` | `gingerminds_core.security.api_token_handler` |
+| `POST /api/logout` | `Security::logout()` → `LogoutEvent` on the `api` firewall | `gingerminds_core.security.api_token_revocation_listener` |
+
+Not `json_login`: its contract differs from this API (400 on a missing field instead of 422,
+untrimmed email). The user checker of the `api_login` firewall (`user_checker`) applies to the
+API login, and the password hash is upgraded on login like with `form_login`.
+
+### Hooking into the login / logout
+
+Symfony's security events are the main extension point; they are dispatched on the firewall
+(`api_login` for the login, `api` for the logout) and reach any global listener:
+
+```php
+#[AsEventListener]
+public function onLogin(LoginSuccessEvent $event): void
+{
+    // $event->getUser(), $event->getResponse() (the token response, replaceable)
+}
+
+#[AsEventListener]
+public function onLoginFailure(LoginFailureEvent $event): void {}
+
+#[AsEventListener]
+public function onLogout(LogoutEvent $event): void {} // $event->setResponse() replaces {"message": ...}
+```
+
+Check the firewall (`$event->getFirewallName()`) when the listener must ignore the admin login.
+To change only the token payload, use a `LoginResponseEnricherInterface` (below); to change a
+whole response, decorate one of the handlers above.
 
 ### Rate limit
 

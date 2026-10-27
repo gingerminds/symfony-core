@@ -29,6 +29,11 @@ framework:
     rate_limiter:
         gingerminds_core_api:
             storage_service: test.rate_limiter_storage
+        # API login_throttling (gingerminds_core.api.login_throttling below).
+        gingerminds_core_api_login:
+            storage_service: test.rate_limiter_storage
+        gingerminds_core_api_login_global:
+            storage_service: test.rate_limiter_storage
         test_strict:
             policy: fixed_window
             limit: 1
@@ -79,6 +84,14 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js|assets)/
             security: false
+        api_login:
+            pattern: ^/api/login$
+            stateless: true
+            provider: gingerminds_users
+            custom_authenticators:
+                - gingerminds_core.security.api_login_authenticator
+            login_throttling:
+                limiter: gingerminds_core.security.api_login_rate_limiter
         api:
             pattern: ^/api
             stateless: true
@@ -118,6 +131,9 @@ gingerminds_core:
         permission_form_sidebar: ['admin/_form_include.html.twig']
         profile_form_main: ['admin/_form_include.html.twig']
     api:
+        # AuthTest: below the API rate limit, so login throttling shows up first.
+        login_throttling:
+            max_attempts: 2
         rate_limit:
             limit: 3
     # AdminTest: global value (edit -> list) and a per resource override (permission).

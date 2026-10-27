@@ -225,9 +225,16 @@ final class GingermindsCoreBundle extends AbstractBundle
 
         $builder->prependExtensionConfig('framework', [
             'rate_limiter' => [
+                // API login_throttling (gingerminds_core.security.api_login_rate_limiter): per
+                // username + IP, and per IP with 5x the attempts, as Symfony's own default.
                 'gingerminds_core_api_login' => [
                     'policy' => 'fixed_window',
                     'limit' => $config['api']['login_throttling']['max_attempts'],
+                    'interval' => $config['api']['login_throttling']['interval'],
+                ],
+                'gingerminds_core_api_login_global' => [
+                    'policy' => 'fixed_window',
+                    'limit' => 5 * $config['api']['login_throttling']['max_attempts'],
                     'interval' => $config['api']['login_throttling']['interval'],
                 ],
                 ApiRateLimitListener::DEFAULT_LIMITER => [
