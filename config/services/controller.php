@@ -6,6 +6,7 @@ namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
 use Gingerminds\CoreBundle\Controller\AutocompleteController;
 use Gingerminds\CoreBundle\Controller\Dashboard\DashboardController;
+use Gingerminds\CoreBundle\Controller\EventListener\InvalidCsrfTokenListener;
 use Gingerminds\CoreBundle\Controller\HealthController;
 use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
@@ -19,6 +20,7 @@ use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
 use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
 use Gingerminds\CoreBundle\Repository\User\UserRepository;
 use Psr\Container\ContainerInterface;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /*
  * Admin, security and API controllers.
@@ -51,6 +53,11 @@ return static function (ContainerConfigurator $container): void {
     $services->set('gingerminds_core.value_resolver.resource_entity', ResourceEntityValueResolver::class)
         ->args([service('gingerminds_core.resource_registry'), service('doctrine')])
         ->tag('controller.targeted_value_resolver', ['name' => ResourceEntityValueResolver::class]);
+
+    // Before the firewall's ExceptionListener (priority 1), which sends to the login page.
+    $services->set('gingerminds_core.listener.invalid_csrf_token', InvalidCsrfTokenListener::class)
+        ->args([service('gingerminds_core.resource_registry'), service('router'), service('translator')])
+        ->tag('kernel.event_listener', ['event' => KernelEvents::EXCEPTION, 'priority' => InvalidCsrfTokenListener::PRIORITY]);
 
     $controller('gingerminds_core.controller.admin.dashboard', DashboardController::class);
     $controller('gingerminds_core.controller.admin.profile', ProfileController::class)

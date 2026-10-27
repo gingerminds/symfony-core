@@ -208,14 +208,40 @@ final class AdminTest extends ApiTestCase
         $deleteUrl = $base . '/' . $product->getId() . '/delete';
         $token = (string) $crawler->filter(\sprintf('[data-gm-delete-url="%s"]', $deleteUrl))->attr('data-gm-delete-token');
 
-        // #[IsCsrfTokenValid]: an InvalidCsrfTokenException, the firewall's entry point.
+        // An invalid token without referer: back to the list of the same parent.
         $this->client->request('POST', $deleteUrl, ['_token' => 'invalid']);
-        self::assertResponseRedirects('/admin/login');
+        self::assertResponseRedirects($base, 303);
 
         $this->client->request('POST', $deleteUrl, ['_token' => $token]);
         self::assertResponseRedirects($base);
         $entityManager->clear();
         self::assertNull($entityManager->find(Product::class, $product->getId()));
+    }
+
+    public function testInvalidDeleteTokenRedirectsBackWithAFlash(): void
+    {
+        $role = $this->fixtures->role('Editors');
+        $this->client->loginUser($this->fixtures->user('csrf@example.com', superAdmin: true), 'admin');
+        $deleteUrl = '/admin/roles/' . $role->getId() . '/delete';
+        $editUrl = 'http://localhost/admin/roles/' . $role->getId() . '/edit';
+
+        // InvalidCsrfTokenListener, before the firewall: no login page, back to the referer.
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid'], server: ['HTTP_REFERER' => $editUrl]);
+        self::assertResponseRedirects($editUrl, 303);
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.alert-danger', 'Invalid security token');
+
+        // A referer of another host is not followed: the resource list.
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid'], server: ['HTTP_REFERER' => 'https://evil.example.com/']);
+        self::assertResponseRedirects('/admin/roles', 303);
+
+        // A JSON request keeps the firewall's handling.
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid'], server: ['HTTP_ACCEPT' => 'application/json']);
+        self::assertResponseRedirects('/admin/login');
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        self::assertNotNull($entityManager->find(Role::class, $role->getId()));
     }
 
     public function testFormColumnsRenderTheFormIncludes(): void
@@ -439,9 +465,9 @@ final class AdminTest extends ApiTestCase
         $this->client->loginUser($this->fixtures->user('deleter@example.com', superAdmin: true), 'admin');
         $role = $this->fixtures->role('To delete');
 
-        // #[IsCsrfTokenValid]: an InvalidCsrfTokenException, the firewall's entry point.
+        // #[IsCsrfTokenValid]: nothing deleted, back to the list (testInvalidDeleteTokenRedirectsBackWithAFlash).
         $this->client->request('POST', '/admin/roles/' . $role->getId() . '/delete', ['_token' => 'invalid']);
-        self::assertResponseRedirects('/admin/login');
+        self::assertResponseRedirects('/admin/roles', 303);
         self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Role::class, $role->getId()));
 
         $csrf = $this->deleteToken('/admin/roles', '/admin/roles/' . $role->getId() . '/delete');

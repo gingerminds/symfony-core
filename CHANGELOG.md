@@ -46,8 +46,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   registry, Doctrine and the translator (`getResourceRegistry()`, `getDoctrine()`, `trans()`);
   `$this->context` is gone, `addFlash()` loses its `Request` argument. Access is declared with
   `#[IsGranted]` on the actions, the delete token with `#[IsCsrfTokenValid]`: an invalid token is
-  an `InvalidCsrfTokenException` (the firewall sends to the login page) instead of a flash, the
-  `flash.invalid_csrf` message is removed. The resource is the `_resource` default of the route
+  an `InvalidCsrfTokenException`, turned on the HTML requests of a resource route into the
+  `flash.invalid_csrf` flash and a redirection to the same host referer, or else to the list, by
+  `InvalidCsrfTokenListener` (`kernel.exception`, before the firewall which would send to the
+  login page; JSON requests keep the firewall's handling). The resource is the `_resource` default of the route
   (set by the CRUD route loader): `getResourceName()` and its loop over the registry are removed,
   `getResource()` is not cached any more. `edit()` / `delete()` receive the entity, resolved by
   `ResourceEntityValueResolver` (`#[ValueResolver(ResourceEntityValueResolver::class)]`, 404

@@ -191,7 +191,9 @@ PHP does not inherit them) and throw `createNotFoundException()`.
 `addFlash()`, `createForm()`, `isGranted()`... are the framework's. Access is checked by
 attributes on the actions: `#[IsGranted('VIEW'|'CREATE', subject: <the route's _resource>)]`,
 `#[IsGranted('EDIT'|'DELETE', subject: 'entity')]` and `#[IsCsrfTokenValid('delete-{id}')]` on
-`delete()` (an invalid token is an `InvalidCsrfTokenException`, handled by the firewall). It
+`delete()` (an invalid token is an `InvalidCsrfTokenException`: on an HTML request of a resource
+route, `InvalidCsrfTokenListener` answers it with the `flash.invalid_csrf` flash and a redirection
+to the referer of the same host, or else to the list, instead of the firewall's login page). It
 subscribes to the resource registry, Doctrine and the translator (`getResourceRegistry()`,
 `getDoctrine()`, `trans()`); any other service goes in the constructor of your controller,
 autowired (the parent has none):
