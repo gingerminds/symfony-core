@@ -9,6 +9,7 @@ use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Role\RoleInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Serializer\Attribute\SerializedName;
 
@@ -28,6 +29,7 @@ trait UserRolesTrait
     #[ORM\InverseJoinColumn(name: 'role_id', onDelete: 'CASCADE')]
     #[Groups([BaseUser::GROUP_LIST, BaseUser::GROUP_READ])]
     #[SerializedName('roles')]
+    #[EagerLoad]
     protected Collection $roleEntities;
 
     /**

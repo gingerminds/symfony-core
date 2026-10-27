@@ -12,7 +12,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Model\CacheableResourceInterface;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\Searchable;
@@ -39,7 +39,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     paginationClientItemsPerPage: true,
 )]
-class Product implements ResourceInterface, FilterableInterface, EagerLoadableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
+class Product implements ResourceInterface, FilterableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
 {
     use CacheableResourceTrait;
     use TimestampableTrait;
@@ -78,6 +78,7 @@ class Product implements ResourceInterface, FilterableInterface, EagerLoadableIn
     #[Groups(['product:list'])]
     #[Sortable(paths: ['name'])]
     #[Searchable(paths: ['name'])]
+    #[EagerLoad]
     private ?Category $category = null;
 
     /**
@@ -108,11 +109,6 @@ class Product implements ResourceInterface, FilterableInterface, EagerLoadableIn
             'tags' => ['type' => 'select-entity', 'label' => 'product.field.tags', 'entity' => Category::class, 'multiple' => true],
             'name' => ['type' => 'select', 'label' => 'product.field.name', 'disabled_for_back' => true],
         ];
-    }
-
-    public static function getEagerLoads(): array
-    {
-        return ['category'];
     }
 
     public static function getCacheKey(): string

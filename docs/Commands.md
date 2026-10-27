@@ -81,8 +81,8 @@ installed). E.g. `--translated` of `gingerminds/symfony-multisite`.
 | `generate(ResourceMakerContext $context)` | extra files (`$context->resourceGenerator->generateClassFromSkeleton()`, `addTranslations()`), returns next steps |
 
 Extensible skeleton variables: `Entity.tpl.php` `interfaces`, `traits` (short names, import
-them with `addUse()`) and `eager_loads` (PHP expressions; non-empty: the entity implements
-`EagerLoadableInterface`); `FormType.tpl.php` `build_form` (lines of `buildForm()`). Every
+them with `addUse()`; a trait marks its own associations `#[EagerLoad]`); `FormType.tpl.php`
+`build_form` (lines of `buildForm()`). Every
 skeleton receives `skeleton_directory` (the core skeleton directory).
 
 ## Runtime commands

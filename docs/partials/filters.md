@@ -116,6 +116,6 @@ silently ignored. To render it in the admin panel, add
 
 ## See also
 
-- [Resource model](../ResourceModel.md#optional-interfaces)
+- [Resource model](../ResourceModel.md#optional-interfaces-and-attributes)
 - [Facets](facets.md)
 - [Sorting](../Sorting.md)

@@ -15,7 +15,8 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `ResourceModelInterface` | `ResourceInterface` | |
 | `SortableModelInterface` (`$sortable`) | `#[Sortable]` on the properties | Sort paths are the marked properties only. |
 | `SearchableModelInterface` (`$searchable`) | `#[Searchable]` on the properties | Searched paths are the marked properties only. |
-| `FilterableModelInterface`, `EagerLoadableModelInterface` | `FilterableInterface`, `EagerLoadableInterface` | Same contracts. Filter keys are whitelisted against Doctrine metadata. |
+| `EagerLoadableModelInterface` (`$with`) | `#[EagerLoad]` on the associations | `#[EagerLoad(paths: ['language'])]` for `translations.language`. |
+| `FilterableModelInterface` | `FilterableInterface` | Same contract. Filter keys are whitelisted against Doctrine metadata. |
 | `CacheableResourceInterface`, `CacheCascadeInterface` | same names | Cache stores API responses, see [Cache](Cache.md). |
 | timestamps | `TimestampableInterface`/`Trait` | Doctrine listener. Soft deletes are not ported: deletions are real. |
 | `AbstractRepository::get(Request)` | `AbstractRepository::paginate(ListQuery)` | `ListQuery::fromRequest()`; repositories no longer read the request. |

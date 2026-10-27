@@ -9,7 +9,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\Trait\UserRolesTrait;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
@@ -20,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['email'])]
-abstract class BaseUser implements UserInterface, TimestampableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseUser implements UserInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
     use UserRolesTrait;
@@ -65,9 +65,14 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, EagerL
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     protected ?\DateTimeImmutable $emailVerifiedAt = null;
 
+    /**
+     * Eager loaded: shown by the admin list and the `user:list` group, and the inverse side of a
+     * one-to-one, which Doctrine can't lazy load (one query per user otherwise).
+     */
     #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user')]
     #[Groups([self::GROUP_LIST, self::GROUP_READ])]
     #[Sortable(paths: ['lastname'])]
+    #[EagerLoad]
     protected ?ContributorInterface $contributor = null;
 
     public function __construct()
@@ -137,15 +142,6 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, EagerL
     public function setContributor(?ContributorInterface $contributor): void
     {
         $this->contributor = $contributor;
-    }
-
-    /**
-     * Shown by the admin list and the `user:list` group. `contributor` is the inverse side
-     * of a one-to-one: Doctrine can't lazy load it, it would cost one query per user.
-     */
-    public static function getEagerLoads(): array
-    {
-        return ['contributor', 'roleEntities'];
     }
 
     /**

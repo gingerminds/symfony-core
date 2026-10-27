@@ -7,7 +7,7 @@ namespace Gingerminds\CoreBundle\Entity\User;
 use ApiPlatform\Metadata\ApiProperty;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Enum\Civility;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
-abstract class BaseContributor implements ContributorInterface, TimestampableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseContributor implements ContributorInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -70,6 +70,7 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     #[ORM\OneToOne(targetEntity: UserInterface::class, inversedBy: 'contributor')]
     #[ORM\JoinColumn(name: 'user_id', nullable: true, onDelete: 'SET NULL')]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT])]
+    #[EagerLoad]
     protected ?UserInterface $user = null;
 
     public function getId(): ?int
@@ -141,11 +142,6 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     public function getFullName(): string
     {
         return trim(\sprintf('%s %s', $this->firstname, $this->lastname));
-    }
-
-    public static function getEagerLoads(): array
-    {
-        return ['user'];
     }
 
     public function __toString(): string

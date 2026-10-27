@@ -11,7 +11,7 @@ namespace <?= $namespace ?>;
 // Index the default sort and the sortable / filtered columns once the table can grow:
 // #[ORM\Index(name: '<?= $resource->snakePlural ?>_name_idx', fields: ['name'])]
 <?php if ($api): include $skeleton_directory . '/ApiResource.tpl.php'; endif ?>
-class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'TimestampableInterface', ...$interfaces, ...([] !== $eager_loads ? ['EagerLoadableInterface'] : []), '\Stringable']) ?>
+class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'TimestampableInterface', ...$interfaces, '\Stringable']) ?>
 
 {
     use TimestampableTrait;
@@ -35,27 +35,14 @@ class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'Tim
     private ?int $id = null;
 
     // TODO: mark the fields matched by `filters[search]` with #[Searchable]
-    // (#[Searchable(paths: ['name'])] on an association searches `relation.name`).
+    // (#[Searchable(paths: ['name'])] on an association searches `relation.name`), and the
+    // relations shown by the admin list or the API list group with #[EagerLoad] (no query per row).
 
     public function __toString(): string
     {
         return (string) $this->id;
     }
 
-<?php if ([] !== $eager_loads): ?>
-    /**
-     * Relations shown by the admin list or the API list group (no query per row).
-     */
-    public static function getEagerLoads(): array
-    {
-        return [<?= implode(', ', $eager_loads) ?>];
-    }
-
-<?php else: ?>
-    // Relations shown by the admin list or the API list group: implement EagerLoadableInterface
-    // and return them from getEagerLoads(), e.g. ['category', 'tags'] (no query per row).
-
-<?php endif ?>
     public function getId(): ?int
     {
         return $this->id;

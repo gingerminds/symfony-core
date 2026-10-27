@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Model;
 
 /**
- * The paths declared by a property attribute carrying `paths` (`#[Sortable]`, `#[Searchable]`)
+ * The paths declared by a property attribute carrying `paths` (`#[Sortable]`, `#[Searchable]`, `#[EagerLoad]`)
  * on an entity, parent classes and traits included: the property name, or
  * `property.path` for each of its `paths`.
  *
@@ -17,8 +17,8 @@ final class PropertyPaths
     private static array $paths = [];
 
     /**
-     * @param class-string                      $class
-     * @param class-string<Sortable|Searchable> $attribute
+     * @param class-string                                $class
+     * @param class-string<Sortable|Searchable|EagerLoad> $attribute
      *
      * @return list<string>
      */

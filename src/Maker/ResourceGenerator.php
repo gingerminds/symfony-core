@@ -16,7 +16,6 @@ use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
 use Gingerminds\CoreBundle\Controller\AbstractCrudController;
 use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Maker\Extension\SkeletonTemplate;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
@@ -101,14 +100,7 @@ final readonly class ResourceGenerator
             // Extra implemented interfaces / used traits (short names, imported with `uses`).
             'interfaces' => [],
             'traits' => [],
-            // Non-empty: the entity implements EagerLoadableInterface and returns these
-            // paths (PHP expressions, e.g. `'category'` or `...self::getTranslationEagerLoads()`).
-            'eager_loads' => [],
         ], $uses);
-
-        if ([] !== $skeleton->variables['eager_loads']) {
-            $skeleton->addUse(EagerLoadableInterface::class);
-        }
 
         return $this->generateClassFromSkeleton($generator, $io, $resource->entityClass(), $skeleton);
     }

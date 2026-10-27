@@ -10,7 +10,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
@@ -23,7 +23,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['name'])]
-abstract class BaseRole implements RoleInterface, TimestampableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseRole implements RoleInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -57,6 +57,9 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, EagerL
     protected ?bool $default = null;
 
     /**
+     * Counted on the list (getPermissionsCount(), `role:list` group) and serialized on reads:
+     * loaded for the whole page at once on lists, fetch-joined on reads.
+     *
      * @var Collection<int, PermissionInterface>
      */
     #[ORM\ManyToMany(targetEntity: PermissionInterface::class)]
@@ -64,6 +67,7 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, EagerL
     #[ORM\JoinColumn(name: 'role_id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'permission_id', onDelete: 'CASCADE')]
     #[Groups([self::GROUP_READ])]
+    #[EagerLoad]
     protected Collection $permissions;
 
     public function __construct()
@@ -148,15 +152,6 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, EagerL
         $slug = new AsciiSlugger()->slug((string) $this->name, '_')->upper()->toString();
 
         return 'ROLE_' . $slug;
-    }
-
-    /**
-     * Counted on the list (getPermissionsCount(), `role:list` group) and serialized on reads:
-     * loaded for the whole page at once on lists, fetch-joined on reads.
-     */
-    public static function getEagerLoads(): array
-    {
-        return ['permissions'];
     }
 
     public function __toString(): string

@@ -26,16 +26,16 @@ class Product implements ResourceInterface, \Stringable
 }
 ```
 
-### Optional interfaces
+### Optional interfaces and attributes
 
 All of them live under `Gingerminds\CoreBundle\Model`.
 
-| Interface | Effect |
+| Interface / attribute | Effect |
 |---|---|
 | `#[Sortable]` (property attribute) | Enables `?sortBy=&sort=asc\|desc` (admin column headers and API) on that property, or on `relation.field` with `#[Sortable(paths: ['field'])]` on a to-one association; any other path is ignored. See [Sorting](Sorting.md). |
 | `#[Searchable]` (property attribute) | Enables `filters[search]` (and the admin search field): case-insensitive `LIKE` on the marked properties, or on `relation.field` with `#[Searchable(paths: ['field'])]` on an association; any other field is not searched. `SearchableFields::of(Product::class)` returns the paths (parent classes included). |
 | `FilterableInterface` | Enables the filters panel and `filters[...]` on the API, from `getFilters()`. See [Filters](partials/filters.md) and [Facets](partials/facets.md). |
-| `EagerLoadableInterface` | `getEagerLoads()` associations are loaded with the entities on every repository read (lists, API reads, admin edit page). Fixes N+1 at the source. To-one paths are fetch-joined; on paginated lists, a path going through a collection is loaded after the page, one `WHERE IN` query per path (joining it would paginate through `DISTINCT` subqueries over the whole table). |
+| `#[EagerLoad]` (property attribute) | The marked associations (`#[EagerLoad(paths: ['language'])]` on `$translations` also loads `translations.language`; parents and traits included, `EagerLoads::of()`) are loaded with the entities on every repository read (lists, API reads, admin edit page). Fixes N+1 at the source. To-one paths are fetch-joined; on paginated lists, a path going through a collection is loaded after the page, one `WHERE IN` query per path (joining it would paginate through `DISTINCT` subqueries over the whole table). |
 | `CacheableResourceInterface` | Caches the API responses of the resource. See [Cache](Cache.md). |
 | `CacheCascadeInterface` | Invalidates other resources' cache when this entity changes. See [Cache](Cache.md). |
 | `TimestampableInterface` + `TimestampableTrait` | `createdAt`/`updatedAt` filled automatically (Eloquent timestamps). |
@@ -167,7 +167,7 @@ belongs to it in `findEntity()`.
 resource:
 
 1. **Eager load what the list shows.** Every relation displayed by the admin list or exposed in
-   the API list group goes in `getEagerLoads()` (`EagerLoadableInterface`), otherwise each row
+   the API list group is marked `#[EagerLoad]`, otherwise each row
    runs its own query. The inverse side of a one-to-one (`mappedBy`) is never lazy: it costs one
    query per row even when not displayed.
 2. **Index the sorts and filters.** Add a `#[ORM\Index]` on the default sort of the repository

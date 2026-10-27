@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `relation.name`), read by `SearchableFields`. `filters[search]` only matches the marked
   properties; `is_searchable` (admin search field) is true when the entity has at least one; the
   generated entities no longer implement `SearchableInterface`.
+- **BC break** Eager loads: `EagerLoadableInterface::getEagerLoads()` is replaced by the
+  `#[EagerLoad]` attribute on the associations (`#[EagerLoad(paths: ['language'])]` on
+  `$translations` for `translations.language`), read by `EagerLoads` (parents and traits
+  included). The `eager_loads` variable of the `Entity.tpl.php` maker skeleton is removed: a
+  trait added through `traits` marks its own associations.
 
 ### Added
 
