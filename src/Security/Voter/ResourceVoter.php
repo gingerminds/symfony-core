@@ -52,12 +52,12 @@ class ResourceVoter extends Voter
     {
         // A subject type is a loaded class (an object's) or a builtin type: no autoloading.
         return 'string' === $subjectType
-            || (class_exists($subjectType, false) && null !== $this->resources->findByEntity($subjectType));
+            || (class_exists($subjectType, false) && $this->resources->findByEntity($subjectType) instanceof ResourceDefinition);
     }
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return $this->supportsAttribute($attribute) && null !== $this->findResource($subject);
+        return $this->supportsAttribute($attribute) && $this->findResource($subject) instanceof ResourceDefinition;
     }
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
@@ -65,7 +65,7 @@ class ResourceVoter extends Voter
         $user = $token->getUser();
         $resource = $this->findResource($subject);
 
-        if (!$user instanceof UserInterface || null === $resource) {
+        if (!$user instanceof UserInterface || !$resource instanceof ResourceDefinition) {
             return false;
         }
 

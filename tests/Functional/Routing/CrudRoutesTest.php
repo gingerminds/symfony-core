@@ -87,7 +87,7 @@ final class CrudRoutesTest extends ApiTestCase
         // cache depends on the container file (FrameworkBundle Router), rebuilt with it in debug.
         $container = self::getContainer();
         $containerFile = $container->getParameter('kernel.build_dir') . '/' . $container->getParameter('kernel.container_class') . '.php';
-        $resources = array_map('strval', $container->get(RouterInterface::class)->getRouteCollection()->getResources());
+        $resources = array_map(strval(...), $container->get(RouterInterface::class)->getRouteCollection()->getResources());
 
         self::assertContains(realpath($containerFile), $resources);
     }

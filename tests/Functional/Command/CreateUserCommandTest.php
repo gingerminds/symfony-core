@@ -6,6 +6,7 @@ namespace Gingerminds\CoreBundle\Tests\Functional\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Entity\Role\Role;
+use Gingerminds\CoreBundle\Entity\Role\RoleInterface;
 use Gingerminds\CoreBundle\Entity\User\User;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -38,7 +39,7 @@ final class CreateUserCommandTest extends KernelTestCase
         $user = $entityManager->getRepository(User::class)->findOneBy(['email' => 'cli@example.com']);
         self::assertInstanceOf(User::class, $user);
         self::assertSame('Turing', $user->getContributor()?->getLastname());
-        self::assertSame(['Member'], array_map(static fn ($role): ?string => $role->getName(), $user->getRoleEntities()->toArray()));
+        self::assertSame(['Member'], array_map(static fn (RoleInterface $role): ?string => $role->getName(), $user->getRoleEntities()->toArray()));
         self::assertNotSame('cli-password', $user->getPassword());
         self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'cli-password'));
     }

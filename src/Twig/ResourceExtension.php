@@ -13,13 +13,13 @@ use Twig\Attribute\AsTwigFunction;
  * Twig functions on the resources (`gm_resource()`, `gm_resource_for()`, `gm_entity_choices()`):
  * a Twig runtime, instantiated on the first call only.
  */
-final class ResourceExtension
+final readonly class ResourceExtension
 {
     private const int MAX_LOCAL_CHOICES = 500;
 
     public function __construct(
-        private readonly ResourceRegistry $resources,
-        private readonly ManagerRegistry $doctrine,
+        private ResourceRegistry $resources,
+        private ManagerRegistry $doctrine,
     ) {
     }
 

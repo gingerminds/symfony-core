@@ -42,7 +42,7 @@ final class ResourceEntityRouteListener
         foreach (new \ReflectionMethod($controller[0], $controller[1])->getParameters() as $parameter) {
             $entity = $arguments[$parameter->getName()] ?? null;
 
-            if (!\is_object($entity) || !self::isResolvedByResourceEntityValueResolver($parameter)) {
+            if (!\is_object($entity) || !$this->isResolvedByResourceEntityValueResolver($parameter)) {
                 continue;
             }
 
@@ -56,14 +56,11 @@ final class ResourceEntityRouteListener
         }
     }
 
-    private static function isResolvedByResourceEntityValueResolver(\ReflectionParameter $parameter): bool
+    private function isResolvedByResourceEntityValueResolver(\ReflectionParameter $parameter): bool
     {
-        foreach ($parameter->getAttributes(ValueResolver::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-            if (ResourceEntityValueResolver::class === $attribute->newInstance()->resolver) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any(
+            $parameter->getAttributes(ValueResolver::class, \ReflectionAttribute::IS_INSTANCEOF),
+            static fn (\ReflectionAttribute $attribute): bool => ResourceEntityValueResolver::class === $attribute->newInstance()->resolver,
+        );
     }
 }

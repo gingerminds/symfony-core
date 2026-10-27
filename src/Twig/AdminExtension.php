@@ -14,18 +14,18 @@ use Twig\Attribute\AsTwigFunction;
  * Twig functions of the admin layout (`gm_admin_menu()`, `gm_admin_title()`, `gm_admin_includes()`,
  * `gm_form_includes()`, `gm_is_menu_active()`): a Twig runtime, instantiated on the first call only.
  */
-final class AdminExtension
+final readonly class AdminExtension
 {
     private const array FORM_COLUMNS = ['main', 'sidebar'];
 
     public function __construct(
-        private readonly AdminMenu $menu,
-        private readonly RequestStack $requestStack,
-        private readonly TranslatorInterface $translator,
-        private readonly string $adminTitle,
-        private readonly string $adminTitleDomain,
+        private AdminMenu $menu,
+        private RequestStack $requestStack,
+        private TranslatorInterface $translator,
+        private string $adminTitle,
+        private string $adminTitleDomain,
         /** @var array<string, list<string>> */
-        private readonly array $adminIncludes = [],
+        private array $adminIncludes = [],
     ) {
     }
 

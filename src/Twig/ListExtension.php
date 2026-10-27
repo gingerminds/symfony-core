@@ -12,10 +12,10 @@ use Twig\Attribute\AsTwigFunction;
  * Twig functions of the lists (`gm_list_path()`, `gm_sort_path()`, `gm_sort_direction()`):
  * a Twig runtime, instantiated on the first call only.
  */
-final class ListExtension
+final readonly class ListExtension
 {
     public function __construct(
-        private readonly UrlGeneratorInterface $urlGenerator,
+        private UrlGeneratorInterface $urlGenerator,
     ) {
     }
 

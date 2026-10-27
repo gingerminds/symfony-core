@@ -56,7 +56,7 @@ final class CrudRouteLoader extends Loader
                 throw new \LogicException(\sprintf('The controller of the resource "%s" must be a class name, "%s" given.', $definition->name, $definition->controller));
             }
 
-            self::assertOverridesRestateTheirAttributes($definition->controller);
+            $this->assertOverridesRestateTheirAttributes($definition->controller);
             $controllerRoutes = $this->import($definition->controller, 'attribute');
 
             if (!$controllerRoutes instanceof RouteCollection) {
@@ -89,7 +89,7 @@ final class CrudRouteLoader extends Loader
      *
      * @param class-string $controller
      */
-    private static function assertOverridesRestateTheirAttributes(string $controller): void
+    private function assertOverridesRestateTheirAttributes(string $controller): void
     {
         foreach (new \ReflectionClass($controller)->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
             $parentClass = $method->getDeclaringClass()->getParentClass();
@@ -101,7 +101,7 @@ final class CrudRouteLoader extends Loader
             $overridden = $parentClass->getMethod($method->getName());
 
             foreach ([Route::class, IsGranted::class, IsCsrfTokenValid::class] as $attribute) {
-                if (self::declares($overridden, $attribute) && !self::declares($method, $attribute)) {
+                if ($this->declares($overridden, $attribute) && !$this->declares($method, $attribute)) {
                     throw new \LogicException(\sprintf(
                         '"%s::%s()" overrides an action declaring #[%s]: restate it (attributes are not inherited).',
                         $method->getDeclaringClass()->getName(),
@@ -116,7 +116,7 @@ final class CrudRouteLoader extends Loader
     /**
      * @param class-string $attribute
      */
-    private static function declares(\ReflectionMethod $method, string $attribute): bool
+    private function declares(\ReflectionMethod $method, string $attribute): bool
     {
         return [] !== $method->getAttributes($attribute, \ReflectionAttribute::IS_INSTANCEOF);
     }

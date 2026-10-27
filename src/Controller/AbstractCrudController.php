@@ -6,6 +6,7 @@ namespace Gingerminds\CoreBundle\Controller;
 
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Persistence\ObjectManager;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
 use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
@@ -276,7 +277,7 @@ abstract class AbstractCrudController extends AbstractController
         $manager = $this->getDoctrine()->getManagerForClass($entity::class);
         $metadata = $manager?->getClassMetadata($entity::class);
 
-        if (null === $manager || !$metadata instanceof ClassMetadata) {
+        if (!$manager instanceof ObjectManager || !$metadata instanceof ClassMetadata) {
             return true;
         }
 
