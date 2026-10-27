@@ -54,6 +54,24 @@ final class ResourceRegistryPassTest extends TestCase
         self::assertSame('edit', $resources['user']['redirect_after_edit']);
     }
 
+    public function testCrudControllersAreLeftToTheCrudRouteLoader(): void
+    {
+        $container = new ContainerBuilder();
+        $container->setDefinition('gingerminds_core.resource_registry', new Definition(ResourceRegistry::class, ['$resources' => []]));
+        $container->setParameter('gingerminds_core.resources_config', ['user' => ['controller' => 'App\Controller\UserController']]);
+        $container->register('App\Controller\ProductController')
+            ->addTag(ResourceRegistryPass::CRUD_CONTROLLER_TAG, ['resource' => 'product', 'entity' => 'App\Entity\Product'])
+            ->addTag('routing.controller');
+        $container->register('app.user_controller', 'App\Controller\UserController')->addTag('routing.controller');
+        $container->register('App\Controller\HomeController')->addTag('routing.controller');
+
+        new ResourceRegistryPass()->process($container);
+
+        self::assertFalse($container->getDefinition('App\Controller\ProductController')->hasTag('routing.controller'), 'Bound by #[AsCrudController].');
+        self::assertFalse($container->getDefinition('app.user_controller')->hasTag('routing.controller'), 'Controller class of a configured resource.');
+        self::assertTrue($container->getDefinition('App\Controller\HomeController')->hasTag('routing.controller'));
+    }
+
     public function testRedirectAfterSaveResolution(): void
     {
         $container = new ContainerBuilder();

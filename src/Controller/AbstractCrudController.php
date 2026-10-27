@@ -24,13 +24,20 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\ValueResolver;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Admin CRUD of a resource. The resource is the `_resource` default of the current route;
- * the entity of edit/delete is resolved by ResourceEntityValueResolver (404 before the access check).
+ * Admin CRUD of a resource.
+ *
+ * The #[Route] of the actions are relative to the resource: CrudRouteLoader loads them for each
+ * resource bound to the controller, under `/{admin_prefix}/{path}`, named `{route_prefix}_{name}`,
+ * with the `_resource` default naming the resource. A subclass adds its own actions the same way
+ * (`#[Route('/reorder', name: 'reorder')]` serves `/{admin_prefix}/{path}/reorder`, route
+ * `{route_prefix}_reorder`). The entity of edit/delete is resolved by ResourceEntityValueResolver
+ * (404 before the access check).
  */
 abstract class AbstractCrudController extends AbstractController
 {
@@ -38,6 +45,8 @@ abstract class AbstractCrudController extends AbstractController
      * The resource name of the current route, subject of the list/create access checks.
      */
     protected const string RESOURCE_SUBJECT = 'request.attributes.get("_resource")';
+
+    protected const string ID_REQUIREMENT = '[^/]+';
 
     public static function getSubscribedServices(): array
     {
@@ -49,6 +58,7 @@ abstract class AbstractCrudController extends AbstractController
         ];
     }
 
+    #[Route('', name: 'index', methods: ['GET'])]
     #[IsGranted(ResourceVoter::VIEW, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function index(Request $request): Response
     {
@@ -64,6 +74,7 @@ abstract class AbstractCrudController extends AbstractController
         ]);
     }
 
+    #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
     #[IsGranted(ResourceVoter::CREATE, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function new(Request $request): Response
     {
@@ -88,6 +99,7 @@ abstract class AbstractCrudController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/edit', name: 'edit', requirements: ['id' => self::ID_REQUIREMENT], methods: ['GET', 'POST'])]
     #[IsGranted(ResourceVoter::EDIT, subject: 'entity')]
     public function edit(Request $request, #[ValueResolver(ResourceEntityValueResolver::class)] object $entity): Response
     {
@@ -110,6 +122,7 @@ abstract class AbstractCrudController extends AbstractController
         ]);
     }
 
+    #[Route('/{id}/delete', name: 'delete', requirements: ['id' => self::ID_REQUIREMENT], methods: ['POST'])]
     #[IsGranted(ResourceVoter::DELETE, subject: 'entity')]
     #[IsCsrfTokenValid(new Expression('"delete-" ~ request.attributes.get("id")'))]
     public function delete(#[ValueResolver(ResourceEntityValueResolver::class)] object $entity): Response

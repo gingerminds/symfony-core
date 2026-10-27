@@ -69,12 +69,12 @@ the CSRF token in the `X-CSRF-Token` header:
 {"ids": [3, 1, 2], "parent_id": 5}
 ```
 
-The endpoint, in your `AbstractCrudController` subclass (its `#[Route]` attributes are loaded
-by your usual `config/routes.yaml` controllers import; the `_resource` default names the resource
-of `getRepository()`):
+The endpoint, in your `AbstractCrudController` subclass: like the CRUD actions, its `#[Route]`
+is relative to the resource (`/admin/categories/reorder`, route `admin_category_reorder`, the
+`_resource` default of `getRepository()` set by the core route loader):
 
 ```php
-#[Route('/admin/categories/reorder', name: 'admin_category_reorder', methods: ['POST'], defaults: ['_resource' => 'category'])]
+#[Route('/reorder', name: 'reorder', methods: ['POST'])]
 #[IsCsrfTokenValid('reorder-category', tokenKey: 'X-CSRF-Token', tokenSource: IsCsrfTokenValid::SOURCE_HEADER)]
 public function reorder(Request $request): JsonResponse
 {

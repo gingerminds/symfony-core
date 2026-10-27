@@ -8,6 +8,10 @@ namespace <?= $namespace ?>;
 
 /**
  * Admin CRUD of <?= $resource->snakePlural ?>: routes `admin_<?= $resource->snake ?>_*`, templates `<?= $resource->templateDirectory() ?>/*`.
+ *
+ * The CRUD routes are the #[Route] of AbstractCrudController, loaded by the core under the
+ * resource path. An action of its own is relative to it too:
+ * `#[Route('/export', name: 'export')]` serves `/{admin_prefix}/<?= str_replace('_', '-', $resource->snakePlural) ?>/export`, route `admin_<?= $resource->snake ?>_export`.
  */
 #[AsCrudController(
     resource: '<?= $resource->snake ?>',

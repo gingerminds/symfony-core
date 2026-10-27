@@ -13,6 +13,7 @@ use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -28,6 +29,7 @@ final class AutocompleteController extends AbstractController
     ) {
     }
 
+    #[Route('/_autocomplete/{resource}', name: 'gingerminds_core_autocomplete', requirements: ['resource' => '[a-z0-9_]+'], methods: ['GET'])]
     #[IsGranted(ResourceVoter::VIEW, subject: 'resource')]
     public function __invoke(Request $request, string $resource): JsonResponse
     {

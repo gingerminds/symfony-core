@@ -57,7 +57,8 @@ return static function (ContainerConfigurator $container): void {
         ->args([service('doctrine'), service('translator')]);
     $controller('gingerminds_core.controller.admin.autocomplete', AutocompleteController::class)
         ->args([service('gingerminds_core.resource_registry'), service('doctrine')]);
-    $controller('gingerminds_core.controller.security.login', LoginController::class);
+    $controller('gingerminds_core.controller.security.login', LoginController::class)
+        ->args([service('security.authentication_utils')]);
     $controller('gingerminds_core.controller.security.logout', LogoutController::class);
     $controller('gingerminds_core.controller.health', HealthController::class);
     $controller('gingerminds_core.controller.api.auth', AuthController::class)
@@ -70,4 +71,19 @@ return static function (ContainerConfigurator $container): void {
             param('gingerminds_core.api.token_ttl'),
             service('translator'),
         ]);
+
+    // The #[Route] attributes name the controller class: `_controller: Class` / `Class::action`.
+    foreach (
+        [
+            'admin.dashboard' => DashboardController::class,
+            'admin.profile' => ProfileController::class,
+            'admin.autocomplete' => AutocompleteController::class,
+            'security.login' => LoginController::class,
+            'security.logout' => LogoutController::class,
+            'health' => HealthController::class,
+            'api.auth' => AuthController::class,
+        ] as $id => $class
+    ) {
+        $services->alias($class, 'gingerminds_core.controller.' . $id)->public();
+    }
 };

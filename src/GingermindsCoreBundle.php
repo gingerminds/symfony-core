@@ -38,6 +38,7 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
 use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\DependencyInjection\ChildDefinition;
+use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ConfigurationExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -108,7 +109,9 @@ final class GingermindsCoreBundle extends AbstractBundle
     {
         parent::build($container);
 
-        $container->addCompilerPass(new ResourceRegistryPass());
+        // Before RoutingControllerPass (priority 0): ResourceRegistryPass removes the CRUD
+        // controllers from the `routing.controllers` import.
+        $container->addCompilerPass(new ResourceRegistryPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 1);
         $container->addCompilerPass(new OverriddenEntityPass());
     }
 

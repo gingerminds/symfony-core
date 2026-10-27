@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   passed to `render()` as `FormInterface` (422 on an invalid submission by `AbstractController`).
   The bundle controllers are service subscribers (`container.service_subscriber`,
   `setContainer()`); `ProfileController` takes Doctrine and the translator, `AuthController` no
-  longer takes `Security`, `LoginController` gets `AuthenticationUtils` as an action argument.
+  longer takes `Security`.
 - **BC break** Security: one `ResourceVoter` for every registered resource replaces
   `AbstractResourceVoter` and its `UserVoter`, `ContributorVoter`, `RoleVoter`, `PermissionVoter`
   (and the voter each resource had to declare). It reads the resource registry (name, configured
@@ -69,6 +69,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `make:gm:voter`, `MakeVoter`, the `Voter.tpl.php` skeleton and
   `ResourceGenerator::generateVoter()` are removed (`make:gm:resource` generates no voter).
   `gingerminds:permissions:sync` creates `ResourceDefinition::permissionNames()`.
+- **BC break** Routing: the CRUD routes are the `#[Route]` attributes of
+  `AbstractCrudController`'s actions (`''`/`index`, `/new`/`new`, `/{id}/edit`/`edit`,
+  `/{id}/delete`/`delete`), relative to the resource. `CrudRouteLoader` (`gingerminds_crud`) no
+  longer builds them by hand: it loads the attributes of each resource controller (its own
+  `#[Route]` actions included, e.g. `#[Route('/reorder', name: 'reorder')]` becomes
+  `{route_prefix}_reorder` under the resource path, with `_resource`) and applies the
+  registry's path, route prefix and `_resource` default; it stays because path, route prefix
+  and controller remain configurable per resource. A resource `controller` must be a class name.
+  `ResourceRegistryPass` (now run before `RoutingControllerPass`) removes the CRUD controllers
+  from the `routing.controllers` import, which would load their inherited routes without prefix.
+  A subclass overriding a CRUD action restates its `#[Route]` / `#[IsGranted]` /
+  `#[IsCsrfTokenValid]` (attributes are not inherited): the loader throws otherwise, an override
+  would silently lose its route or its access check. Route names and URLs are unchanged. The dashboard, login, logout, profile,
+  autocomplete, health and API login/logout routes are `#[Route]` attributes too, imported by
+  `config/routes/*.php` (names and paths unchanged); the bundle controllers are aliased by class.
 
 ### Added
 

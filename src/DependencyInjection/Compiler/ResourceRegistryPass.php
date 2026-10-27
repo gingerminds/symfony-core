@@ -17,6 +17,7 @@ final class ResourceRegistryPass implements CompilerPassInterface
 {
     public const string CRUD_CONTROLLER_TAG = 'gingerminds_core.crud_controller';
     private const string REGISTRY_ID = 'gingerminds_core.resource_registry';
+    private const string ROUTING_CONTROLLER_TAG = 'routing.controller';
 
     public function process(ContainerBuilder $container): void
     {
@@ -71,6 +72,34 @@ final class ResourceRegistryPass implements CompilerPassInterface
         }
 
         $container->getDefinition(self::REGISTRY_ID)->setArgument('$resources', $resources);
+        $this->excludeFromRoutingControllers($container, $resources);
+    }
+
+    /**
+     * The CRUD controllers are routed by CrudRouteLoader, under their resource path: the
+     * `routing.controllers` import must not load their #[Route] (inherited from
+     * AbstractCrudController) a second time, without prefix. This pass runs before
+     * RoutingControllerPass.
+     *
+     * @param array<string, array<string, mixed>> $resources
+     */
+    private function excludeFromRoutingControllers(ContainerBuilder $container, array $resources): void
+    {
+        $routed = [];
+
+        foreach ($resources as $resource) {
+            if (\is_string($resource['controller'] ?? null)) {
+                $routed[$resource['controller']] = true;
+            }
+        }
+
+        foreach (array_keys($container->findTaggedServiceIds(self::ROUTING_CONTROLLER_TAG)) as $id) {
+            $class = $container->getParameterBag()->resolveValue($container->getDefinition($id)->getClass());
+
+            if (isset($routed[$id]) || (\is_string($class) && isset($routed[$class]))) {
+                $container->getDefinition($id)->clearTag(self::ROUTING_CONTROLLER_TAG);
+            }
+        }
     }
 
     /**

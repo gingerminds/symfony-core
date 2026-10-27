@@ -46,7 +46,9 @@ gingerminds_core:
 ## Route prefix
 
 `admin_prefix` prefixes every admin route of the bundle (login, dashboard, profile, CRUD
-routes, autocomplete). Protection itself is your firewall's `access_control` (see
+routes, autocomplete): `#[Route]` attributes on the bundle controllers, imported under the prefix
+by `@GingermindsCoreBundle/config/routes.php`; the CRUD routes by the `gingerminds_crud` loader
+(`resources.*.path` / `route_prefix` for each resource). Protection itself is your firewall's `access_control` (see
 [Authentication](Authentication.md)): keep both in sync.
 
 ## Redirect after save
@@ -206,7 +208,7 @@ resources. The bundle still prepends its own `doctrine.orm.mappings` and
 gingerminds_core:
     resources:
         user:
-            controller: App\Controller\User\UserController    # extends the bundle UserController
+            controller: App\Controller\User\UserController    # a class extending the bundle UserController
             form: App\Form\UserType                           # extends the bundle UserType
             template_prefix: admin/user
 ```

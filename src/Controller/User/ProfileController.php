@@ -11,6 +11,7 @@ use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -30,6 +31,7 @@ class ProfileController extends AbstractController
     ) {
     }
 
+    #[Route('/profile', name: 'gingerminds_core_profile', methods: ['GET', 'POST'])]
     #[IsGranted('IS_AUTHENTICATED')]
     public function __invoke(Request $request, #[CurrentUser] UserInterface $user): Response
     {

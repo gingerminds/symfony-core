@@ -132,8 +132,37 @@ final class ProductController extends AbstractCrudController
 }
 ```
 
-Generated routes (`admin_product_index|new|edit|delete`), templates and hooks: see
-[Layouts](templating/layouts.md). Useful hooks: `createEntity()`, `getFormOptions()`,
+Routes (`admin_product_index|new|edit|delete`, `/admin/products[/new|/{id}/edit|/{id}/delete]`):
+the `#[Route]` attributes of `AbstractCrudController`, relative to the resource. The core route
+loader (`gingerminds_crud`, imported by `@GingermindsCoreBundle/config/routes.php`) loads them for
+each resource under `/{admin_prefix}/{path}`, names them `{route_prefix}_{name}` and sets the
+`_resource` default the controller reads. Your own actions are declared the same way and get the
+same prefixes:
+
+```php
+#[Route('/export', name: 'export', methods: ['GET'])]           // admin_product_export, /admin/products/export
+#[IsGranted('VIEW', subject: new Expression(self::RESOURCE_SUBJECT))]
+public function export(): Response
+```
+
+The resource path and route prefix are not on the controller: they stay configurable
+(`resources.*.path`, `route_prefix`, `controller`, see [Configuration](Configuration.md)) and one
+controller class can serve several resources. The core keeps the CRUD controllers out of your
+`routing.controllers` import (no duplicate, unprefixed routes). Overriding a CRUD action in a
+subclass drops its attributes (PHP does not inherit them): restate `#[Route]` and `#[IsGranted]`
+(the route loader refuses an override that does not, rather than lose its route or access check):
+
+```php
+#[Route('/new', name: 'new', methods: ['GET', 'POST'])]
+#[IsGranted('CREATE', subject: new Expression(self::RESOURCE_SUBJECT))]
+public function new(Request $request): Response
+{
+    // ...
+    return parent::new($request);
+}
+```
+
+Templates and hooks: see [Layouts](templating/layouts.md). Useful hooks: `createEntity()`, `getFormOptions()`,
 `getIndexParameters()`, `getFormParameters()`, `getDeleteError()`, `redirectAfterSave()`,
 `createListQuery()` (force a filter on the admin list). The redirect after a save is
 configurable without code: see [Redirect after save](Configuration.md#redirect-after-save).
@@ -147,7 +176,7 @@ A resource under a parent puts the parent id in its path, e.g. the products of a
 final class CategoryProductController extends AbstractCrudController
 ```
 
-The route loader generates `/admin/categories/{categoryId}/products[/new|/{id}/edit|/{id}/delete]`.
+The route loader serves `/admin/categories/{categoryId}/products[/new|/{id}/edit|/{id}/delete]`.
 `getRouteParameters()` returns the parameters of the current route but `id` (`['categoryId' => '7']`):
 the redirects after save and delete keep them, and the templates get them as `route_parameters`
 (list, tree, form and row action links). Filter the list on the parent in the repository or with

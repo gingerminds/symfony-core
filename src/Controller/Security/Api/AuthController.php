@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\RateLimiter\LimiterInterface;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final class AuthController extends AbstractController
@@ -33,6 +34,7 @@ final class AuthController extends AbstractController
     ) {
     }
 
+    #[Route('/login', name: 'gingerminds_core_api_login', methods: ['POST'], format: 'json')]
     public function login(Request $request): JsonResponse
     {
         try {
@@ -61,6 +63,7 @@ final class AuthController extends AbstractController
         return $this->issueToken($user);
     }
 
+    #[Route('/logout', name: 'gingerminds_core_api_logout', methods: ['POST'], format: 'json')]
     public function logout(Request $request): JsonResponse
     {
         $user = $this->getUser();
