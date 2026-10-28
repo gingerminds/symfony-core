@@ -213,6 +213,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   user and the contributor saves. `BaseUser::setContributor()` and `BaseContributor::setUser()`
   keep both sides in sync (the side left is released). `BaseUser::$contributor` is
   `#[Assert\Valid]`.
+- `PermissionNameVoter` caches its support (`supportsAttribute()` / `supportsType()`): lowercase
+  `{action} {object}` names without subject only.
 
 ### Removed
 

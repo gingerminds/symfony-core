@@ -126,6 +126,11 @@ final class VoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, null, ['ROLE_ADMIN']));
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, null, ['IS_AUTHENTICATED']));
         self::assertSame(VoterInterface::ACCESS_ABSTAIN, $voter->vote($token, new \stdClass(), ['view dashboard']));
+        // Cached support (CacheableVoterInterface).
+        self::assertTrue($voter->supportsAttribute('view dashboard'));
+        self::assertFalse($voter->supportsAttribute('EDIT'));
+        self::assertTrue($voter->supportsType('null'));
+        self::assertFalse($voter->supportsType(\stdClass::class));
     }
 
     public function testSuperAdminVoter(): void

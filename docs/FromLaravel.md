@@ -21,7 +21,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | timestamps | `TimestampableInterface`/`Trait` | Doctrine listener. Soft deletes are not ported: deletions are real. |
 | `AbstractRepository::get(Request)` | `AbstractRepository::paginate(Parameters)` | `FilterParameters::fromQuery()`; repositories no longer read the request. |
 | `AbstractRepository::update(FormRequest, Model)` | form + `save(entity)` (`beforeSave()` hook) | Mapping, unmapped fields included, is done by the form (event listeners); the repository only persists. |
-| `FormRequest` (+ `FormRequestInterface`) | Symfony form type + validator constraints | One form for admin and API. |
+| `FormRequest` (+ `FormRequestInterface`) | validator constraints on the entity + Symfony form type (admin) | The constraints are shared by the admin form and the API, which writes without a form (Serializer + Validator). |
 | `Date/DecimalConverterTrait` | form types (`DateType`, `NumberType` with `scale`) | Conversion is a form concern. |
 | `DisplayTimezone` + `ConvertsDisplayDatetimesToUtc` | `DisplayTimezone` service + UTC Doctrine `datetime` types, `DateTimeType` extension, Twig `date.timezone` | `gingerminds_core.display_timezone` (default `Europe/Paris`, Laravel falls back to `app.timezone`). No per-request field list: every `DateTimeType` converts. |
 | `AbstractController` + generated per-resource CRUD | `AbstractCrudController` (generic, `#[Route]` on its actions) + `CrudRouteLoader` (resource prefix) | A resource controller is usually empty. |
@@ -39,13 +39,13 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `LoginResponseEnricherInterface` (tag) | same, autoconfigured | |
 | `AbstractApiProvider` / `BaseStateProcessor` | native API Platform Doctrine providers / writes | No class: reads start from the repository list query (`repositoryMethod`). Writes are deserialized, validated and persisted by API Platform (Doctrine processor run inside the repository save hooks), no form. |
 | `addFilters()` | a provider decorating the Doctrine one, or `configureListQueryBuilder()` | |
-| `ClassHierarchyResourceNameCollectionFactory` | not needed | An overridden bundle entity is excluded from the Doctrine mapping and API resources. |
-| `ApiHeaderParameterRegistry` | `HeaderParameterRegistry` + `HeaderParameterProviderInterface` | |
+| `ClassHierarchyResourceNameCollectionFactory` | not needed | The project entity overriding a bundle entity replaces it in the Doctrine mapping and the API resources, and inherits its `#[ApiResource]`. See [API](API.md). |
+| `ApiHeaderParameterRegistry` | API Platform `HeaderParameter` on the operations | No registry: `gingerminds/symfony-multisite` documents its own context headers. |
 | `EmbeddedResourceAttributesFixContextBuilder`, `ObjectNormalizer`/`PropertyAccessor` fixes | not needed | Eloquent-specific workarounds. |
 | `JsonCollectionNormalizer` | removed | Use JSON-LD/Hydra: `totalItems` + `view` pagination links. |
-| `FilterStore` subclasses + `AbstractInjectFiltersMiddleware` | `ComputedFilterStore` (keyed by resource class) + `ComputedFiltersCollectionNormalizer` | |
+| `FilterStore` subclasses + `AbstractInjectFiltersMiddleware` | `ComputedFilterStore` (keyed by resource class) + `ComputedFiltersCollectionNormalizer` | Facets computed by `AbstractFacetRepository`, see [Facets](partials/facets.md). |
 | Blade layouts/components | Twig layouts/components (`@GingermindsCore/...`) | See [Layouts](templating/layouts.md). |
-| Vite, jQuery, Select2, Livewire `SelectModel` | AssetMapper, Stimulus, UX Autocomplete (Tom Select), `ResourceAutocompleter` behind `/_autocomplete/{alias}` | No Node build. Navigation goes through Turbo Drive, see [Turbo](Turbo.md). |
+| Vite, jQuery, Select2, Livewire `SelectModel` | AssetMapper, Stimulus, UX Autocomplete (Tom Select), `ResourceAutocompleter` behind `/admin/_autocomplete/{alias}` | No Node build. Navigation goes through Turbo Drive, see [Turbo](Turbo.md). |
 | `make:*` artisan commands | `make:gm:*` makers (MakerBundle) | See [Commands](Commands.md). |
 | Migrations shipped by the package | `doctrine:migrations:diff` in the project | Symfony convention. |
 
