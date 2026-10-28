@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\DependencyInjection\Compiler;
 
-use Gingerminds\CoreBundle\GingermindsCoreBundle;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
@@ -14,13 +13,31 @@ use Symfony\Component\String\Inflector\EnglishInflector;
 
 use function Symfony\Component\String\u;
 
+/**
+ * The resource registry, by precedence: the bundle resources (AbstractResourceBundle), the
+ * `#[AsCrudController]` controllers, the `gingerminds_core.resources` configuration.
+ */
 final class ResourceRegistryPass implements CompilerPassInterface
 {
     public const string CRUD_CONTROLLER_TAG = 'gingerminds_core.crud_controller';
+    public const string BUNDLE_RESOURCE_TAG = 'gingerminds_core.bundle_resource';
     private const string REGISTRY_ID = 'gingerminds_core.resource_registry';
     private const string ROUTING_CONTROLLER_TAG = 'routing.controller';
     private const string AUTOCOMPLETER_ID = 'gingerminds_core.form.autocompleter';
     private const string UX_AUTOCOMPLETER_TAG = 'ux.entity_autocompleter';
+
+    /**
+     * A resource of a bundle, from its extension (whatever the bundle registration order).
+     *
+     * @param array<string, mixed> $resource
+     */
+    public static function registerBundleResource(ContainerBuilder $builder, string $name, array $resource): void
+    {
+        // Placeholder definition, only read (then removed) by process().
+        $builder->register(self::BUNDLE_RESOURCE_TAG . '.' . $name, \stdClass::class)
+            ->setAbstract(true)
+            ->addTag(self::BUNDLE_RESOURCE_TAG, ['resource' => $name, ...$resource]);
+    }
 
     public function process(ContainerBuilder $container): void
     {
@@ -30,19 +47,14 @@ final class ResourceRegistryPass implements CompilerPassInterface
 
         $resources = [];
 
-        foreach (GingermindsCoreBundle::CORE_RESOURCES as $name => $core) {
-            $resources[$name] = [
-                'entity' => $core['entity'],
-                'controller' => $core['controller'],
-                'form' => $core['form'],
-                'path' => $core['path'],
-                'permission' => $core['permission'],
-                'route_prefix' => 'gingerminds_core_' . $name,
-                'translation_prefix' => $name,
-                'translation_domain' => 'GingermindsCore',
-                'template_prefix' => '@GingermindsCore/pages/' . $name,
-                'permissions' => $core['permissions'] ?? [],
-            ];
+        foreach ($container->findTaggedServiceIds(self::BUNDLE_RESOURCE_TAG) as $id => $tags) {
+            foreach ($tags as $attributes) {
+                $name = $attributes['resource'];
+                unset($attributes['resource']);
+                $resources[$name] = $attributes;
+            }
+
+            $container->removeDefinition($id);
         }
 
         foreach ($container->findTaggedServiceIds(self::CRUD_CONTROLLER_TAG) as $id => $tags) {

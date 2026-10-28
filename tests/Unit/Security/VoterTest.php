@@ -150,7 +150,7 @@ final class VoterTest extends TestCase
     {
         $resources = [];
 
-        foreach ([...GingermindsCoreBundle::CORE_RESOURCES, 'category' => ['entity' => Category::class, 'permission' => 'categories']] as $name => $resource) {
+        foreach ([...GingermindsCoreBundle::RESOURCES, 'category' => ['entity' => Category::class, 'permission' => 'categories']] as $name => $resource) {
             $resources[$name] = [
                 'entity' => $entities[$name] ?? $resource['entity'],
                 'path' => $name,

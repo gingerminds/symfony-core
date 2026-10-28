@@ -186,21 +186,53 @@ The same works for `contributor` (`BaseContributor`), `role` (`BaseRole`, keep t
 
 ### Overridable entities of another bundle
 
-A bundle shipping its own overridable entities (e.g. `gingerminds/symfony-multisite`) uses
-the same mechanism: in its `loadExtension()`, it registers every bundle entity replaced by a
-project one, whatever the bundle registration order:
+A bundle shipping its own overridable entities and admin resources (e.g.
+`gingerminds/symfony-multisite`) extends `Gingerminds\CoreBundle\Bundle\AbstractResourceBundle`,
+as the core does:
 
 ```php
-use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
+final class GingermindsMultisiteBundle extends AbstractResourceBundle
+{
+    public const array RESOURCES = [
+        'site' => [
+            'entity' => Site::class,              // default class, `resources.site.entity` overrides it
+            'interface' => SiteInterface::class,  // resolve_target_entities
+            'controller' => SiteController::class,
+            'form' => SiteType::class,
+            'path' => 'sites',
+            'permission' => 'sites',
+        ],
+    ];
 
-if ($entity !== Site::class) {
-    OverriddenEntityPass::registerOverriddenEntity($builder, Site::class);
+    protected function resources(array $config): array
+    {
+        return self::RESOURCES;  // `$config` for conditional resources; `admin: false` for an entity only
+    }
+
+    protected function entityDirectories(): array
+    {
+        return ['Site', 'Language'];  // src/Entity/<dir>, Doctrine attribute mappings
+    }
 }
 ```
 
-The core then excludes `Site` from the Doctrine attribute mapping and from the API Platform
-resources. The bundle still prepends its own `doctrine.orm.mappings` and
-`resolve_target_entities`.
+`loadExtension()` and `prependExtension()` (call the parent when overriding them) then:
+
+- set `<alias>.resource.<name>.entity` (the configured class) for the services;
+- register the replaced bundle entities (`OverriddenEntityPass`): the core excludes them from
+  the Doctrine attribute mapping and from the API Platform resources;
+- register the admin resources (`<alias>_<name>` routes, the bundle translation domain,
+  `@<Bundle>/pages/<name>` templates). A project's `#[AsCrudController(resource: 'site')]` and
+  `gingerminds_core.resources.site` override them, in that order;
+- prepend the `doctrine.orm.mappings` and `resolve_target_entities`.
+
+`resolveConfig()` processes the bundle configuration while prepending (`prependConfigKeys()`:
+`resources` only by default, the other keys may hold env placeholders);
+`AbstractResourceBundle::extensionConfigValue($builder, 'gingerminds_multisite', 'translation.log_channel')`
+reads a raw value of any extension (the last non-empty one).
+
+The bundle repositories extending `AbstractRepository` get the API Platform `ParameterExtension`
+from the core (`RepositoryParameterExtensionPass`): declare them without `setParameterExtension()`.
 
 ### Controller, form, templates, translations
 

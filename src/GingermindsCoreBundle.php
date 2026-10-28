@@ -6,11 +6,13 @@ namespace Gingerminds\CoreBundle;
 
 use Doctrine\DBAL\Types\Types;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterProviderInterface;
+use Gingerminds\CoreBundle\Bundle\AbstractResourceBundle;
 use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
 use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
 use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
+use Gingerminds\CoreBundle\DependencyInjection\Compiler\RepositoryParameterExtensionPass;
 use Gingerminds\CoreBundle\DependencyInjection\Compiler\ResourceRegistryPass;
 use Gingerminds\CoreBundle\Doctrine\Type\UtcDateTimeImmutableType;
 use Gingerminds\CoreBundle\Doctrine\Type\UtcDateTimeType;
@@ -33,20 +35,16 @@ use Gingerminds\CoreBundle\Security\Api\ApiRateLimitListener;
 use Gingerminds\CoreBundle\Security\Api\LoginResponseEnricherInterface;
 use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Symfony\Bundle\MakerBundle\MakerBundle;
-use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
-use Symfony\Component\Config\Definition\Processor;
 use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Extension\ConfigurationExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
-final class GingermindsCoreBundle extends AbstractBundle
+final class GingermindsCoreBundle extends AbstractResourceBundle
 {
-    public const array CORE_RESOURCES = [
+    public const array RESOURCES = [
         'user' => [
             'entity' => User::class,
             'interface' => UserInterface::class,
@@ -112,6 +110,7 @@ final class GingermindsCoreBundle extends AbstractBundle
         // controllers from the `routing.controllers` import.
         $container->addCompilerPass(new ResourceRegistryPass(), PassConfig::TYPE_BEFORE_OPTIMIZATION, 1);
         $container->addCompilerPass(new OverriddenEntityPass());
+        $container->addCompilerPass(new RepositoryParameterExtensionPass());
     }
 
     /**
@@ -145,14 +144,7 @@ final class GingermindsCoreBundle extends AbstractBundle
         $parameters->set('gingerminds_core.redirect_after_save', $config['redirect_after_save']);
         $parameters->set('gingerminds_core.admin_includes', $config['admin_includes']);
 
-        foreach ($this->coreEntities($config) as $name => $entity) {
-            $parameters->set('gingerminds_core.resource.' . $name . '.entity', $entity);
-            $default = self::CORE_RESOURCES[$name]['entity'];
-
-            if ($entity !== $default) {
-                OverriddenEntityPass::registerOverriddenEntity($builder, $default);
-            }
-        }
+        parent::loadExtension($config, $container, $builder);
 
         // Filled by OverriddenEntityPass.
         $parameters->set(OverriddenEntityPass::PARAMETER, []);
@@ -192,20 +184,8 @@ final class GingermindsCoreBundle extends AbstractBundle
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
     {
+        parent::prependExtension($container, $builder);
         $config = $this->resolveConfig($builder);
-        $entities = $this->coreEntities($config);
-
-        $mappings = [];
-
-        foreach (['User', 'Role', 'Permission', 'Security'] as $type) {
-            $mappings['GingermindsCore' . $type] = $this->mapping($type);
-        }
-
-        $resolveTargetEntities = [];
-
-        foreach (self::CORE_RESOURCES as $name => $resource) {
-            $resolveTargetEntities[$resource['interface']] = $entities[$name];
-        }
 
         $builder->prependExtensionConfig('doctrine', [
             'dbal' => [
@@ -214,10 +194,6 @@ final class GingermindsCoreBundle extends AbstractBundle
                     Types::DATETIME_MUTABLE => UtcDateTimeType::class,
                     Types::DATETIME_IMMUTABLE => UtcDateTimeImmutableType::class,
                 ],
-            ],
-            'orm' => [
-                'resolve_target_entities' => $resolveTargetEntities,
-                'mappings' => $mappings,
             ],
         ]);
 
@@ -300,47 +276,24 @@ final class GingermindsCoreBundle extends AbstractBundle
     /**
      * @param array<string, mixed> $config
      *
-     * @return array<string, class-string>
+     * @return array<string, array<string, mixed>>
      */
-    private function coreEntities(array $config): array
+    protected function resources(array $config): array
     {
-        $entities = [];
+        return self::RESOURCES;
+    }
 
-        foreach (self::CORE_RESOURCES as $name => $resource) {
-            $entities[$name] = $config['resources'][$name]['entity'] ?? $resource['entity'];
-        }
-
-        return $entities;
+    protected function entityDirectories(): array
+    {
+        return ['User', 'Role', 'Permission', 'Security'];
     }
 
     /**
-     * @return array<string, mixed>
+     * The whole configuration while prepending (login throttling, rate limits, display timezone).
      */
-    private function resolveConfig(ContainerBuilder $builder): array
+    protected function prependConfigKeys(): ?array
     {
-        $extension = $this->getContainerExtension();
-        $configuration = $extension instanceof ConfigurationExtensionInterface ? $extension->getConfiguration([], $builder) : null;
-
-        if (!$configuration instanceof ConfigurationInterface) {
-            throw new \LogicException('The GingermindsCoreBundle configuration cannot be resolved.');
-        }
-
-        $configs = $builder->getParameterBag()->resolveValue($builder->getExtensionConfig($this->extensionAlias));
-
-        return new Processor()->processConfiguration($configuration, $configs);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mapping(string $directory): array
-    {
-        return [
-            'type' => 'attribute',
-            'is_bundle' => false,
-            'dir' => $this->getPath() . '/src/Entity/' . $directory,
-            'prefix' => 'Gingerminds\\CoreBundle\\Entity\\' . str_replace('/', '\\', $directory),
-        ];
+        return null;
     }
 
     private function bootstrapScssParentDirectory(string $projectDir): string

@@ -26,7 +26,6 @@ return static function (ContainerConfigurator $container): void {
     ) {
         $services->set($class)
             ->args([service('doctrine'), param('gingerminds_core.resource.' . $name . '.entity')])
-            ->call('setParameterExtension', [service('api_platform.doctrine.orm.extension.parameter_extension')])
             ->tag('doctrine.repository_service');
         $services->alias('gingerminds_core.repository.' . $name, $class);
     }

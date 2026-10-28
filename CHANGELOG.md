@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** Bundles: `AbstractResourceBundle` holds what each bundle class repeated (resources
+  and overridable entities, `<alias>.resource.<name>.entity` parameters, `OverriddenEntityPass`,
+  Doctrine mappings, `resolve_target_entities`, `resolveConfig()`) and
+  `extensionConfigValue()` reads another extension's raw configuration. `GingermindsCoreBundle`
+  extends it; `CORE_RESOURCES` is renamed `RESOURCES`. The bundle resources reach the registry
+  through `ResourceRegistryPass::registerBundleResource()`, below the `#[AsCrudController]`
+  attributes and the `gingerminds_core.resources` configuration (a bundle no longer prepends them
+  to `gingerminds_core.resources`). `RepositoryParameterExtensionPass` gives every
+  `AbstractRepository` service the `ParameterExtension` (no more `setParameterExtension()` call in
+  the service definitions).
 - API: the `search` parameter is in the Hydra `search` template of the collections, mapped to
   `hydra:freetextQuery` (its `property`; `SearchableFilter` searches its `properties`).
 - **BC break** List parameters: one set of rules for the API and the admin. `FilterParameters`
