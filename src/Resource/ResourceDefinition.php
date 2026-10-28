@@ -64,7 +64,11 @@ final readonly class ResourceDefinition
             ResourceVoter::VIEW => 'view ' . $this->permission,
             ResourceVoter::CREATE, ResourceVoter::EDIT => 'edit ' . $this->permission,
             ResourceVoter::DELETE => 'delete ' . $this->permission,
-            default => throw new \InvalidArgumentException(\sprintf('Unknown resource attribute "%s", expected one of "%s".', $attribute, implode('", "', ResourceVoter::ATTRIBUTES))),
+            default => throw new \InvalidArgumentException(\sprintf(
+                'Unknown resource attribute "%s", expected one of "%s".',
+                $attribute,
+                implode('", "', ResourceVoter::ATTRIBUTES),
+            )),
         };
     }
 
