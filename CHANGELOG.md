@@ -231,6 +231,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   with an authenticated user or an `Authorization` header always reaches the application (the
   cache key holds no user). `ApiResponseCacheListener` takes the token storage.
 
+### Fixed
+
+- The list parameters (`#[Filter]`, `#[Sortable]`, `#[Searchable]`) of a bundle API resource
+  inherited by a project entity are read from the project entity, its own attributes included
+  (`OverriddenEntityResourceMetadataCollectionFactory` now decorates below the filter parameters).
+
 ### Removed
 
 - **BC break** `RepositoryInterface::getEntityClass()`: Doctrine's `getClassName()` instead.

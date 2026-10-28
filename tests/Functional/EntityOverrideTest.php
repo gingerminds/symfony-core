@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Tests\Functional;
 
+use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\HttpOperation;
 use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use ApiPlatform\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
@@ -92,6 +93,24 @@ final class EntityOverrideTest extends TestCase
         foreach ($resource->getOperations() ?? [] as $operation) {
             self::assertSame(User::class, $operation->getClass());
         }
+    }
+
+    public function testTheInheritedResourceListsTheParametersOfTheProjectEntity(): void
+    {
+        /** @var ResourceMetadataCollectionFactoryInterface $factory */
+        $factory = self::$kernel->getContainer()->get('test.service_container')->get('api_platform.metadata.resource.metadata_collection_factory');
+        $parameters = [];
+
+        foreach ($factory->create(User::class)[0]->getOperations() ?? [] as $operation) {
+            if ($operation instanceof GetCollection) {
+                $parameters = array_keys(iterator_to_array($operation->getParameters() ?? []));
+            }
+        }
+
+        // `phone` is declared by the project entity only.
+        self::assertContains('phone', $parameters);
+        self::assertContains('order[phone]', $parameters);
+        self::assertContains('order[email]', $parameters);
     }
 
     public function testTheResourceVoterTargetsTheProjectEntity(): void
