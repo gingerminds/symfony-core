@@ -108,18 +108,12 @@ class ResourceVoter extends Voter
      */
     private function findResource(mixed $subject): ?ResourceDefinition
     {
-        if (\is_object($subject)) {
-            return $this->resources->findByEntity($subject);
-        }
-
-        if (!\is_string($subject)) {
-            return null;
-        }
-
-        if ($this->resources->has($subject)) {
-            return $this->resources->get($subject);
-        }
-
-        return class_exists($subject) ? $this->resources->findByEntity($subject) : null;
+        return match (true) {
+            \is_object($subject) => $this->resources->findByEntity($subject),
+            !\is_string($subject) => null,
+            $this->resources->has($subject) => $this->resources->get($subject),
+            class_exists($subject) => $this->resources->findByEntity($subject),
+            default => null,
+        };
     }
 }
