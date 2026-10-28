@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Tests\Unit\DependencyInjection;
 
 use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
+use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Entity\User\User;
 use PHPUnit\Framework\TestCase;
@@ -17,15 +18,20 @@ final class OverriddenEntityPassTest extends TestCase
         $container = new ContainerBuilder();
         $driver = $container->register('doctrine.orm.default_attribute_metadata_driver', \stdClass::class);
 
-        OverriddenEntityPass::registerOverriddenEntity($container, User::class);
-        OverriddenEntityPass::registerOverriddenEntity($container, Role::class);
+        OverriddenEntityPass::registerOverriddenEntity($container, User::class, 'App\\Entity\\User');
+        OverriddenEntityPass::registerOverriddenEntity($container, Role::class, 'App\\Entity\\Role');
         // Registered twice (e.g. by two bundles): kept once.
-        OverriddenEntityPass::registerOverriddenEntity($container, User::class);
+        OverriddenEntityPass::registerOverriddenEntity($container, User::class, 'App\\Entity\\User');
+        // The project entity is not exposed either.
+        OverriddenEntityPass::disableApiResource($container, User::class);
+        OverriddenEntityPass::disableApiResource($container, Permission::class);
 
         new OverriddenEntityPass()->process($container);
 
-        self::assertSame([User::class, Role::class], $container->getParameter(OverriddenEntityPass::PARAMETER));
+        self::assertSame([User::class => 'App\\Entity\\User', Role::class => 'App\\Entity\\Role'], $container->getParameter(OverriddenEntityPass::PARAMETER));
+        self::assertSame([User::class, 'App\\Entity\\User', Permission::class], $container->getParameter(OverriddenEntityPass::API_DISABLED_PARAMETER));
         self::assertSame([], $container->findTaggedServiceIds(OverriddenEntityPass::TAG));
+        self::assertSame([], $container->findTaggedServiceIds(OverriddenEntityPass::API_DISABLED_TAG));
         self::assertSame(
             [['addExcludePaths', [[
                 (string) new \ReflectionClass(User::class)->getFileName(),
@@ -43,6 +49,7 @@ final class OverriddenEntityPassTest extends TestCase
         new OverriddenEntityPass()->process($container);
 
         self::assertSame([], $container->getParameter(OverriddenEntityPass::PARAMETER));
+        self::assertSame([], $container->getParameter(OverriddenEntityPass::API_DISABLED_PARAMETER));
         self::assertSame([], $driver->getMethodCalls());
     }
 }

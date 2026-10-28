@@ -20,7 +20,9 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
  * resources() lists them by name: `entity` (the default class) and `interface` (resolved to the
  * configured class by `resolve_target_entities`), then the admin keys (`controller`, `form`,
  * `path`, `permission`, `permissions`); `admin: false` for an entity without admin resource.
- * `entity`, `controller` and `form` are overridable from `<alias>.resources.<name>`.
+ * `entity`, `controller` and `form` are overridable from `<alias>.resources.<name>`, and
+ * `<alias>.resources.<name>.api: false` stops exposing the entity (its `#[ApiResource]`, inherited
+ * by a project entity overriding it).
  *
  * - loadExtension(): the `<alias>.resource.<name>.entity` parameters, the overridden entities
  *   (OverriddenEntityPass), the admin resources (ResourceRegistryPass, below the
@@ -58,8 +60,12 @@ abstract class AbstractResourceBundle extends AbstractBundle
             $entity = $this->resourceValue($config, $name, 'entity', $resource);
             $parameters->set($this->extensionAlias . '.resource.' . $name . '.entity', $entity);
 
-            if ($entity !== $resource['entity']) {
-                OverriddenEntityPass::registerOverriddenEntity($builder, $resource['entity']);
+            if (null !== $entity && $entity !== $resource['entity']) {
+                OverriddenEntityPass::registerOverriddenEntity($builder, $resource['entity'], $entity);
+            }
+
+            if (false === ($config['resources'][$name]['api'] ?? true)) {
+                OverriddenEntityPass::disableApiResource($builder, $resource['entity']);
             }
 
             if (false === ($resource['admin'] ?? true)) {

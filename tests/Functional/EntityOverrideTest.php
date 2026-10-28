@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Tests\Functional;
 
+use ApiPlatform\Metadata\HttpOperation;
+use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use ApiPlatform\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Tools\SchemaTool;
+use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Entity\Security\ApiToken;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
@@ -73,6 +76,22 @@ final class EntityOverrideTest extends TestCase
         self::assertContains(User::class, $resources);
         self::assertNotContains(CoreUser::class, $resources);
         self::assertContains(Contributor::class, $resources);
+        self::assertNotContains(Permission::class, $resources, '`api: false` removes the resource.');
+    }
+
+    public function testTheProjectEntityInheritsTheBundleApiResource(): void
+    {
+        /** @var ResourceMetadataCollectionFactoryInterface $factory */
+        $factory = self::$kernel->getContainer()->get('test.service_container')->get('api_platform.metadata.resource.metadata_collection_factory');
+        $resource = $factory->create(User::class)[0];
+
+        self::assertSame(User::class, $resource->getClass());
+        self::assertSame('User', $resource->getShortName());
+        self::assertSame(['GET', 'GET', 'POST', 'PATCH', 'DELETE'], array_values(array_map(static fn (HttpOperation $operation): string => $operation->getMethod(), iterator_to_array($resource->getOperations() ?? []))));
+
+        foreach ($resource->getOperations() ?? [] as $operation) {
+            self::assertSame(User::class, $operation->getClass());
+        }
     }
 
     public function testTheResourceVoterTargetsTheProjectEntity(): void

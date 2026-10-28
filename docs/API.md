@@ -119,16 +119,27 @@ computed filters. The OpenAPI document (`/api/docs`) lists every list parameter.
 
 ## Overriding a bundle resource's `#[ApiResource]`
 
-Class attributes are not inherited, so a project entity overriding `User` (see
-[Configuration](Configuration.md#overriding-a-built-in-resource)) declares its own
-`#[ApiResource]` — or none, to stop exposing it. Because the bundle excludes its own entity from
-the Doctrine mapping and the API resources as soon as it is overridden, there is never a duplicate resource (no equivalent of the
-Laravel `ClassHierarchyResourceNameCollectionFactory` is needed).
+A project entity overriding a bundle entity (see
+[Configuration](Configuration.md#entity)) **inherits the bundle `#[ApiResource]`**: no need to
+restate it. The bundle entity is replaced by the project one among the API resources
+(`CoreResourceNameCollectionFactory`), which gets the operations, groups, `security` and
+`validationContext` of the bundle declaration (`OverriddenEntityResourceMetadataCollectionFactory`,
+right above the attributes reading: the filters, parameters and Doctrine providers then apply
+to the project class). An added property is exposed by its serialization groups:
 
-Serialization groups, validation constraints, the repository hooks and the relation ids, on the
-other hand, live on the base class **properties**, the repository and global services: they are
-inherited. Restate the bundle `#[ApiResource]` (operations, groups, `validationContext`) and
-nothing else (the native providers apply); a read-only exposure:
+```php
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: 'users')]
+class User extends BaseUser
+{
+    #[ORM\Column(nullable: true)]
+    #[Groups([BaseUser::GROUP_READ, BaseUser::GROUP_CREATE, BaseUser::GROUP_EDIT])]
+    private ?string $phone = null;
+}
+```
+
+An `#[ApiResource]` on the project entity **replaces** the bundle one (no merge); a read-only
+exposure:
 
 ```php
 #[ApiResource(
@@ -146,8 +157,17 @@ nothing else (the native providers apply); a read-only exposure:
 class User extends BaseUser {}
 ```
 
-As in the Laravel core: diff the operations you override (pagination options, `security`...)
-instead of skimming them — nothing errors when you silently drop one.
+Diff the operations you restate (pagination options, `security`...) against the bundle ones:
+nothing errors when you silently drop one.
+
+To stop exposing a bundle resource, overridden or not:
+
+```yaml
+gingerminds_core:
+    resources:
+        permission:
+            api: false
+```
 
 ## Documenting context headers (`X-Site-Id`, `Accept-Language`...)
 

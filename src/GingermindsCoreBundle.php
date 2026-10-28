@@ -149,6 +149,7 @@ final class GingermindsCoreBundle extends AbstractResourceBundle
 
         // Filled by OverriddenEntityPass.
         $parameters->set(OverriddenEntityPass::PARAMETER, []);
+        $parameters->set(OverriddenEntityPass::API_DISABLED_PARAMETER, []);
 
         $container->services()
             ->alias('gingerminds_core.cache.pool', (string) $config['cache']['pool']);

@@ -16,6 +16,7 @@ use Gingerminds\CoreBundle\ApiPlatform\Metadata\ContextHeaderParametersResourceM
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\CoreResourceNameCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\FilterParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterRegistry;
+use Gingerminds\CoreBundle\ApiPlatform\Metadata\OverriddenEntityResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\ComputedFiltersCollectionNormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\RelationIdDenormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\State\RepositoryProcessor;
@@ -80,6 +81,15 @@ return static function (ContainerConfigurator $container): void {
 
     $services->set('gingerminds_core.api.metadata.core_resource_names', CoreResourceNameCollectionFactory::class)
         ->decorate('api_platform.metadata.resource.name_collection_factory')
+        ->args([
+            service('.inner'),
+            param('gingerminds_core.overridden_entities'),
+            param('gingerminds_core.api.disabled_resources'),
+        ]);
+
+    // Right above the attributes reading (API Platform's innermost decorator is at 1000).
+    $services->set('gingerminds_core.api.metadata.overridden_entity_resources', OverriddenEntityResourceMetadataCollectionFactory::class)
+        ->decorate('api_platform.metadata.resource.metadata_collection_factory', null, 1001)
         ->args([
             service('.inner'),
             param('gingerminds_core.overridden_entities'),

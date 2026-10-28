@@ -70,11 +70,13 @@ final class ResourceRegistryPass implements CompilerPassInterface
             }
         }
 
-        /** @var array<string, array<string, array<string, string>|string|null>> $configured */
+        /** @var array<string, array<string, array<string, string>|string|bool|null>> $configured */
         $configured = $container->getParameter('gingerminds_core.resources_config');
 
         foreach ($configured as $name => $config) {
-            $resources[$name] = [...$resources[$name] ?? [], ...array_filter($config, static fn (array|string|null $value): bool => null !== $value && [] !== $value)];
+            // Read by AbstractResourceBundle (OverriddenEntityPass), not a registry key.
+            unset($config['api']);
+            $resources[$name] = [...$resources[$name] ?? [], ...array_filter($config, static fn (mixed $value): bool => null !== $value && [] !== $value)];
         }
 
         /** @var array{new: string, edit: string} $redirectAfterSave */

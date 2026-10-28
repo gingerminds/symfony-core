@@ -125,6 +125,7 @@ Every admin resource is described by a `ResourceDefinition` held in the
 | `redirect_after_new` | `redirect_after_save.new` (`index`)      | `redirect_after_save.new` (`index`) |
 | `redirect_after_edit`| `redirect_after_save.edit` (`edit`)      | `redirect_after_save.edit` (`edit`) |
 | `permissions`        | `manage roles` for every attribute of `role` | `{}`: `view\|edit\|edit\|delete <permission>` |
+| `api`                | `true`: `false` stops exposing the bundle entity (and the project entity overriding it) | – |
 
 Sources are merged in this order (last wins): core resources, `#[AsCrudController]`
 controllers, `gingerminds_core.resources` configuration. Only the keys you set are overridden.
@@ -153,7 +154,7 @@ use Gingerminds\CoreBundle\Repository\User\UserRepository;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
-// + #[ApiResource(...)] if the user must stay exposed, see API.md
+// the bundle #[ApiResource] applies (or your own replaces it), see API.md
 class User extends BaseUser
 {
     #[ORM\Column(nullable: true)]
@@ -174,7 +175,8 @@ of the contributor list), then generates its migration.
 
 The bundle then:
 
-- excludes its own `Entity/User/User.php` from the Doctrine mapping and the API resources
+- excludes its own `Entity/User/User.php` from the Doctrine mapping and replaces it by your
+  class among the API resources, with the bundle `#[ApiResource]` unless you declare one
   (no duplicate table, no duplicate API resource —
   this replaces the Laravel `ClassHierarchyResourceNameCollectionFactory` hack);
 - resolves `UserInterface` to your class everywhere (`resolve_target_entities`), so every
@@ -203,7 +205,8 @@ The API tokens (entity not overridable) go through `ApiTokenRepositoryInterface`
 (`gingerminds_core.repository.api_token`): decorate it to change their storage.
 
 Property mapping, validation constraints and serialization groups **are** inherited from the
-base class; only `#[ORM\Entity]`, `#[ORM\Table]` and `#[ApiResource]` must be restated.
+base class; only `#[ORM\Entity]` and `#[ORM\Table]` must be restated (`#[ApiResource]` is inherited,
+see [API](API.md#overriding-a-bundle-resources-apiresource)).
 The same works for `contributor` (`BaseContributor`), `role` (`BaseRole`, keep the
 `roles_default_unique` unique constraint on `is_external, is_default`) and `permission`
 (`BasePermission`).
