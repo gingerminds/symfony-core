@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Security\Api;
 
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
+use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepositoryInterface;
 use Symfony\Component\Security\Http\AccessToken\AccessTokenExtractorInterface;
 use Symfony\Component\Security\Http\Event\LogoutEvent;
 
@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Event\LogoutEvent;
 final readonly class ApiTokenRevocationListener
 {
     public function __construct(
-        private ApiTokenRepository $tokens,
+        private ApiTokenRepositoryInterface $tokens,
         private AccessTokenExtractorInterface $accessTokenExtractor,
     ) {
     }

@@ -69,15 +69,7 @@ return static function (ContainerConfigurator $container): void {
     $controller('gingerminds_core.controller.security.logout', LogoutController::class);
     $controller('gingerminds_core.controller.health', HealthController::class);
     $controller('gingerminds_core.controller.api.auth', AuthController::class)
-        ->args([
-            service('gingerminds_core.repository.user'),
-            service('gingerminds_core.repository.api_token'),
-            service('security.user_password_hasher'),
-            service('limiter.gingerminds_core_api_login'),
-            tagged_iterator('gingerminds_core.login_response_enricher'),
-            param('gingerminds_core.api.token_ttl'),
-            service('translator'),
-        ]);
+        ->args([service('security.helper'), service('translator')]);
 
     // The #[Route] attributes name the controller class: `_controller: Class` / `Class::action`.
     foreach (

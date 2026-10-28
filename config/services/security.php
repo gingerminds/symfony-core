@@ -51,7 +51,7 @@ return static function (ContainerConfigurator $container): void {
     // API login (`custom_authenticators` + `login_throttling.limiter` of the login firewall).
     $services->set('gingerminds_core.security.api_login_success_handler', ApiLoginSuccessHandler::class)
         ->args([
-            service(ApiTokenRepository::class),
+            service('gingerminds_core.repository.api_token'),
             tagged_iterator('gingerminds_core.login_response_enricher'),
             param('gingerminds_core.api.token_ttl'),
             service('clock'),
@@ -80,7 +80,7 @@ return static function (ContainerConfigurator $container): void {
 
     // API logout: revokes the bearer token on the LogoutEvent of Security::logout().
     $services->set('gingerminds_core.security.api_token_revocation_listener', ApiTokenRevocationListener::class)
-        ->args([service(ApiTokenRepository::class), service('security.access_token_extractor.header')])
+        ->args([service('gingerminds_core.repository.api_token'), service('security.access_token_extractor.header')])
         ->tag('kernel.event_listener', ['event' => LogoutEvent::class]);
 
     $services->set('gingerminds_core.security.authorized_domain_listener', AuthorizedDomainListener::class)
