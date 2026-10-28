@@ -44,6 +44,7 @@ list:
     pagination: Pagination
     first: First page
     last: Last page
+    invalid_parameters: 'Invalid list parameters ignored: %parameters%'
 
 flash:
     created: '%resource% "%label%" successfully created.'

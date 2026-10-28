@@ -44,7 +44,7 @@ return static function (ContainerConfigurator $container): void {
         ->tag('api_platform.filter');
 
     $services->set('gingerminds_core.api.filter_parameters', FilterParameters::class)
-        ->args([service('doctrine')]);
+        ->args([service('doctrine'), service('validator')]);
     $services->alias(FilterParameters::class, 'gingerminds_core.api.filter_parameters');
 
     // Before the API Platform parameter factories (998, 1000), which then describe the added

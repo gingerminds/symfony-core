@@ -2,7 +2,8 @@
  # Collapsible filters panel of a list: the search (`search`) and the `#[Filter]` fields.
  #
  # Expects the CRUD index variables: resource, filters (active values by
- # parameter), is_searchable, is_filterable, filter_configs; optional route /
+ # parameter), is_searchable, is_filterable, filter_configs; optional
+ # filter_errors (message of each ignored invalid parameter), route /
  # route_parameters (defaults to the resource index).
  #
  # The fields are named after the list parameters, as the API reads them:
@@ -14,7 +15,8 @@
 {% set route = route ?? resource.route('index') %}
 {% set route_parameters = route_parameters ?? {} %}
 {% set filters = filters ?? {} %}
-{% set is_filtered = filters is not empty %}
+{% set filter_errors = filter_errors ?? {} %}
+{% set is_filtered = filters is not empty or filter_errors is not empty %}
 {% set domain = resource.translationDomain %}
 {% set query = app.request.query.all %}
 {% set kept = {itemsPerPage: query.itemsPerPage ?? null, order: query.order ?? null}|filter(v => v is not empty) %}
@@ -56,6 +58,7 @@
                                         property: property,
                                         config: config,
                                         value: filters[property] ?? null,
+                                        error: filter_errors[property] ?? null,
                                         label: (config.label ?? null) is not null ? config.label|trans({}, config.translation_domain ?? domain) : property|humanize,
                                     } only %}
                                 {% endfor %}

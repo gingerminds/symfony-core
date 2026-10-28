@@ -17,9 +17,16 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\Constraint\ParameterValue;
 use Gingerminds\CoreBundle\Model\Filter;
 use Gingerminds\CoreBundle\Model\SearchableFields;
 use Gingerminds\CoreBundle\Model\SortableFields;
+use Symfony\Component\Validator\Constraint;
+use Symfony\Component\Validator\Constraints\Choice;
+use Symfony\Component\Validator\Constraints\Date;
+use Symfony\Component\Validator\Constraints\Regex;
+use Symfony\Component\Validator\Constraints\Type;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * The list parameters of an entity, read from its attributes: one declaration for the API
@@ -30,6 +37,10 @@ use Gingerminds\CoreBundle\Model\SortableFields;
  * - `order[<path>]=asc|desc` for each `#[Sortable]` path (API Platform SortFilter);
  * - `search=text` on the `#[Searchable]` paths (SearchableFilter);
  * - `<property>=...` for each `#[Filter]` property (see Filter for the filters and their values).
+ *
+ * The parameters carry their validation constraints (sort direction, values of the typed
+ * filters): the API answers 422 on an invalid value (API Platform ParameterValidatorProvider),
+ * the admin ignores it (discardInvalid()).
  *
  * @phpstan-type PanelField array{
  *     type: string,
@@ -80,6 +91,7 @@ final class FilterParameters
 
     public function __construct(
         private readonly ManagerRegistry $registry,
+        private readonly ValidatorInterface $validator,
     ) {
     }
 
@@ -113,6 +125,35 @@ final class FilterParameters
         }
 
         return $parameters;
+    }
+
+    /**
+     * Validates the valued parameters against their constraints, as the API does: the invalid
+     * ones lose their value (the admin lists ignore them).
+     *
+     * @return array<string, string> the message of each discarded parameter, by key
+     */
+    public function discardInvalid(Parameters $parameters): array
+    {
+        $errors = [];
+
+        foreach ($parameters as $key => $parameter) {
+            $value = $parameter->getValue(null);
+            $constraints = $parameter->getConstraints();
+
+            if (null === $value || $value instanceof ParameterNotFound || null === $constraints || [] === $constraints) {
+                continue;
+            }
+
+            $violations = $this->validator->validate($value, $constraints);
+
+            if (\count($violations) > 0) {
+                $errors[$key] = (string) $violations->get(0)->getMessage();
+                $parameter->setValue(new ParameterNotFound());
+            }
+        }
+
+        return $errors;
     }
 
     /**
@@ -196,6 +237,7 @@ final class FilterParameters
                 filter: new SortFilter(),
                 property: $path,
                 description: 'Sort by ' . $path . ': asc or desc',
+                constraints: [new Choice(choices: ['asc', 'desc', 'ASC', 'DESC'])],
                 extraProperties: $this->nestedPropertyInfo($metadata, $path),
             );
         }
@@ -215,7 +257,7 @@ final class FilterParameters
 
                     $filter = $attribute->newInstance();
                     $type = $filter->type ?? $this->guessType($metadata, $name);
-                    $parameters[] = new QueryParameter(key: $name, filter: $this->filter($type), property: $name);
+                    $parameters[] = new QueryParameter(key: $name, filter: $this->filter($type), property: $name, constraints: $this->constraints($metadata, $name, $type));
 
                     if ($filter->admin) {
                         $panel[$name] = $this->panelField($metadata, $name, $type, $filter);
@@ -253,6 +295,54 @@ final class FilterParameters
             \in_array($type, self::NUMBER_TYPES, true) => Filter::NUMBER,
             default => Filter::EXACT,
         };
+    }
+
+    /**
+     * The constraints of a core filter value; none for the free texts (`exact`, `partial`) and
+     * the custom filters.
+     *
+     * @param ClassMetadata<object>|null $metadata
+     *
+     * @return list<Constraint>|null
+     */
+    private function constraints(?ClassMetadata $metadata, string $property, string $type): ?array
+    {
+        $constraint = match ($type) {
+            Filter::BOOLEAN => new ParameterValue([new Regex('/^(true|false|1|0)$/i')]),
+            Filter::NUMBER => new ParameterValue([new Type('numeric')], operators: ['gt', 'gte', 'lt', 'lte', 'ne']),
+            Filter::DATE => new ParameterValue([new Date()], operators: [DisplayDateFilter::AFTER, DisplayDateFilter::BEFORE]),
+            Filter::ENUM => $this->enumConstraint($metadata, $property),
+            Filter::RELATION => new ParameterValue(list: true),
+            default => null,
+        };
+
+        return $constraint instanceof ParameterValue ? [$constraint] : null;
+    }
+
+    /**
+     * A case value or name of the backed enum of the column, case-insensitive (EnumFilter).
+     *
+     * @param ClassMetadata<object>|null $metadata
+     */
+    private function enumConstraint(?ClassMetadata $metadata, string $property): ?ParameterValue
+    {
+        $enumClass = $metadata?->hasField($property) ? $metadata->getFieldMapping($property)->enumType : null;
+
+        if (null === $enumClass || !is_subclass_of($enumClass, \BackedEnum::class)) {
+            return null;
+        }
+
+        $accepted = [];
+
+        foreach ($enumClass::cases() as $case) {
+            $accepted[] = preg_quote((string) $case->value, '/');
+            $accepted[] = preg_quote($case->name, '/');
+        }
+
+        return new ParameterValue(
+            [new Regex('/^(' . implode('|', array_unique($accepted)) . ')$/i', message: 'The value you selected is not a valid choice.')],
+            list: true,
+        );
     }
 
     private function filter(string $type): FilterInterface|string

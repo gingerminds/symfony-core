@@ -73,6 +73,19 @@ final class ListFiltersTest extends ApiTestCase
         self::assertSame(['Cable', 'Laptop', 'Mouse', 'Phone', 'Tablet'], $this->adminNames($crawler));
     }
 
+    public function testAnInvalidValueIsIgnoredAndPointedOut(): void
+    {
+        // A 422 on the API (ListTest): the same constraints, the admin lists ignore the value.
+        $crawler = $this->client->request('GET', $this->listUrl() . '?status=deleted&price[gte]=cheap&active=true&order[name]=sideways');
+
+        self::assertSame(['Laptop', 'Mouse'], $this->adminNames($crawler));
+        self::assertStringContainsString('order[name], price, status', $crawler->filter('.alert-warning')->text());
+        self::assertCount(1, $crawler->filter('select[name="status[]"].is-invalid'));
+        self::assertCount(2, $crawler->filter('input[name^="price["].is-invalid'));
+        self::assertCount(0, $crawler->filter('select[name="active"].is-invalid'));
+        self::assertCount(1, $crawler->filter('#gm-filters.show'));
+    }
+
     public function testThePanelFieldsAreNamedAfterTheParameters(): void
     {
         $crawler = $this->client->request('GET', $this->listUrl() . '?order[name]=desc&itemsPerPage=25&status[]=draft');

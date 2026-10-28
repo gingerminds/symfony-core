@@ -75,6 +75,13 @@ abstract class AbstractCrudController extends AbstractController
     public function index(Request $request): Response
     {
         $parameters = $this->createListParameters($request);
+        // The API rules: an invalid value is a 422 on the API, ignored here and pointed out.
+        $filterErrors = $this->getFilterParameters()->discardInvalid($parameters);
+
+        if ([] !== $filterErrors) {
+            $this->addFlash('warning', $this->trans('list.invalid_parameters', ['%parameters%' => implode(', ', array_keys($filterErrors))]));
+        }
+
         $items = $this->getRepository()->paginate(
             $parameters,
             $request->query->getInt(self::PAGE_PARAMETER, 1),
@@ -86,6 +93,7 @@ abstract class AbstractCrudController extends AbstractController
             'items' => $items,
             'list_parameters' => $parameters,
             'filters' => FilterParameters::filterValues($parameters),
+            'filter_errors' => $filterErrors,
             ...$this->getIndexParameters($request, $items),
         ]);
     }

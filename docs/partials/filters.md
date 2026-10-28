@@ -68,10 +68,28 @@ Why some filters are the bundle's (`Gingerminds\CoreBundle\ApiPlatform\Filter\*`
 
 ## Invalid and empty values
 
-Unknown parameters are ignored. A declared parameter is validated by API Platform on the API: a
-wrong sort direction is a `422`; the admin ignores it. The admin drops the empty values of its
-panel (an empty field is not a filter); on the API an empty value is a value (`name=` matches the
-empty names).
+Unknown parameters are ignored. The declared parameters carry their constraints (`FilterParameters`),
+the same on both sides:
+
+| Parameter | Valid values |
+|---|---|
+| `order[...]` | `asc`, `desc` (`ASC`, `DESC`) |
+| `boolean` | `true`, `false`, `1`, `0` (case-insensitive), not a list |
+| `number` | operators `gt`, `gte`, `lt`, `lte`, `ne` only, numeric bounds |
+| `date` | operators `after`, `before` only, `Y-m-d` bounds |
+| `enum` | a case value or name (case-insensitive), or a list of them |
+| `relation` | an id, `null`, or a list of them (not an operator map) |
+
+`exact`, `partial`, `search` and the custom filters are not constrained (give a custom filter's
+`QueryParameter` its own `constraints`, or a JSON schema API Platform derives them from).
+
+The API answers `422` on an invalid value (API Platform `ParameterValidatorProvider`, a violation
+per parameter). The admin list ignores it (`FilterParameters::discardInvalid()`), shows a warning
+flash naming the ignored parameters and marks the panel field (`is-invalid` and the message,
+`filter_errors` in the template): an old bookmark still opens the list.
+
+The admin drops the empty values of its panel (an empty field is not a filter); on the API an
+empty value is a value (`name=` matches the empty names).
 
 ## The admin filters panel
 

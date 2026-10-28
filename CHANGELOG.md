@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** List parameters: one set of rules for the API and the admin. `FilterParameters`
+  gives each parameter its constraints (`ParameterValue`: the value shape, scalar, list or
+  operator map, and each item): sort direction, `boolean` (`true|false|1|0`), `number` (numeric
+  `gt|gte|lt|lte|ne` bounds), `date` (`Y-m-d` `after|before` bounds), `enum` (case value or
+  name), `relation` (ids or `null`). The API answers `422` on these invalid values, which were
+  ignored (`active=all` was all the rows). The admin lists validate with the same constraints
+  (`FilterParameters::discardInvalid()`): the invalid parameters are ignored, named in a warning
+  flash (`list.invalid_parameters`) and their panel field is marked (`filter_errors`).
+  `FilterParameters` takes the validator.
 - **BC break** Autocomplete: the `gingerminds_core_autocomplete` endpoint
   (`/_autocomplete/{alias}` under the admin prefix) is UX Autocomplete's controller. Each
   registered resource gets a `ResourceAutocompleter` (`EntityAutocompleterInterface`, alias: the

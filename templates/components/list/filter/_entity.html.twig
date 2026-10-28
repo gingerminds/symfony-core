@@ -9,7 +9,7 @@
  #   preloaded with their labels (gm_entity_choices(entity, value)).
  # - Otherwise: local select of gm_entity_choices(entity).
  #
- # Vars: property, config, value, label
+ # Vars: property, config, value, label, error?
  #}
 {% trans_default_domain 'GingermindsCore' %}
 {% set multiple = config.multiple ?? false %}
@@ -19,7 +19,7 @@
 {% set choices = resource_name ? gm_entity_choices(entity, selected) : gm_entity_choices(entity) %}
 <div class="col-md-4">
     <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
-    <select id="filter-{{ property }}" class="form-select" name="{{ property }}{{ multiple ? '[]' }}"
+    <select id="filter-{{ property }}" class="form-select{{ (error ?? null) ? ' is-invalid' }}" name="{{ property }}{{ multiple ? '[]' }}"
             {% if multiple %}multiple{% endif %}
             data-controller="symfony--ux-autocomplete--autocomplete"
             {% if resource_name %}data-symfony--ux-autocomplete--autocomplete-url-value="{{ path('gingerminds_core_autocomplete', {alias: resource_name}) }}"{% endif %}
@@ -33,4 +33,5 @@
             <option value="{{ choice.value }}"{{ choice.value in selected ? ' selected' }}>{{ choice.text }}</option>
         {% endfor %}
     </select>
+    {% if error ?? null %}<div class="invalid-feedback d-block">{{ error }}</div>{% endif %}
 </div>

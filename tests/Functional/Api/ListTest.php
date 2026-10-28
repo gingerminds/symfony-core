@@ -121,7 +121,6 @@ final class ListTest extends ApiTestCase
         yield 'boolean true' => ['active=true', ['Laptop', 'Mouse']];
         yield 'boolean false includes null' => ['active=false', ['Cable', 'Phone', 'Tablet']];
         yield 'boolean 0' => ['active=0', ['Cable', 'Phone', 'Tablet']];
-        yield 'boolean other value ignored' => ['active=all', ['Cable', 'Laptop', 'Mouse', 'Phone', 'Tablet']];
         yield 'exact' => ['name=Phone', ['Phone']];
         yield 'exact list' => ['name[]=Phone&name[]=Cable', ['Cable', 'Phone']];
         yield 'enum by value' => ['status=published', ['Laptop', 'Phone']];
@@ -130,6 +129,33 @@ final class ListTest extends ApiTestCase
         yield 'to-many relation none' => ['tags=null', ['Cable', 'Mouse', 'Phone']];
         yield 'combined' => ['status=published&active=false&price[gte]=100', ['Phone']];
         yield 'unknown filter ignored' => ['nope=1', ['Cable', 'Laptop', 'Mouse', 'Phone', 'Tablet']];
+    }
+
+    #[DataProvider('invalidValues')]
+    public function testAnInvalidFilterValueIsRefused(string $query, string $propertyPath): void
+    {
+        $data = $this->api('GET', '/api/products?' . $query, $this->token);
+
+        $this->assertStatus(422);
+        self::assertSame([$propertyPath], array_column($data['violations'], 'propertyPath'));
+    }
+
+    /**
+     * Constraints of FilterParameters, shared with the admin lists.
+     *
+     * @return iterable<string, array{string, string}>
+     */
+    public static function invalidValues(): iterable
+    {
+        yield 'boolean' => ['active=all', 'active'];
+        yield 'boolean list' => ['active[]=true', 'active'];
+        yield 'number' => ['price[gte]=cheap', 'price'];
+        yield 'number operator' => ['price[between]=1', 'price'];
+        yield 'number without operator' => ['price=10', 'price'];
+        yield 'date' => ['publishedAt[after]=yesterday', 'publishedAt'];
+        yield 'enum' => ['status=deleted', 'status'];
+        yield 'enum in a list' => ['status[]=draft&status[]=deleted', 'status[1]'];
+        yield 'relation operator' => ['category[gt]=1', 'category'];
     }
 
     public function testToOneRelationFilterById(): void
