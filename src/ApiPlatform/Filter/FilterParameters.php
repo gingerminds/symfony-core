@@ -229,8 +229,42 @@ final class FilterParameters
         }
 
         $metadata = $this->metadata($entityClass);
-        $parameters = [];
+        $parameters = $this->sortParameters($entityClass, $metadata);
         $panel = [];
+
+        if ([] !== ($paths = SearchableFields::of($entityClass))) {
+            // `property`: the Hydra term of a free text search, for the Hydra `search` template
+            // (SearchableFilter searches the `properties`).
+            $parameters[] = new QueryParameter(key: self::SEARCH, filter: self::SEARCH_FILTER, property: self::SEARCH_PROPERTY, properties: $paths);
+        }
+
+        foreach ($this->filterAttributes($entityClass) as $name => $filter) {
+            if (\in_array($name, array_map(static fn (Parameter $parameter): ?string => $parameter->getKey(), $parameters), true)) {
+                continue;
+            }
+
+            $type = $filter->type ?? $this->guessType($metadata, $name);
+            $parameters[] = new QueryParameter(key: $name, filter: $this->filter($type), property: $name, constraints: $this->constraints($metadata, $name, $type));
+
+            if ($filter->admin) {
+                $panel[$name] = $this->panelField($metadata, $name, $type, $filter);
+            }
+        }
+
+        return $this->definitions[$entityClass] = ['parameters' => $parameters, 'panel' => $panel];
+    }
+
+    /**
+     * An `order[<path>]` parameter per `#[Sortable]` path.
+     *
+     * @param class-string               $entityClass
+     * @param ClassMetadata<object>|null $metadata
+     *
+     * @return list<QueryParameter>
+     */
+    private function sortParameters(string $entityClass, ?ClassMetadata $metadata): array
+    {
+        $parameters = [];
 
         foreach (SortableFields::of($entityClass) as $path) {
             $parameters[] = new QueryParameter(
@@ -243,33 +277,29 @@ final class FilterParameters
             );
         }
 
-        if ([] !== ($paths = SearchableFields::of($entityClass))) {
-            // `property`: the Hydra term of a free text search, for the Hydra `search` template
-            // (SearchableFilter searches the `properties`).
-            $parameters[] = new QueryParameter(key: self::SEARCH, filter: self::SEARCH_FILTER, property: self::SEARCH_PROPERTY, properties: $paths);
-        }
+        return $parameters;
+    }
+
+    /**
+     * The `#[Filter]` of each property, parent classes included: the first declared one wins.
+     *
+     * @param class-string $entityClass
+     *
+     * @return array<string, Filter>
+     */
+    private function filterAttributes(string $entityClass): array
+    {
+        $filters = [];
 
         for ($reflection = new \ReflectionClass($entityClass); false !== $reflection; $reflection = $reflection->getParentClass()) {
             foreach ($reflection->getProperties() as $property) {
-                $name = $property->getName();
-
                 foreach ($property->getAttributes(Filter::class) as $attribute) {
-                    if (isset($panel[$name]) || \in_array($name, array_map(static fn (Parameter $parameter): ?string => $parameter->getKey(), $parameters), true)) {
-                        continue;
-                    }
-
-                    $filter = $attribute->newInstance();
-                    $type = $filter->type ?? $this->guessType($metadata, $name);
-                    $parameters[] = new QueryParameter(key: $name, filter: $this->filter($type), property: $name, constraints: $this->constraints($metadata, $name, $type));
-
-                    if ($filter->admin) {
-                        $panel[$name] = $this->panelField($metadata, $name, $type, $filter);
-                    }
+                    $filters[$property->getName()] ??= $attribute->newInstance();
                 }
             }
         }
 
-        return $this->definitions[$entityClass] = ['parameters' => $parameters, 'panel' => $panel];
+        return $filters;
     }
 
     /**
@@ -277,16 +307,9 @@ final class FilterParameters
      */
     private function guessType(?ClassMetadata $metadata, string $property): string
     {
-        if (!$metadata instanceof ClassMetadata) {
-            return Filter::EXACT;
-        }
-
-        if ($metadata->hasAssociation($property)) {
-            return Filter::RELATION;
-        }
-
-        if (!$metadata->hasField($property)) {
-            return Filter::EXACT;
+        // An association is no field.
+        if (!$metadata instanceof ClassMetadata || !$metadata->hasField($property)) {
+            return true === $metadata?->hasAssociation($property) ? Filter::RELATION : Filter::EXACT;
         }
 
         $type = $metadata->getTypeOfField($property);
@@ -423,16 +446,14 @@ final class FilterParameters
         }
 
         foreach ($segments as $association) {
-            if (!$metadata->hasAssociation($association)) {
+            $target = $metadata->hasAssociation($association) ? $this->metadata($metadata->getAssociationTargetClass($association)) : null;
+
+            if (!$target instanceof ClassMetadata) {
                 return [];
             }
 
             $classes[] = $metadata->getName();
-            $metadata = $this->metadata($metadata->getAssociationTargetClass($association));
-
-            if (!$metadata instanceof ClassMetadata) {
-                return [];
-            }
+            $metadata = $target;
         }
 
         return ['nested_properties_info' => [$path => [
@@ -481,12 +502,8 @@ final class FilterParameters
 
     private static function withoutEmpty(mixed $value): mixed
     {
-        if (\is_string($value)) {
-            return '' === trim($value) ? null : $value;
-        }
-
         if (!\is_array($value)) {
-            return $value;
+            return \is_string($value) && '' === trim($value) ? null : $value;
         }
 
         $isList = array_is_list($value);
