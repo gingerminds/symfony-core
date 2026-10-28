@@ -11,8 +11,8 @@ use Symfony\Contracts\Service\Attribute\Required;
 
 /**
  * Computed filters (facets) of a collection, from its valued list parameters (the collection
- * operation's on the API): stored in ComputedFilterStore by a provider, added to the
- * collection response as `filters` by InjectComputedFiltersListener.
+ * operation's on the API): stored in ComputedFilterStore by a provider, added to the Hydra
+ * collection as `filters` by ComputedFiltersCollectionNormalizer.
  */
 abstract class AbstractFilterComputeService
 {

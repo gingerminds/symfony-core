@@ -9,7 +9,6 @@ use Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\DisplayDateFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\EnumFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
-use Gingerminds\CoreBundle\ApiPlatform\Filter\InjectComputedFiltersListener;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\NullableBooleanFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\RelationFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\SearchableFilter;
@@ -17,9 +16,9 @@ use Gingerminds\CoreBundle\ApiPlatform\Metadata\ContextHeaderParametersResourceM
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\CoreResourceNameCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\FilterParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterRegistry;
+use Gingerminds\CoreBundle\ApiPlatform\Serializer\ComputedFiltersCollectionNormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\RelationIdDenormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\State\RepositoryProcessor;
-use Symfony\Component\HttpKernel\KernelEvents;
 
 /*
  * API Platform list filters and parameters, write processors, relation denormalizer, metadata
@@ -101,7 +100,11 @@ return static function (ContainerConfigurator $container): void {
         ->tag('kernel.reset', ['method' => 'reset']);
     $services->alias(ComputedFilterStore::class, 'gingerminds_core.api.computed_filter_store');
 
-    $services->set('gingerminds_core.api.inject_computed_filters_listener', InjectComputedFiltersListener::class)
-        ->args([service('gingerminds_core.api.computed_filter_store')])
-        ->tag('kernel.event_listener', ['event' => KernelEvents::RESPONSE, 'priority' => 10]);
+    // Outermost decorator of the Hydra collection normalizer.
+    $services->set('gingerminds_core.api.computed_filters_normalizer', ComputedFiltersCollectionNormalizer::class)
+        ->decorate('api_platform.hydra.normalizer.collection', null, 10)
+        ->args([
+            service('.inner'),
+            service('gingerminds_core.api.computed_filter_store'),
+        ]);
 };

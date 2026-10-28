@@ -43,7 +43,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `ApiHeaderParameterRegistry` | `HeaderParameterRegistry` + `HeaderParameterProviderInterface` | |
 | `EmbeddedResourceAttributesFixContextBuilder`, `ObjectNormalizer`/`PropertyAccessor` fixes | not needed | Eloquent-specific workarounds. |
 | `JsonCollectionNormalizer` | removed | Use JSON-LD/Hydra: `totalItems` + `view` pagination links. |
-| `FilterStore` subclasses + `AbstractInjectFiltersMiddleware` | `ComputedFilterStore` (keyed by resource class) + listener | |
+| `FilterStore` subclasses + `AbstractInjectFiltersMiddleware` | `ComputedFilterStore` (keyed by resource class) + `ComputedFiltersCollectionNormalizer` | |
 | Blade layouts/components | Twig layouts/components (`@GingermindsCore/...`) | See [Layouts](templating/layouts.md). |
 | Vite, jQuery, Select2, Livewire `SelectModel` | AssetMapper, Stimulus, UX Autocomplete (Tom Select), `/_autocomplete/{resource}` | No Node build. Navigation goes through Turbo Drive, see [Turbo](Turbo.md). |
 | `make:*` artisan commands | `make:gm:*` makers (MakerBundle) | See [Commands](Commands.md). |

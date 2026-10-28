@@ -159,6 +159,19 @@ final class ListTest extends ApiTestCase
         self::assertArrayHasKey('totalItems', $data);
     }
 
+    public function testAPlainJsonCollectionStaysAList(): void
+    {
+        $this->client->request('GET', '/api/products?status=published', server: [
+            'HTTP_ACCEPT' => 'application/json',
+            'HTTP_AUTHORIZATION' => 'Bearer ' . $this->token,
+        ]);
+        $this->assertStatus(200);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+
+        self::assertTrue(array_is_list($data));
+        self::assertSame(['Laptop', 'Phone'], array_column($data, 'name'));
+    }
+
     public function testTheParametersAreDocumented(): void
     {
         $this->client->request('GET', '/api/docs.jsonopenapi', server: ['HTTP_ACCEPT' => 'application/vnd.openapi+json']);

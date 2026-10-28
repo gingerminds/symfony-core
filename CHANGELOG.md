@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** Computed filters: `InjectComputedFiltersListener` (which decoded and re-encoded every
+  collection response) is replaced by `ComputedFiltersCollectionNormalizer`, a decorator of the
+  Hydra collection normalizer adding the `ComputedFilterStore` entries as `filters` while the
+  collection is serialized. Only JSON-LD collections carry them: a plain `application/json`
+  collection stays a bare list (it was wrapped as `{member, filters}`).
 - **BC break** Lists: one engine, the API Platform filters, for the API collections and the admin
   lists, with the same query parameters. Before → after: `page`, `itemsPerPage` (unchanged);
   `sortBy=x&sort=desc` → `order[x]=desc` (API Platform `SortFilter`, `#[Sortable]` paths only, a

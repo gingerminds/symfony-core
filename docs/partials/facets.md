@@ -71,8 +71,9 @@ Helpers: `computeDateFilters()`, `activeFilterValue()`, `mergeWithSelected()`,
 ## Exposing computed filters through the API
 
 A provider decorating the native Doctrine collection provider stores them in
-`Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore`; `InjectComputedFiltersListener`
-adds them as a `filters` key of the collection response, entries without options dropped. A forced filter is set on the operation's parameter before both:
+`Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore`; `ComputedFiltersCollectionNormalizer`
+(decorating the Hydra collection normalizer) adds them as a `filters` key of the JSON-LD collection,
+entries without options dropped. A forced filter is set on the operation's parameter before both:
 
 ```php
 final readonly class EventProvider implements ProviderInterface
