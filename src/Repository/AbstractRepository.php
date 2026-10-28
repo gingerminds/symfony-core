@@ -52,14 +52,6 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         $this->parameterExtension = $parameterExtension;
     }
 
-    /**
-     * @return class-string<T>
-     */
-    public function getEntityClass(): string
-    {
-        return $this->getClassName();
-    }
-
     public function paginate(Parameters $parameters, int $page = 1, ?int $itemsPerPage = null): Paginator
     {
         $page = max(1, $page);
@@ -99,7 +91,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     {
         $extension = $this->parameterExtension
             ?? throw new \LogicException(\sprintf('"%s" needs the API Platform ParameterExtension (setParameterExtension(), autowired on a service repository).', static::class));
-        $entityClass = $this->getEntityClass();
+        $entityClass = $this->getClassName();
 
         $extension->applyToCollection($qb, new QueryNameGenerator(), $entityClass, new GetCollection(class: $entityClass, parameters: $parameters));
     }
@@ -187,7 +179,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
 
     private function createEagerLoader(): EagerLoader
     {
-        return new EagerLoader($this->getEntityManager(), $this->getEntityClass());
+        return new EagerLoader($this->getEntityManager(), $this->getClassName());
     }
 
     /**

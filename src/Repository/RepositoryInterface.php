@@ -16,7 +16,7 @@ interface RepositoryInterface
     /**
      * @return class-string<T>
      */
-    public function getEntityClass(): string;
+    public function getClassName(): string;
 
     /**
      * A page of the list query with the list parameters (admin lists): their API Platform filters

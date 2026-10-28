@@ -23,10 +23,10 @@ return static function (ContainerConfigurator $container): void {
     $services = $container->services();
 
     $services->set('gingerminds_core.form.type.user', UserType::class)
-        ->args([service('gingerminds_core.resource_registry'), service('gingerminds_core.repository.contributor'), service('translator')])
+        ->args([service('gingerminds_core.resource_registry'), service('gingerminds_core.repository.contributor')])
         ->tag('form.type');
     $services->set('gingerminds_core.form.type.profile', ProfileType::class)
-        ->args([service('gingerminds_core.resource_registry'), service('gingerminds_core.repository.contributor'), service('translator')])
+        ->args([service('gingerminds_core.resource_registry'), service('gingerminds_core.repository.contributor')])
         ->tag('form.type');
 
     foreach (

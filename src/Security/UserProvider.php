@@ -57,7 +57,7 @@ final readonly class UserProvider implements UserProviderInterface, PasswordUpgr
 
     public function supportsClass(string $class): bool
     {
-        return is_a($class, $this->users->getEntityClass(), true);
+        return is_a($class, $this->users->getClassName(), true);
     }
 
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void

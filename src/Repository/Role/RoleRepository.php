@@ -25,11 +25,6 @@ class RoleRepository extends AbstractRepository
         parent::__construct($registry, $entityClass);
     }
 
-    public function findDefaultRole(bool $isExternal = false): ?RoleInterface
-    {
-        return $this->findOneBy(['default' => true, 'external' => $isExternal]);
-    }
-
     public function findOneByName(string $name): ?RoleInterface
     {
         return $this->findOneBy(['name' => $name]);

@@ -56,27 +56,6 @@ final class AdminMenuTest extends TestCase
         self::assertSame(['visible'], $this->labels($menu->getItems()));
     }
 
-    public function testDeprecatedPriorityIsTheOppositeWeight(): void
-    {
-        $deprecations = [];
-        set_error_handler(static function (int $level, string $message) use (&$deprecations): bool {
-            $deprecations[] = $message;
-
-            return true;
-        }, \E_USER_DEPRECATED);
-
-        try {
-            $item = new MenuItem('legacy', 'legacy', priority: 1000);
-        } finally {
-            restore_error_handler();
-        }
-
-        self::assertSame(-1000, $item->weight);
-        self::assertCount(1, $deprecations);
-        self::assertStringContainsString('"priority" argument', $deprecations[0]);
-        self::assertSame(5, new MenuItem('weighted', 'weighted', priority: 0, weight: 5)->weight);
-    }
-
     public function testTheBuiltEventRemovesReplacesAndAddsEntriesAtAnyLevel(): void
     {
         $menu = $this->menu([
@@ -148,7 +127,7 @@ final class AdminMenuTest extends TestCase
     {
         $dispatcher = new EventDispatcher();
 
-        if (null !== $listener) {
+        if ($listener instanceof \Closure) {
             $dispatcher->addListener(AdminMenuBuiltEvent::class, $listener);
         }
 

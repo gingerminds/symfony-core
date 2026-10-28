@@ -87,8 +87,7 @@ contributors `10`, roles `20`, permissions `30`.
 
 Entries of one level sharing an `id` are merged, whatever provider declares them: their
 children are added up (then sorted by weight), the label, icon and weight are those of the
-first declared one (the core provider runs first). `priority` (highest first) is deprecated since 1.5: it is
-read as `weight: -priority`. The active state matches the route and its CRUD siblings
+first declared one (the core provider runs first). The active state matches the route and its CRUD siblings
 (`admin_product_*`) exactly, avoiding the Laravel prefix-collision issue.
 
 To remove or change an entry declared elsewhere, listen to `AdminMenuBuiltEvent`: dispatched

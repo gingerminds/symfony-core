@@ -25,7 +25,6 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The user and its contributor: the unmapped `contributor*` fields create, select or edit the
@@ -41,7 +40,6 @@ class UserType extends AbstractType
     public function __construct(
         protected readonly ResourceRegistry $resources,
         protected readonly ContributorRepositoryInterface $contributors,
-        protected readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -209,22 +207,5 @@ class UserType extends AbstractType
         if ($civility instanceof Civility) {
             $contributor->setCivility($civility);
         }
-    }
-
-    /**
-     * @deprecated loads every contributor: the contributorId field uses
-     *             ContributorSelectorType (remote search) instead
-     *
-     * @return array<string, string>
-     */
-    protected function contributorChoices(): array
-    {
-        $choices = [$this->translator->trans('user.contributor.new', [], 'GingermindsCore') => self::NEW_CONTRIBUTOR];
-
-        foreach ($this->contributors->findAllOrdered() as $contributor) {
-            $choices[$contributor->getFullName() . ' (#' . $contributor->getId() . ')'] = (string) $contributor->getId();
-        }
-
-        return $choices;
     }
 }

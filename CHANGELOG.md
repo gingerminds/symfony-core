@@ -214,6 +214,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   keep both sides in sync (the side left is released). `BaseUser::$contributor` is
   `#[Assert\Valid]`.
 
+### Removed
+
+- **BC break** `RepositoryInterface::getEntityClass()`: Doctrine's `getClassName()` instead.
+- **BC break** `MenuItem`'s `priority` argument (deprecated since 1.5): `weight` (ascending).
+- **BC break** `UserType::contributorChoices()` (deprecated) and the `UserType` / `ProfileType`
+  translator argument; `RoleRepository::findDefaultRole()` (no caller): a project reads its
+  default role with `findOneBy(['default' => true, 'external' => $external])`.
+
 ### Added
 
 - Input groups: `input_prefix` / `input_suffix` options on every field (`InputGroupTypeExtension`),
