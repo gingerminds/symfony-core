@@ -62,36 +62,59 @@ final readonly class FilterParametersResourceMetadataCollectionFactory implement
 
     private function configure(Operation $operation): Operation
     {
-        $stateOptions = $operation->getStateOptions();
-        $entityClass = $stateOptions instanceof Options ? $stateOptions->getEntityClass() : null;
-        $entityClass ??= $operation->getClass();
+        $entityClass = $this->entityClass($operation);
+        $manager = null !== $entityClass ? $this->registry->getManagerForClass($entityClass) : null;
 
-        if (null === $entityClass || !class_exists($entityClass)) {
-            return $operation;
-        }
-
-        $manager = $this->registry->getManagerForClass($entityClass);
-
-        if (!$manager instanceof EntityManagerInterface) {
+        if (null === $entityClass || !$manager instanceof EntityManagerInterface) {
             return $operation;
         }
 
         if ($operation instanceof CollectionOperationInterface) {
-            $parameters = $operation->getParameters() ?? new Parameters();
-
-            foreach ($this->filterParameters->create($entityClass) as $key => $parameter) {
-                if (!$parameters->has($key)) {
-                    $parameters->add($key, $parameter);
-                }
-            }
-
-            $operation = $operation->withParameters($parameters);
+            $operation = $this->withFilterParameters($operation, $entityClass);
         }
 
-        $repositoryClass = $manager->getClassMetadata($entityClass)->customRepositoryClassName;
+        return $this->withRepositoryMethod($operation, $manager->getClassMetadata($entityClass)->customRepositoryClassName);
+    }
 
+    /**
+     * The entity read by the operation: its Doctrine state options' (DTO resource), else its class.
+     *
+     * @return class-string|null
+     */
+    private function entityClass(Operation $operation): ?string
+    {
+        $stateOptions = $operation->getStateOptions();
+        $entityClass = ($stateOptions instanceof Options ? $stateOptions->getEntityClass() : null) ?? $operation->getClass();
+
+        return null !== $entityClass && class_exists($entityClass) ? $entityClass : null;
+    }
+
+    /**
+     * The list parameters of the entity added to the collection operation, those it declares kept.
+     *
+     * @param class-string $entityClass
+     */
+    private function withFilterParameters(Operation $operation, string $entityClass): Operation
+    {
+        $parameters = $operation->getParameters() ?? new Parameters();
+
+        foreach ($this->filterParameters->create($entityClass) as $key => $parameter) {
+            if (!$parameters->has($key)) {
+                $parameters->add($key, $parameter);
+            }
+        }
+
+        return $operation->withParameters($parameters);
+    }
+
+    /**
+     * Reads start from the list query of a core repository (`repositoryMethod`), unless the
+     * operation names its own.
+     */
+    private function withRepositoryMethod(Operation $operation, ?string $repositoryClass): Operation
+    {
         // The Doctrine resource factory gives every operation Options (links handler).
-        $stateOptions ??= new Options();
+        $stateOptions = $operation->getStateOptions() ?? new Options();
 
         if (
             $stateOptions instanceof Options
