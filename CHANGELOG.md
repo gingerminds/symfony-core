@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- API: the `search` parameter is in the Hydra `search` template of the collections, mapped to
+  `hydra:freetextQuery` (its `property`; `SearchableFilter` searches its `properties`).
 - **BC break** List parameters: one set of rules for the API and the admin. `FilterParameters`
   gives each parameter its constraints (`ParameterValue`: the value shape, scalar, list or
   operator map, and each item): sort direction, `boolean` (`true|false|1|0`), `number` (numeric

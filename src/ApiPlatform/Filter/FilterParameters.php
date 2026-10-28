@@ -56,6 +56,7 @@ final class FilterParameters
 {
     public const string SEARCH = 'search';
     public const string ORDER = 'order';
+    public const string SEARCH_PROPERTY = 'hydra:freetextQuery';
 
     /**
      * Filter service ids (`api_platform.filter` tag) of the core filters needing services.
@@ -243,7 +244,9 @@ final class FilterParameters
         }
 
         if ([] !== ($paths = SearchableFields::of($entityClass))) {
-            $parameters[] = new QueryParameter(key: self::SEARCH, filter: self::SEARCH_FILTER, properties: $paths);
+            // `property`: the Hydra term of a free text search, for the Hydra `search` template
+            // (SearchableFilter searches the `properties`).
+            $parameters[] = new QueryParameter(key: self::SEARCH, filter: self::SEARCH_FILTER, property: self::SEARCH_PROPERTY, properties: $paths);
         }
 
         for ($reflection = new \ReflectionClass($entityClass); false !== $reflection; $reflection = $reflection->getParentClass()) {

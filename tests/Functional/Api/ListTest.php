@@ -210,6 +210,16 @@ final class ListTest extends ApiTestCase
         }
     }
 
+    public function testTheHydraSearchTemplateHasTheParameters(): void
+    {
+        $search = $this->api('GET', '/api/products', $this->token)['search'];
+        $mapping = array_column($search['mapping'], 'property', 'variable');
+
+        self::assertStringContainsString('search', $search['template']);
+        self::assertSame('hydra:freetextQuery', $mapping['search'] ?? null);
+        self::assertSame('status', $mapping['status'] ?? null);
+    }
+
     public function testCollectionQueryCountDoesNotDependOnTheRows(): void
     {
         $this->client->disableReboot();

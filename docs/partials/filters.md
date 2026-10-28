@@ -13,10 +13,13 @@ and validates them.
 |---|---|---|
 | `page`, `itemsPerPage` | API Platform pagination (`paginationClientItemsPerPage: true`) | admin: repository `$itemsPerPage` (10) / `$maxItemsPerPage` (200) |
 | `order[<path>]=asc\|desc` | `#[Sortable]` (see [Sorting](../Sorting.md)) | API Platform `SortFilter`, then the identifier |
-| `search=text` | `#[Searchable]` | `SearchableFilter` |
+| `search=text` | `#[Searchable]` | `SearchableFilter` (Hydra template: `hydra:freetextQuery`) |
 | `<property>=...` | `#[Filter]` | by type, below |
 
 The front passes **ids**, never IRIs (`category=5`, `tags[]=3`).
+
+In the Hydra `search` template, `search` is mapped to `hydra:freetextQuery`. With a snake_case
+`name_converter`, API Platform converts that property too (`hydra:freetext_query`).
 
 ## `#[Filter]`
 
