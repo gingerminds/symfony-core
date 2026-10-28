@@ -37,37 +37,6 @@ collection operation's (`$operation->getParameters()`, valued by API Platform), 
 `Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator::compute(QueryBuilder, string $dqlField, DisplayTimezone)`
 is also available directly. Bounds and years are days of the display timezone.
 
-## `AbstractFilterComputeService`
-
-Turns facet stats into the front-end shape:
-
-```php
-final class EventFilterComputeService extends AbstractFilterComputeService
-{
-    public function __construct(private readonly EventRepository $events) {}
-
-    protected function dateFacetStats(Parameters $parameters): array
-    {
-        return ['publishedAt' => $this->events->getDateFacetStats($parameters, 'publishedAt')];
-    }
-
-    /**
-     * @return list<array{value: int, label: string, total: int}>
-     */
-    public function categories(Parameters $parameters): array
-    {
-        return $this->resolveCategoryOptions(
-            Category::class,
-            $this->events->getAssociationFacetCounts($parameters, 'categories'),
-            $this->normalizeIds($this->activeFilterValue($parameters, 'categories')),
-        );
-    }
-}
-```
-
-Helpers: `computeDateFilters()`, `activeFilterValue()`, `mergeWithSelected()`,
-`normalizeIds()`, `resolveCategoryOptions()`.
-
 ## Exposing computed filters through the API
 
 A provider decorating the native Doctrine collection provider stores them in
@@ -81,7 +50,7 @@ final readonly class EventProvider implements ProviderInterface
     public function __construct(
         #[Autowire(service: CollectionProvider::class)]
         private ProviderInterface $collectionProvider,
-        private EventFilterComputeService $filters,
+        private EventRepository $events,
         private ComputedFilterStore $store,
     ) {
     }
@@ -91,9 +60,18 @@ final readonly class EventProvider implements ProviderInterface
         $parameters = $operation->getParameters() ?? new Parameters();
         $parameters->get('status')?->setValue('published');
 
+        $categories = $this->events->getAssociationFacetCounts($parameters, 'categories');
+
         $this->store->set(Event::class, [
-            ...$this->filters->computeDateFilters($parameters),
-            'categories' => ['type' => 'relation', 'options' => $this->filters->categories($parameters)],
+            'publishedAt' => ['type' => 'date', 'options' => $this->events->getDateFacetStats($parameters, 'publishedAt')],
+            'categories' => [
+                'type' => 'relation',
+                'options' => array_map(
+                    static fn (int|string $id, int $total): array => ['value' => $id, 'total' => $total],
+                    array_keys($categories),
+                    $categories,
+                ),
+            ],
         ]);
 
         return $this->collectionProvider->provide($operation, $uriVariables, $context);

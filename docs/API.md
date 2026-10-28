@@ -171,27 +171,15 @@ gingerminds_core:
 
 ## Documenting context headers (`X-Site-Id`, `Accept-Language`...)
 
-Implement `Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterProviderInterface`
-(autoconfigured): every operation of every resource using the marker trait (anywhere in its
-class hierarchy) or implementing the marker interface gets the header documented in OpenAPI.
+Declare them on the operations with API Platform's `HeaderParameter`:
 
 ```php
-final class SiteHeaderParameterProvider implements HeaderParameterProviderInterface
-{
-    public function getMarker(): string
-    {
-        return SiteContextedTrait::class;
-    }
-
-    public function getHeaderParameter(): HeaderParameter
-    {
-        return new HeaderParameter(key: 'X-Site-Id', description: 'Restricts the response to the given site.', schema: ['type' => 'string']);
-    }
-}
+#[GetCollection(parameters: [
+    'X-Site-Id' => new HeaderParameter(description: 'Restricts the response to the given site.', schema: ['type' => 'string']),
+])]
 ```
 
-The registry (`gingerminds_core.api.header_parameter_registry`) also has a `register()`
-method for runtime registration.
+`gingerminds/symfony-multisite` documents its own context headers on the resources it scopes.
 
 ## Computed properties
 

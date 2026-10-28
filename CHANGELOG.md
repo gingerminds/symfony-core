@@ -221,6 +221,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **BC break** `UserType::contributorChoices()` (deprecated) and the `UserType` / `ProfileType`
   translator argument; `RoleRepository::findDefaultRole()` (no caller): a project reads its
   default role with `findOneBy(['default' => true, 'external' => $external])`.
+- **BC break** `AbstractFilterComputeService`, cms-shaped (duck-typed categories), moves to the cms.
+  `AbstractFacetRepository`, `ComputedFilterStore` and `ComputedFiltersCollectionNormalizer` stay.
+- **BC break** `HeaderParameterRegistry`, `HeaderParameterProviderInterface`, the
+  `gingerminds_core.api_header_parameter` tag and `ContextHeaderParametersResourceMetadataCollectionFactory`:
+  a context header is an API Platform `HeaderParameter` on the operations, the multisite bundle
+  documents its own.
 
 ### Added
 

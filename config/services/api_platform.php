@@ -12,10 +12,8 @@ use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\NullableBooleanFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\RelationFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\SearchableFilter;
-use Gingerminds\CoreBundle\ApiPlatform\Metadata\ContextHeaderParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\CoreResourceNameCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\FilterParametersResourceMetadataCollectionFactory;
-use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterRegistry;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\OverriddenEntityResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\ComputedFiltersCollectionNormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\RelationIdDenormalizer;
@@ -93,17 +91,6 @@ return static function (ContainerConfigurator $container): void {
         ->args([
             service('.inner'),
             param('gingerminds_core.overridden_entities'),
-        ]);
-
-    $services->set('gingerminds_core.api.header_parameter_registry', HeaderParameterRegistry::class)
-        ->args([tagged_iterator('gingerminds_core.api_header_parameter')]);
-    $services->alias(HeaderParameterRegistry::class, 'gingerminds_core.api.header_parameter_registry');
-
-    $services->set('gingerminds_core.api.metadata.context_header_parameters', ContextHeaderParametersResourceMetadataCollectionFactory::class)
-        ->decorate('api_platform.metadata.resource.metadata_collection_factory', null, 0)
-        ->args([
-            service('.inner'),
-            service('gingerminds_core.api.header_parameter_registry'),
         ]);
 
     $services->set('gingerminds_core.api.computed_filter_store', ComputedFilterStore::class)

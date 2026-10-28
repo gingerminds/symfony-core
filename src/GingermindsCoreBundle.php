@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle;
 
 use Doctrine\DBAL\Types\Types;
-use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterProviderInterface;
 use Gingerminds\CoreBundle\Bundle\AbstractResourceBundle;
 use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
@@ -180,8 +179,6 @@ final class GingermindsCoreBundle extends AbstractResourceBundle
             ->addTag('gingerminds_core.admin_menu_provider');
         $builder->registerForAutoconfiguration(LoginResponseEnricherInterface::class)
             ->addTag('gingerminds_core.login_response_enricher');
-        $builder->registerForAutoconfiguration(HeaderParameterProviderInterface::class)
-            ->addTag('gingerminds_core.api_header_parameter');
     }
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
