@@ -35,7 +35,7 @@ final class ResourceAutocompleteType extends AbstractType
                 ? new LazyChoiceLoader($loader)
                 : null,
             'autocomplete' => true,
-            'autocomplete_url' => fn (Options $options): string => $this->urlGenerator->generate('gingerminds_core_autocomplete', ['resource' => $options['resource']]),
+            'autocomplete_url' => fn (Options $options): string => $this->urlGenerator->generate('gingerminds_core_autocomplete', ['alias' => $options['resource']]),
         ]);
     }
 

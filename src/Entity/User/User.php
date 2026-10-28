@@ -26,16 +26,14 @@ use Gingerminds\CoreBundle\Repository\User\UserRepository;
         new Post(
             denormalizationContext: ['groups' => [BaseUser::GROUP_CREATE]],
             security: "is_granted('CREATE', 'user')",
-            deserialize: false,
+            validationContext: ['groups' => ['Default', BaseUser::GROUP_CREATE]],
         ),
-        new Patch(security: "is_granted('EDIT', object)", deserialize: false),
+        new Patch(security: "is_granted('EDIT', object)"),
         new Delete(security: "is_granted('DELETE', object)"),
     ],
     normalizationContext: ['groups' => [BaseUser::GROUP_READ]],
     denormalizationContext: ['groups' => [BaseUser::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.user',
-    processor: 'gingerminds_core.api.processor.user',
 )]
 class User extends BaseUser
 {

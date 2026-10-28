@@ -8,8 +8,9 @@ namespace Gingerminds\CoreBundle\Resource;
 final readonly class AsCrudController
 {
     /**
-     * @param class-string      $entity
-     * @param class-string|null $form
+     * @param class-string          $entity
+     * @param class-string|null     $form
+     * @param array<string, string> $permissions permission name by ResourceVoter attribute, e.g. `[ResourceVoter::DELETE => 'edit files']`
      */
     public function __construct(
         public string $resource,
@@ -23,6 +24,7 @@ final readonly class AsCrudController
         public ?string $templatePrefix = null,
         public ?RedirectTarget $redirectAfterNew = null,
         public ?RedirectTarget $redirectAfterEdit = null,
+        public array $permissions = [],
     ) {
     }
 }

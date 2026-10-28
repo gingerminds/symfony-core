@@ -3,19 +3,19 @@
 ## What is cached
 
 The **serialized API responses** of `Get`/`GetCollection` operations of resources
-implementing `CacheableResourceInterface`:
+marked `#[Cacheable]`:
 
 ```php
-class Event implements ResourceInterface, CacheableResourceInterface
-{
-    use CacheableResourceTrait; // getCacheTtl(): null => gingerminds_core.cache.default_ttl
+use Gingerminds\CoreBundle\Model\Cacheable;
 
-    public static function getCacheKey(): string
-    {
-        return 'event';
-    }
+#[Cacheable(key: 'event')] // ttl: null => gingerminds_core.cache.default_ttl
+class Event implements ResourceInterface
+{
 }
 ```
+
+The attribute is read on the class or its parents, the closest declaration winning: an entity
+overriding a bundle one keeps its cache, or declares its own (`CacheMetadata::cacheable()`).
 
 > Change from the Laravel core, which cached query results (Eloquent models). Caching
 > Doctrine entities is unsafe (detached entities, uninitialized proxies), so the bundle caches
@@ -30,20 +30,31 @@ class Event implements ResourceInterface, CacheableResourceInterface
 
 ## Security
 
-The listener runs after the firewall (authentication applies) and before API Platform's read.
-A collection operation's `security` expression is evaluated before serving a hit; item
-operations whose `security` uses `object` are never cached. If a response depends on the
-current user in any other way, add the user (or their audience) to the cache context — or
-do not make the resource cacheable.
+Only **anonymous** requests are served from the cache and stored: a request with an
+authenticated user or an `Authorization` header always reaches the application, so the key holds
+no user and a response depending on the viewer (drafts shown to an admin,
+`#[ApiProperty(security: ...)]`, a per-user query) never leaks. The headless fronts read the
+public API without a token.
+
+The listener runs after the firewall and before API Platform's read. A collection operation's
+`security` expression is evaluated (anonymously) before serving a hit; item operations whose
+`security` uses `object` are never cached.
 
 ## Invalidation
 
 On every Doctrine flush (`CacheInvalidationListener`):
 
-- an inserted/updated/removed `CacheableResourceInterface` entity invalidates its
-  `{key}.list` and `{key}.item.{id}` tags (collection changes included);
-- a `CacheCascadeInterface` entity invalidates the whole `{key}` tag of every key returned by
-  `getCascadeCacheKeys()` (translation rows, child rows embedded in a parent's response).
+- an inserted/updated/removed `#[Cacheable]` entity invalidates its `{key}.list` and
+  `{key}.item.{id}` tags (collection changes included);
+- a `#[CacheCascade(['event'])]` entity invalidates the whole `{key}` tag of each of its keys
+  (translation rows, child rows embedded in a parent's response):
+
+```php
+#[CacheCascade(['event'])]
+class EventTranslation
+{
+}
+```
 
 Tags are collected during the flush and invalidated once it succeeded. Writes done with DQL
 `UPDATE`/`DELETE` bypass the unit of work: invalidate manually
@@ -66,4 +77,4 @@ Return canonical ids: `fr` and `fr-FR` must produce the same key.
 ## Switches
 
 - `gingerminds_core.cache.enabled: false` disables reads and invalidation (e.g. when Redis is down).
-- `getCacheTtl()` returns seconds, `0` for no expiration, `null` for the default TTL.
+- `#[Cacheable(ttl: ...)]` is in seconds, `0` for no expiration, `null` for the default TTL.

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Form\User;
 
+use Gingerminds\CoreBundle\Entity\User\BaseUser;
 use Gingerminds\CoreBundle\Entity\User\ContributorInterface;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Enum\Civility;
 use Gingerminds\CoreBundle\Form\Type\ContributorSelectorType;
-use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Repository\User\ContributorRepositoryInterface;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -21,19 +21,25 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormInterface;
+use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints as Assert;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
+ * The user and its contributor: the unmapped `contributor*` fields create, select or edit the
+ * contributor of the user once the form is valid (`contributorId`: an existing contributor id,
+ * or NEW_CONTRIBUTOR).
+ *
  * @extends AbstractType<UserInterface>
  */
 class UserType extends AbstractType
 {
+    public const string NEW_CONTRIBUTOR = '__new__';
+
     public function __construct(
         protected readonly ResourceRegistry $resources,
-        protected readonly ContributorRepository $contributors,
-        protected readonly TranslatorInterface $translator,
+        protected readonly ContributorRepositoryInterface $contributors,
     ) {
     }
 
@@ -50,7 +56,6 @@ class UserType extends AbstractType
                 'first_options' => ['label' => 'user.field.password', 'size' => 'md', 'always_empty' => true],
                 'second_options' => ['label' => 'user.field.password_confirmation', 'size' => 'md', 'always_empty' => true],
                 'invalid_message' => 'user.password.mismatch',
-                'constraints' => $options['password_required'] ? [new Assert\NotBlank()] : [],
             ])
             ->add('roles', EntityType::class, [
                 'label' => 'user.field.roles',
@@ -91,6 +96,9 @@ class UserType extends AbstractType
             $form->get('contributorTrigram')->setData($contributor->getTrigram());
             $form->get('contributorCivility')->setData($contributor->getCivility());
         });
+
+        // After the validation listener (priority 0): only a valid submission changes the contributor.
+        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->submitContributor(...), -10);
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -99,6 +107,8 @@ class UserType extends AbstractType
             'data_class' => $this->resources->getEntityClass('user'),
             'translation_domain' => 'GingermindsCore',
             'password_required' => false,
+            // The password is required on creation (BaseUser::GROUP_CREATE), as on the API.
+            'validation_groups' => static fn (Options $options): array => $options['password_required'] ? ['Default', BaseUser::GROUP_CREATE] : ['Default'],
         ]);
         $resolver->setAllowedTypes('password_required', 'bool');
     }
@@ -140,20 +150,62 @@ class UserType extends AbstractType
             ]);
     }
 
-    /**
-     * @deprecated loads every contributor: the contributorId field uses
-     *             ContributorSelectorType (remote search) instead
-     *
-     * @return array<string, string>
-     */
-    protected function contributorChoices(): array
+    protected function submitContributor(FormEvent $event): void
     {
-        $choices = [$this->translator->trans('user.contributor.new', [], 'GingermindsCore') => UserRepository::NEW_CONTRIBUTOR];
+        $form = $event->getForm();
+        $user = $event->getData();
 
-        foreach ($this->contributors->findAllOrdered() as $contributor) {
-            $choices[$contributor->getFullName() . ' (#' . $contributor->getId() . ')'] = (string) $contributor->getId();
+        if (!$user instanceof UserInterface || !$form->isValid() || (!$form->has('contributorId') && !$form->has('contributorLastname'))) {
+            return;
         }
 
-        return $choices;
+        $selector = $form->has('contributorId')
+            ? $form->get('contributorId')->getData()
+            : ($user->getContributor()?->getId() ?? self::NEW_CONTRIBUTOR);
+
+        if (null === $selector || '' === $selector) {
+            return;
+        }
+
+        $contributorClass = $this->resources->getEntityClass('contributor');
+        // A new contributor is persisted with the user (cascade persist of BaseUser::$contributor).
+        $contributor = self::NEW_CONTRIBUTOR === $selector ? new $contributorClass() : $this->contributors->find($selector);
+
+        if (!$contributor instanceof ContributorInterface) {
+            return;
+        }
+
+        $this->fillContributor($contributor, $form);
+        // Releases the contributor left (BaseUser::setContributor()).
+        $user->setContributor($contributor);
+    }
+
+    /**
+     * @param FormInterface<mixed> $form
+     */
+    protected function fillContributor(ContributorInterface $contributor, FormInterface $form): void
+    {
+        $value = static fn (string $field): mixed => $form->has($field) ? $form->get($field)->getData() : null;
+
+        if (null !== $firstname = $value('contributorFirstname')) {
+            $contributor->setFirstname((string) $firstname);
+        }
+
+        if (null !== $lastname = $value('contributorLastname')) {
+            $contributor->setLastname((string) $lastname);
+        }
+
+        $contributor->setFirstname($contributor->getFirstname() ?? '');
+        $contributor->setLastname($contributor->getLastname() ?? '');
+
+        if (null !== $trigram = $value('contributorTrigram')) {
+            $contributor->setTrigram((string) $trigram);
+        }
+
+        $civility = $value('contributorCivility');
+
+        if ($civility instanceof Civility) {
+            $contributor->setCivility($civility);
+        }
     }
 }

@@ -5,23 +5,26 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Controller\Security\Api;
 
 use Gingerminds\CoreBundle\Security\Api\ApiLoginAuthenticator;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
-final readonly class AuthController
+final class AuthController extends AbstractController
 {
     public function __construct(
-        private Security $security,
-        private TranslatorInterface $translator,
+        private readonly Security $security,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
     /**
      * The login is answered by ApiLoginAuthenticator, on the firewall of the route.
      */
+    #[Route('/login', name: ApiLoginAuthenticator::ROUTE, methods: ['POST'], format: 'json')]
     public function login(): never
     {
         throw new \LogicException(\sprintf(
@@ -35,9 +38,10 @@ final readonly class AuthController
      * Native logout of the API firewall: LogoutEvent listeners revoke the token
      * (ApiTokenRevocationListener) and may set the response.
      */
+    #[Route('/logout', name: 'gingerminds_core_api_logout', methods: ['POST'], format: 'json')]
     public function logout(): Response
     {
-        if (!$this->security->getUser() instanceof UserInterface) {
+        if (!$this->getUser() instanceof UserInterface) {
             return $this->message('security.api.unauthenticated', Response::HTTP_UNAUTHORIZED);
         }
 
@@ -46,6 +50,6 @@ final readonly class AuthController
 
     private function message(string $key, int $status = Response::HTTP_OK): JsonResponse
     {
-        return new JsonResponse(['message' => $this->translator->trans($key, [], 'security')], $status);
+        return $this->json(['message' => $this->translator->trans($key, [], 'security')], $status);
     }
 }

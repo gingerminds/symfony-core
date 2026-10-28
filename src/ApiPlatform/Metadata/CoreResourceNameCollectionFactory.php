@@ -7,14 +7,21 @@ namespace Gingerminds\CoreBundle\ApiPlatform\Metadata;
 use ApiPlatform\Metadata\Resource\Factory\ResourceNameCollectionFactoryInterface;
 use ApiPlatform\Metadata\Resource\ResourceNameCollection;
 
+/**
+ * An overridden bundle entity is replaced by its project entity (which gets the bundle
+ * `#[ApiResource]`, see OverriddenEntityResourceMetadataCollectionFactory); the resources
+ * configured with `api: false` are removed.
+ */
 final readonly class CoreResourceNameCollectionFactory implements ResourceNameCollectionFactoryInterface
 {
     /**
-     * @param list<class-string> $overriddenEntities
+     * @param array<class-string, class-string> $overriddenEntities project entity by bundle entity
+     * @param list<class-string>                $disabledResources
      */
     public function __construct(
         private ResourceNameCollectionFactoryInterface $decorated,
         private array $overriddenEntities,
+        private array $disabledResources,
     ) {
     }
 
@@ -23,11 +30,11 @@ final readonly class CoreResourceNameCollectionFactory implements ResourceNameCo
         $classes = [];
 
         foreach ($this->decorated->create() as $class) {
-            if (!\in_array($class, $this->overriddenEntities, true)) {
-                $classes[] = $class;
-            }
+            $classes[] = $this->overriddenEntities[$class] ?? $class;
         }
 
-        return new ResourceNameCollection($classes);
+        $classes = array_values(array_unique($classes));
+
+        return new ResourceNameCollection(array_values(array_diff($classes, $this->disabledResources)));
     }
 }

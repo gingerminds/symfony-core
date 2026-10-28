@@ -1,0 +1,5 @@
+{% extends '@GingermindsCore/crud/list_tree.html.twig' %}
+
+{% block tree %}
+    {% include '@GingermindsCore/components/list/_tree.html.twig' with {nodes: roots} %}
+{% endblock %}

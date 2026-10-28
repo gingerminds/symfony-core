@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Form\ChoiceList;
 
 use Gingerminds\CoreBundle\Entity\User\ContributorInterface;
-use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Form\User\UserType;
+use Gingerminds\CoreBundle\Repository\User\ContributorRepositoryInterface;
 use Symfony\Component\Form\ChoiceList\ArrayChoiceList;
 use Symfony\Component\Form\ChoiceList\ChoiceListInterface;
 use Symfony\Component\Form\ChoiceList\Loader\ChoiceLoaderInterface;
@@ -18,16 +18,16 @@ use Symfony\Component\Form\ChoiceList\Loader\ChoiceLoaderInterface;
  */
 final class ContributorSelectorChoiceLoader implements ChoiceLoaderInterface
 {
-    /** @var array<string, string> label => contributor id (or UserRepository::NEW_CONTRIBUTOR) */
+    /** @var array<string, string> label => contributor id (or UserType::NEW_CONTRIBUTOR) */
     private array $choices;
 
     private ?ChoiceListInterface $choiceList = null;
 
     public function __construct(
-        private readonly ContributorRepository $contributors,
+        private readonly ContributorRepositoryInterface $contributors,
         string $newLabel,
     ) {
-        $this->choices = [$newLabel => UserRepository::NEW_CONTRIBUTOR];
+        $this->choices = [$newLabel => UserType::NEW_CONTRIBUTOR];
     }
 
     public function loadChoiceList(?callable $value = null): ChoiceListInterface

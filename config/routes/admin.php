@@ -2,27 +2,24 @@
 
 declare(strict_types=1);
 
+use Gingerminds\CoreBundle\Controller\Dashboard\DashboardController;
+use Gingerminds\CoreBundle\Controller\Security\LoginController;
+use Gingerminds\CoreBundle\Controller\Security\LogoutController;
+use Gingerminds\CoreBundle\Controller\User\ProfileController;
 use Symfony\Component\Routing\Loader\Configurator\RoutingConfigurator;
 
+/*
+ * The #[Route] of the admin controllers, under the admin prefix (config/routes.php).
+ */
 return static function (RoutingConfigurator $routes): void {
-    $routes->add('gingerminds_core_dashboard', '/')
-        ->controller('gingerminds_core.controller.admin.dashboard')
-        ->methods(['GET']);
+    foreach ([DashboardController::class, LoginController::class, LogoutController::class, ProfileController::class] as $controller) {
+        $routes->import($controller, 'attribute');
+    }
 
-    $routes->add('gingerminds_core_login', '/login')
-        ->controller('gingerminds_core.controller.security.login')
-        ->methods(['GET', 'POST']);
-
-    $routes->add('gingerminds_core_logout', '/logout')
-        ->controller('gingerminds_core.controller.security.logout')
-        ->methods(['GET', 'POST']);
-
-    $routes->add('gingerminds_core_profile', '/profile')
-        ->controller('gingerminds_core.controller.admin.profile')
-        ->methods(['GET', 'POST']);
-
-    $routes->add('gingerminds_core_autocomplete', '/_autocomplete/{resource}')
-        ->controller('gingerminds_core.controller.admin.autocomplete')
-        ->requirements(['resource' => '[a-z0-9_]+'])
+    // UX Autocomplete endpoint, behind the admin firewall: the autocompleter of each resource
+    // (ResourceAutocompleter, aliased by the resource name) and the project's own.
+    $routes->add('gingerminds_core_autocomplete', '/_autocomplete/{alias}')
+        ->controller('ux.autocomplete.autocomplete_controller')
+        ->requirements(['alias' => '[A-Za-z0-9_-]+'])
         ->methods(['GET']);
 };

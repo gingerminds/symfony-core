@@ -7,7 +7,7 @@ namespace Gingerminds\CoreBundle\Tests\Functional\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Entity\User\Contributor;
 use Gingerminds\CoreBundle\Entity\User\User;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
 use Symfony\Component\DomCrawler\Crawler;
 
@@ -50,7 +50,7 @@ final class RemoteAutocompleteFieldTest extends ApiTestCase
 
         $select = $this->client->getCrawler()->filter('select[name="user[contributorId]"]');
         self::assertSame('/admin/_autocomplete/contributor', $this->autocompleteUrl($select));
-        self::assertSame(['', UserRepository::NEW_CONTRIBUTOR], $select->filter('option')->extract(['value']));
+        self::assertSame(['', UserType::NEW_CONTRIBUTOR], $select->filter('option')->extract(['value']));
     }
 
     public function testContributorFormSavesARemotelyChosenUser(): void

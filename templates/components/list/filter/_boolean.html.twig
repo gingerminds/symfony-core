@@ -1,10 +1,11 @@
-{# Boolean filter: all | yes | no. Vars: property, config, value, label #}
+{# Boolean filter: `<property>=true|false` (false includes the empty values), empty for all. Vars: property, config, value, label, error? #}
 {% trans_default_domain 'GingermindsCore' %}
 <div class="col-md-2">
     <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
-    <select id="filter-{{ property }}" class="form-select" name="filters[{{ property }}]">
-        <option value="all">{{ 'common.all'|trans }}</option>
-        <option value="yes"{{ value == 'yes' ? ' selected' }}>{{ 'common.yes'|trans }}</option>
-        <option value="no"{{ value == 'no' ? ' selected' }}>{{ 'common.no'|trans }}</option>
+    <select id="filter-{{ property }}" class="form-select{{ (error ?? null) ? ' is-invalid' }}" name="{{ property }}">
+        <option value="">{{ 'common.all'|trans }}</option>
+        <option value="true"{{ value in ['true', '1'] ? ' selected' }}>{{ 'common.yes'|trans }}</option>
+        <option value="false"{{ value in ['false', '0'] ? ' selected' }}>{{ 'common.no'|trans }}</option>
     </select>
+    {% if error ?? null %}<div class="invalid-feedback d-block">{{ error }}</div>{% endif %}
 </div>

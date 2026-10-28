@@ -1,9 +1,10 @@
-{# Date range filter: filters[property][from] / filters[property][to]. Vars: property, config, value, label #}
+{# Date range filter (days of the display timezone): <property>[after] / <property>[before]. Vars: property, config, value, label, error? #}
 {% trans_default_domain 'GingermindsCore' %}
-{% for bound in ['from', 'to'] %}
+{% for bound, bound_label in {after: 'common.from', before: 'common.to'} %}
     <div class="col-md-2">
-        <label for="filter-{{ property }}-{{ bound }}" class="form-label">{{ label }} | {{ ('common.' ~ bound)|trans }}</label>
-        <input type="date" class="form-control" id="filter-{{ property }}-{{ bound }}"
-               name="filters[{{ property }}][{{ bound }}]" value="{{ value is iterable ? (value[bound] ?? '') : '' }}">
+        <label for="filter-{{ property }}-{{ bound }}" class="form-label">{{ label }} | {{ bound_label|trans }}</label>
+        <input type="date" class="form-control{{ (error ?? null) ? ' is-invalid' }}" id="filter-{{ property }}-{{ bound }}"
+               name="{{ property }}[{{ bound }}]" value="{{ value is iterable ? (value[bound] ?? '') : '' }}">
+        {% if loop.first %}{% if error ?? null %}<div class="invalid-feedback d-block">{{ error }}</div>{% endif %}{% endif %}
     </div>
 {% endfor %}

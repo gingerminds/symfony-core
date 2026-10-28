@@ -85,16 +85,38 @@ by default), at every level, hidden when `permission` is not granted, and empty 
 dropped. Core weights: Dashboard `-100`, Administration `100`, its children users `0`,
 contributors `10`, roles `20`, permissions `30`.
 
-Sections sharing an `id` are merged, whatever provider declares them: their children are
-added up (then sorted by weight), the label, icon and weight are those of the first declared
-one (the core provider runs first). `priority` (highest first) is deprecated since 1.5: it is
-read as `weight: -priority`. The active state matches the route and its CRUD siblings
+Entries of one level sharing an `id` are merged, whatever provider declares them: their
+children are added up (then sorted by weight), the label, icon and weight are those of the
+first declared one (the core provider runs first). The active state matches the route and its CRUD siblings
 (`admin_product_*`) exactly, avoiding the Laravel prefix-collision issue.
+
+To remove or change an entry declared elsewhere, listen to `AdminMenuBuiltEvent`: dispatched
+once the entries are merged, before the sort and the permission filter (an entry added or
+replaced there is sorted and filtered like the others). Entries are found by `id` at any level;
+the core ids are `dashboard`, `administration` (`CoreAdminMenuProvider` constants) and the
+resource names `user`, `contributor`, `role`, `permission`. `MenuItem` is immutable:
+`with(...)` returns a copy with the given constructor arguments changed.
+
+```php
+#[AsEventListener]
+final class AdminMenuListener
+{
+    public function __invoke(AdminMenuBuiltEvent $event): void
+    {
+        $event->remove('permission');
+        $event->replace('user', static fn (MenuItem $item): MenuItem => $item->with(icon: 'bi-person', weight: 50));
+        $event->add(new MenuItem('setting.name_p', 'admin_setting_index', translationDomain: 'admin', id: 'setting'), CoreAdminMenuProvider::ADMINISTRATION);
+    }
+}
+```
+
+`remove()` and `replace()` return `false` when the entry is missing (e.g. a resource not
+registered), `add()` under a missing parent throws.
 
 ## `crud/list.html.twig`
 
-Receives `resource`, `items` (Paginator), `list_query`, `filters`, `filter_configs`,
-`is_searchable`, `is_filterable`, `sortable_fields` (the `#[Sortable]` paths) from `AbstractCrudController::index()`.
+Receives `resource`, `items` (Paginator), `list_parameters`, `filters` (active values by parameter), `filter_configs` (admin panel fields),
+`is_searchable` (at least one `#[Searchable]` property), `is_filterable`, `sortable_fields` (the `#[Sortable]` paths) from `AbstractCrudController::index()`.
 Renders the collapsible filters panel (when the entity is searchable/filterable), the card
 with the table, the items-per-page selector and the pagination.
 

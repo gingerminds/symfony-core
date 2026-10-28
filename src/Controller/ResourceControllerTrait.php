@@ -4,53 +4,79 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller;
 
-use Gingerminds\CoreBundle\Repository\RepositoryInterface;
-use Gingerminds\CoreBundle\Resource\ResourceDefinition;
+use Doctrine\Persistence\ManagerRegistry;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
+use Gingerminds\CoreBundle\Resource\ResourceRegistry;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
- * Resolves the resource bound to a controller and its repository.
- *
- * @property CrudContext $context
+ * The services of a resource controller (an AbstractController): subscribed, and read from
+ * its service locator.
  */
 trait ResourceControllerTrait
 {
-    private ?ResourceDefinition $resource = null;
-
-    protected function getResourceName(): string
+    public static function getSubscribedServices(): array
     {
-        foreach ($this->context->resources->all() as $definition) {
-            if (null !== $definition->controller && is_a($this, $definition->controller)) {
-                return $definition->name;
-            }
-        }
-
-        throw new \LogicException(
-            \sprintf('No resource is bound to the controller "%s". Register it with #[AsCrudController] or in "gingerminds_core.resources".', static::class),
-        );
+        return [
+            ...parent::getSubscribedServices(),
+            ResourceRegistry::class => ResourceRegistry::class,
+            FilterParameters::class => FilterParameters::class,
+            'doctrine' => ManagerRegistry::class,
+            'translator' => TranslatorInterface::class,
+            'validator' => ValidatorInterface::class,
+        ];
     }
 
-    protected function getResource(): ResourceDefinition
+    protected function getResourceRegistry(): ResourceRegistry
     {
-        return $this->resource ??= $this->context->resources->get($this->getResourceName());
+        $resources = $this->container->get(ResourceRegistry::class);
+        \assert($resources instanceof ResourceRegistry);
+
+        return $resources;
+    }
+
+    protected function getDoctrine(): ManagerRegistry
+    {
+        $doctrine = $this->container->get('doctrine');
+        \assert($doctrine instanceof ManagerRegistry);
+
+        return $doctrine;
     }
 
     /**
-     * @return RepositoryInterface<object>
+     * @param array<string, mixed> $parameters
      */
-    protected function getRepository(): RepositoryInterface
+    protected function trans(string $key, array $parameters = [], string $domain = 'GingermindsCore'): string
     {
-        $repository = $this->context->doctrine->getRepository($this->getResource()->entity);
+        $translator = $this->container->get('translator');
+        \assert($translator instanceof TranslatorInterface);
 
-        if (!$repository instanceof RepositoryInterface) {
-            throw new \LogicException(
-                \sprintf(
-                    'The repository of "%s" must implement "%s" (extend AbstractRepository).',
-                    $this->getResource()->entity,
-                    RepositoryInterface::class,
-                ),
-            );
-        }
+        return $translator->trans($key, $parameters, $domain);
+    }
 
-        return $repository;
+    protected function getFilterParameters(): FilterParameters
+    {
+        $filterParameters = $this->container->get(FilterParameters::class);
+        \assert($filterParameters instanceof FilterParameters);
+
+        return $filterParameters;
+    }
+
+    protected function getValidator(): ValidatorInterface
+    {
+        $validator = $this->container->get('validator');
+        \assert($validator instanceof ValidatorInterface);
+
+        return $validator;
+    }
+
+    private function getRequestStack(): RequestStack
+    {
+        $requestStack = $this->container->get('request_stack');
+        \assert($requestStack instanceof RequestStack);
+
+        return $requestStack;
     }
 }

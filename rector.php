@@ -16,6 +16,10 @@ return RectorConfig::configure()
         Rector\DeadCode\Rector\Property\RemoveDefaultValueFromAssignedPropertyRector::class => [
             __DIR__ . '/src/Repository/AbstractRepository.php',
         ],
+        // An override of AbstractCrudController::index(Request): the parameter stays.
+        Rector\Symfony\CodeQuality\Rector\ClassMethod\RemoveUnusedRequestParamRector::class => [
+            __DIR__ . '/src/Controller/AbstractTreeCrudController.php',
+        ],
         __DIR__ . '/tests/Application/config/reference.php',
         __DIR__ . '/src/Maker/skeleton',
         __DIR__ . '/tests/Application/var',

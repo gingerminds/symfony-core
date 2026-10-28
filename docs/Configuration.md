@@ -11,6 +11,9 @@ gingerminds_core:
     health_check_path: health        # public GET /health -> {"status": "ok"}
     display_timezone: Europe/Paris   # dates typed and displayed in this timezone, stored in UTC
 
+    profile:
+        form: Gingerminds\CoreBundle\Form\User\ProfileType   # form type of the profile page (/admin/profile)
+
     security:
         authorized_domains: []       # allowed "Origin" hosts of the admin login, [] = no check
 
@@ -46,7 +49,9 @@ gingerminds_core:
 ## Route prefix
 
 `admin_prefix` prefixes every admin route of the bundle (login, dashboard, profile, CRUD
-routes, autocomplete). Protection itself is your firewall's `access_control` (see
+routes, autocomplete): `#[Route]` attributes on the bundle controllers, imported under the prefix
+by `@GingermindsCoreBundle/config/routes.php` (the autocomplete is UX Autocomplete's controller); the CRUD routes by the `gingerminds_crud` loader
+(`resources.*.path` / `route_prefix` for each resource). Protection itself is your firewall's `access_control` (see
 [Authentication](Authentication.md)): keep both in sync.
 
 ## Redirect after save
@@ -119,6 +124,8 @@ Every admin resource is described by a `ResourceDefinition` held in the
 | `template_prefix`    | `@GingermindsCore/pages/<name>`          | `admin/<name>`                |
 | `redirect_after_new` | `redirect_after_save.new` (`index`)      | `redirect_after_save.new` (`index`) |
 | `redirect_after_edit`| `redirect_after_save.edit` (`edit`)      | `redirect_after_save.edit` (`edit`) |
+| `permissions`        | `manage roles` for every attribute of `role` | `{}`: `view\|edit\|edit\|delete <permission>` |
+| `api`                | `true`: `false` stops exposing the bundle entity (and the project entity overriding it) | – |
 
 Sources are merged in this order (last wins): core resources, `#[AsCrudController]`
 controllers, `gingerminds_core.resources` configuration. Only the keys you set are overridden.
@@ -147,7 +154,7 @@ use Gingerminds\CoreBundle\Repository\User\UserRepository;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
-// + #[ApiResource(...)] if the user must stay exposed, see API.md
+// the bundle #[ApiResource] applies (or your own replaces it), see API.md
 class User extends BaseUser
 {
     #[ORM\Column(nullable: true)]
@@ -168,36 +175,91 @@ of the contributor list), then generates its migration.
 
 The bundle then:
 
-- excludes its own `Entity/User/User.php` from the Doctrine mapping and the API resources
+- excludes its own `Entity/User/User.php` from the Doctrine mapping and replaces it by your
+  class among the API resources, with the bundle `#[ApiResource]` unless you declare one
   (no duplicate table, no duplicate API resource —
   this replaces the Laravel `ClassHierarchyResourceNameCollectionFactory` hack);
 - resolves `UserInterface` to your class everywhere (`resolve_target_entities`), so every
   relation (`Contributor::$user`, `ApiToken::$user`...) targets it;
-- uses it in forms, commands, voters and repositories.
+- uses it in forms, commands, the resource voter and repositories.
+
+### Repository
+
+The `repositoryClass` of the project entity is used everywhere, the authentication and the
+forms included: `gingerminds_core.repository.<name>` (`user`, `contributor`, `role`,
+`permission`) is the repository Doctrine gives for the configured entity, autowired by
+`UserRepositoryInterface` / `ContributorRepositoryInterface`. Extend the bundle repository
+(or implement its interface) and register it as usual (`ServiceEntityRepository`, autoconfigured):
+
+```php
+#[ORM\Entity(repositoryClass: App\Repository\UserRepository::class)]
+class User extends BaseUser {}
+
+final class UserRepository extends \Gingerminds\CoreBundle\Repository\User\UserRepository
+{
+    public function loadUserByIdentifier(string $identifier): ?UserInterface { /* sign in by phone too */ }
+}
+```
+
+The API tokens (entity not overridable) go through `ApiTokenRepositoryInterface`
+(`gingerminds_core.repository.api_token`): decorate it to change their storage.
 
 Property mapping, validation constraints and serialization groups **are** inherited from the
-base class; only `#[ORM\Entity]`, `#[ORM\Table]` and `#[ApiResource]` must be restated.
+base class; only `#[ORM\Entity]` and `#[ORM\Table]` must be restated (`#[ApiResource]` is inherited,
+see [API](API.md#overriding-a-bundle-resources-apiresource)).
 The same works for `contributor` (`BaseContributor`), `role` (`BaseRole`, keep the
 `roles_default_unique` unique constraint on `is_external, is_default`) and `permission`
 (`BasePermission`).
 
 ### Overridable entities of another bundle
 
-A bundle shipping its own overridable entities (e.g. `gingerminds/symfony-multisite`) uses
-the same mechanism: in its `loadExtension()`, it registers every bundle entity replaced by a
-project one, whatever the bundle registration order:
+A bundle shipping its own overridable entities and admin resources (e.g.
+`gingerminds/symfony-multisite`) extends `Gingerminds\CoreBundle\Bundle\AbstractResourceBundle`,
+as the core does:
 
 ```php
-use Gingerminds\CoreBundle\DependencyInjection\Compiler\OverriddenEntityPass;
+final class GingermindsMultisiteBundle extends AbstractResourceBundle
+{
+    public const array RESOURCES = [
+        'site' => [
+            'entity' => Site::class,              // default class, `resources.site.entity` overrides it
+            'interface' => SiteInterface::class,  // resolve_target_entities
+            'controller' => SiteController::class,
+            'form' => SiteType::class,
+            'path' => 'sites',
+            'permission' => 'sites',
+        ],
+    ];
 
-if ($entity !== Site::class) {
-    OverriddenEntityPass::registerOverriddenEntity($builder, Site::class);
+    protected function resources(array $config): array
+    {
+        return self::RESOURCES;  // `$config` for conditional resources; `admin: false` for an entity only
+    }
+
+    protected function entityDirectories(): array
+    {
+        return ['Site', 'Language'];  // src/Entity/<dir>, Doctrine attribute mappings
+    }
 }
 ```
 
-The core then excludes `Site` from the Doctrine attribute mapping and from the API Platform
-resources. The bundle still prepends its own `doctrine.orm.mappings` and
-`resolve_target_entities`.
+`loadExtension()` and `prependExtension()` (call the parent when overriding them) then:
+
+- set `<alias>.resource.<name>.entity` (the configured class) for the services;
+- register the replaced bundle entities (`OverriddenEntityPass`): the core excludes them from
+  the Doctrine attribute mapping and from the API Platform resources;
+- register the admin resources (`<alias>_<name>` routes, the bundle translation domain,
+  `@<Bundle>/pages/<name>` templates). A project's `#[AsCrudController(resource: 'site')]` and
+  `gingerminds_core.resources.site` override them, in that order;
+- prepend the `doctrine.orm.mappings` and `resolve_target_entities`.
+
+`resolveConfig()` processes the bundle configuration while prepending (`prependConfigKeys()`:
+`resources` only by default, the other keys may hold env placeholders);
+`AbstractResourceBundle::extensionConfigValue($builder, 'gingerminds_multisite', 'translation.log_channel')`
+reads a raw value of any extension (the last non-empty one).
+
+The bundle repositories extending `AbstractRepository` get the API Platform `ParameterExtension`
+from the core (`RepositoryParameterExtensionPass`): declare them without `setParameterExtension()`.
 
 ### Controller, form, templates, translations
 
@@ -205,9 +267,20 @@ resources. The bundle still prepends its own `doctrine.orm.mappings` and
 gingerminds_core:
     resources:
         user:
-            controller: App\Controller\User\UserController    # extends the bundle UserController
+            controller: App\Controller\User\UserController    # a class extending the bundle UserController
             form: App\Form\UserType                           # extends the bundle UserType
             template_prefix: admin/user
+```
+
+The profile page of the logged in user (`/admin/profile`) is not a resource: its form type is
+the `profile.form` option, a `FormTypeInterface` (usually a class extending the bundle
+`ProfileType`). The bundle template renders the `ProfileType` fields, the extra ones under them
+(`form_rest()`); override `pages/profile/edit.html.twig` to place them.
+
+```yaml
+gingerminds_core:
+    profile:
+        form: App\Form\ProfileType                            # extends the bundle ProfileType
 ```
 
 Templates can also be overridden one by one with Symfony's standard mechanism:
@@ -216,8 +289,8 @@ Templates can also be overridden one by one with Symfony's standard mechanism:
 ### Services
 
 Every bundle service has a `gingerminds_core.*` id: decorate or replace it as usual
-(`bin/console debug:container gingerminds_core`). For instance the API provider of users is
-`gingerminds_core.api.provider.user`.
+(`bin/console debug:container gingerminds_core`). For instance the list parameters factory is
+`gingerminds_core.api.filter_parameters`.
 
 ## Adding a new resource
 
@@ -225,7 +298,7 @@ Every bundle service has a `gingerminds_core.*` id: decorate or replace it as us
 an `#[AsCrudController]` controller: the resource is registered, its CRUD routes generated,
 its permissions picked up by `gingerminds:permissions:sync`. No configuration needed.
 
-A resource without admin controller (e.g. only used by `select-entity` filters and the
+A resource without admin controller (e.g. only used by `relation` filters and the
 autocomplete endpoint) is declared in configuration:
 
 ```yaml

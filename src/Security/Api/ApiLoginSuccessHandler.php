@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Security\Api;
 
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
+use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,7 +25,7 @@ final readonly class ApiLoginSuccessHandler implements AuthenticationSuccessHand
      * @param iterable<LoginResponseEnricherInterface> $enrichers
      */
     public function __construct(
-        private ApiTokenRepository $tokens,
+        private ApiTokenRepositoryInterface $tokens,
         private iterable $enrichers,
         private ?int $tokenTtl,
         private ClockInterface $clock,

@@ -4,56 +4,57 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller\User;
 
-use Gingerminds\CoreBundle\Controller\ControllerTrait;
-use Gingerminds\CoreBundle\Controller\CrudContext;
+use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Form\User\ProfileType;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
-use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Security\Core\Exception\AccessDeniedException;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\CurrentUser;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
-class ProfileController
+/**
+ * The account of the logged in user.
+ */
+class ProfileController extends AbstractController
 {
-    use ControllerTrait;
-
     /**
-     * @param class-string<ProfileType> $formType
+     * @param class-string<FormTypeInterface<UserInterface>> $formType the `profile.form` option
      */
     public function __construct(
-        protected readonly CrudContext $context,
-        protected readonly Security $security,
+        protected readonly ManagerRegistry $doctrine,
+        protected readonly TranslatorInterface $translator,
         protected readonly string $formType = ProfileType::class,
     ) {
     }
 
-    public function __invoke(Request $request): Response
+    #[Route('/profile', name: 'gingerminds_core_profile', methods: ['GET', 'POST'])]
+    #[IsGranted('IS_AUTHENTICATED')]
+    public function __invoke(Request $request, #[CurrentUser] UserInterface $user): Response
     {
-        $user = $this->security->getUser();
-
-        if (!$user instanceof UserInterface) {
-            throw new AccessDeniedException();
-        }
-
-        $form = $this->context->formFactory->create($this->formType, $user);
+        $form = $this->createForm($this->formType, $user);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $repository = $this->context->doctrine->getRepository($user::class);
+            $repository = $this->doctrine->getRepository($user::class);
 
             if ($repository instanceof RepositoryInterface) {
-                $repository->save($user, $form);
+                $repository->save($user);
             }
 
-            $this->addFlash($request, 'success', $this->trans('flash.profile_updated'));
+            $this->addFlash('success', $this->translator->trans('flash.profile_updated', [], 'GingermindsCore'));
 
-            return $this->redirectToRoute('gingerminds_core_profile');
+            return $this->redirectToRoute('gingerminds_core_profile', status: Response::HTTP_SEE_OTHER);
         }
 
+        // AbstractController::render() answers 422 for a submitted invalid form.
         return $this->render('@GingermindsCore/pages/profile/edit.html.twig', [
             'user' => $user,
-            'form' => $form->createView(),
-        ], new Response(status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK));
+            'form' => $form,
+        ]);
     }
 }

@@ -7,8 +7,8 @@ namespace Gingerminds\CoreBundle\Entity\User;
 use ApiPlatform\Metadata\ApiProperty;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Enum\Civility;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
+use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
-abstract class BaseContributor implements ContributorInterface, TimestampableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseContributor implements ContributorInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -30,6 +30,9 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
         self::GROUP_EDIT,
         BaseUser::GROUP_LIST,
         BaseUser::GROUP_READ,
+        // A new contributor written as a nested document of the user.
+        BaseUser::GROUP_CREATE,
+        BaseUser::GROUP_EDIT,
     ];
 
     #[ORM\Id]
@@ -48,17 +51,20 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     #[Assert\Length(max: 255)]
     #[Groups(self::PROFILE_GROUPS)]
     #[Sortable]
+    #[Searchable]
     protected ?string $lastname = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     #[Groups(self::PROFILE_GROUPS)]
+    #[Searchable]
     protected ?string $firstname = null;
 
     #[ORM\Column(length: 3, nullable: true)]
     #[Assert\Length(max: 3)]
     #[Groups(self::PROFILE_GROUPS)]
+    #[Searchable]
     protected ?string $trigram = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -67,6 +73,7 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
     #[ORM\OneToOne(targetEntity: UserInterface::class, inversedBy: 'contributor')]
     #[ORM\JoinColumn(name: 'user_id', nullable: true, onDelete: 'SET NULL')]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT])]
+    #[EagerLoad]
     protected ?UserInterface $user = null;
 
     public function getId(): ?int
@@ -129,25 +136,28 @@ abstract class BaseContributor implements ContributorInterface, TimestampableInt
         return $this->user;
     }
 
+    /**
+     * Keeps both sides in sync: the user left loses this contributor, the new one gets it.
+     */
     public function setUser(?UserInterface $user): void
     {
+        if ($this->user === $user) {
+            return;
+        }
+
+        $previous = $this->user;
         $this->user = $user;
+
+        if ($previous?->getContributor() === $this) {
+            $previous->setContributor(null);
+        }
+
         $user?->setContributor($this);
     }
 
     public function getFullName(): string
     {
         return trim(\sprintf('%s %s', $this->firstname, $this->lastname));
-    }
-
-    public static function getEagerLoads(): array
-    {
-        return ['user'];
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['firstname', 'lastname', 'trigram'];
     }
 
     public function __toString(): string

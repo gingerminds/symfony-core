@@ -1,0 +1,33 @@
+{#
+ # A level of an admin tree (AbstractTreeCrudController, crud/list_tree.html.twig), recursive:
+ # the drag handle, the label, an "add a child" link and the row actions of each node.
+ #
+ #     {% block tree %}{% include '@GingermindsCore/components/list/_tree.html.twig' with {nodes: roots} %}{% endblock %}
+ #
+ # Vars: nodes, children (by parent id), resource, route_parameters; parent_id, depth (0).
+ # The label of a node is its __toString().
+ #}
+{% trans_default_domain 'GingermindsCore' %}
+{% import '@GingermindsCore/components/macros.html.twig' as gm %}
+{% set depth = depth ?? 0 %}
+{% set route_parameters = route_parameters ?? {} %}
+<div class="sortable-level" data-parent-id="{{ parent_id ?? '' }}">
+    {% for node in nodes %}
+        <div class="sortable-item" data-item-id="{{ node.id }}">
+            <div class="tree-item-row d-flex align-items-center gap-2 p-2 border-bottom" style="padding-left: {{ depth * 1.5 + 0.5 }}rem !important">
+                <i class="bi bi-grip-vertical drag-handle text-muted"></i>
+                <span class="flex-grow-1">{{ node }}</span>
+                {% if is_granted('CREATE', resource.name) %}
+                    <a href="{{ path(resource.route('new'), route_parameters|merge({parent_id: node.id})) }}" class="btn btn-sm btn-outline-success" title="{{ 'action.create'|trans }}">
+                        <i class="bi bi-plus-lg"></i>
+                        <span class="visually-hidden">{{ 'action.create'|trans }}</span>
+                    </a>
+                {% endif %}
+                {{ gm.row_actions(node, resource, route_parameters, node ~ '') }}
+            </div>
+            {% if children[node.id] is defined %}
+                {% include '@GingermindsCore/components/list/_tree.html.twig' with {nodes: children[node.id], parent_id: node.id, depth: depth + 1} %}
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>

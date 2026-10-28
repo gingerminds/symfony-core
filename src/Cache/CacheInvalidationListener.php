@@ -6,8 +6,8 @@ namespace Gingerminds\CoreBundle\Cache;
 
 use Doctrine\ORM\Event\OnFlushEventArgs;
 use Doctrine\ORM\Event\PostFlushEventArgs;
-use Gingerminds\CoreBundle\Model\CacheableResourceInterface;
-use Gingerminds\CoreBundle\Model\CacheCascadeInterface;
+use Gingerminds\CoreBundle\Model\Cacheable;
+use Gingerminds\CoreBundle\Model\CacheMetadata;
 use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Contracts\Service\ResetInterface;
 
@@ -69,8 +69,14 @@ final class CacheInvalidationListener implements ResetInterface
 
     private function collect(?object $entity): void
     {
-        if ($entity instanceof CacheableResourceInterface) {
-            $tag = $entity::getCacheKey();
+        if (null === $entity) {
+            return;
+        }
+
+        $cacheable = CacheMetadata::cacheable($entity::class);
+
+        if ($cacheable instanceof Cacheable) {
+            $tag = $cacheable->key;
             $id = method_exists($entity, 'getId') ? $entity->getId() : null;
 
             $this->tags[$this->keyBuilder->listTag($tag)] = true;
@@ -80,10 +86,8 @@ final class CacheInvalidationListener implements ResetInterface
             }
         }
 
-        if ($entity instanceof CacheCascadeInterface) {
-            foreach ($entity::getCascadeCacheKeys() as $parentTag) {
-                $this->tags[$this->keyBuilder->resourceTag($parentTag)] = true;
-            }
+        foreach (CacheMetadata::cascadeKeys($entity::class) as $parentTag) {
+            $this->tags[$this->keyBuilder->resourceTag($parentTag)] = true;
         }
     }
 }

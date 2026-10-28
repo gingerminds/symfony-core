@@ -3,8 +3,10 @@
  # Port of the Laravel core `layouts/crud/list`.
  #
  # Receives the AbstractCrudController::index() variables: resource, items
- # (Paginator), list_query, filters, filter_configs, is_searchable,
- # is_filterable, sortable_fields (the `#[Sortable]` paths).
+ # (Paginator), list_parameters (the valued list parameters), filters (the
+ # active filter values by parameter), filter_configs (the admin panel fields
+ # of the `#[Filter]` properties), is_searchable, is_filterable,
+ # sortable_fields (the `#[Sortable]` paths).
  #
  # Configuration variables, set at the TOP of the child template (outside any
  # block): Twig runs a child template's top-level `{% set %}` before
@@ -59,7 +61,7 @@
 
 {% block head %}
     {% if show_pagination %}
-        {% include '@GingermindsCore/components/list/_pagination_links.html.twig' with {items: items, list_query: list_query, route: route, route_parameters: route_parameters} only %}
+        {% include '@GingermindsCore/components/list/_pagination_links.html.twig' with {items: items, route: route, route_parameters: route_parameters} only %}
     {% endif %}
 {% endblock %}
 
@@ -101,7 +103,7 @@
                             {% block table_head %}
                                 <tr>
                                     {% for column in columns %}
-                                        {{ gm.sort_header(column, list_query, route, route_parameters, sortable_fields ?? [], domain) }}
+                                        {{ gm.sort_header(column, route, route_parameters, sortable_fields ?? [], domain) }}
                                     {% endfor %}
                                 </tr>
                             {% endblock %}
@@ -141,7 +143,7 @@
                         </p>
                     </div>
                     {% if show_pagination %}
-                        {% include '@GingermindsCore/components/list/_pagination.html.twig' with {items: items, list_query: list_query, route: route, route_parameters: route_parameters} only %}
+                        {% include '@GingermindsCore/components/list/_pagination.html.twig' with {items: items, route: route, route_parameters: route_parameters} only %}
                     {% endif %}
                 </div>
             {% endblock %}

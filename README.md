@@ -44,7 +44,7 @@ database, assets).
 
 **API**
 
-- [API](docs/API.md) — providers, processors, overriding resources, context headers.
+- [API](docs/API.md) — native reads and writes, list parameters, relations by id, overriding resources, context headers.
 - [Cache](docs/Cache.md) — API response cache and invalidation.
 
 ## Development

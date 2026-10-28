@@ -6,7 +6,7 @@ namespace Gingerminds\CoreBundle\Security\Api;
 
 use Gingerminds\CoreBundle\Entity\Security\ApiToken;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
+use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepositoryInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Component\Security\Core\Exception\CustomUserMessageAuthenticationException;
 use Symfony\Component\Security\Http\AccessToken\AccessTokenHandlerInterface;
@@ -15,7 +15,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 final readonly class ApiTokenHandler implements AccessTokenHandlerInterface
 {
     public function __construct(
-        private ApiTokenRepository $tokens,
+        private ApiTokenRepositoryInterface $tokens,
         private ClockInterface $clock,
     ) {
     }

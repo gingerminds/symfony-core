@@ -11,7 +11,7 @@ namespace <?= $namespace ?>;
 // Index the default sort and the sortable / filtered columns once the table can grow:
 // #[ORM\Index(name: '<?= $resource->snakePlural ?>_name_idx', fields: ['name'])]
 <?php if ($api): include $skeleton_directory . '/ApiResource.tpl.php'; endif ?>
-class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'SearchableInterface', 'TimestampableInterface', ...$interfaces, ...([] !== $eager_loads ? ['EagerLoadableInterface'] : []), '\Stringable']) ?>
+class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'TimestampableInterface', ...$interfaces, '\Stringable']) ?>
 
 {
     use TimestampableTrait;
@@ -34,31 +34,17 @@ class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'Sea
 <?php endif ?>
     private ?int $id = null;
 
+    // TODO: mark the list parameters of the API collection and the admin list on the properties:
+    // #[Sortable] (`order[name]=asc|desc`), #[Searchable] (`search=`; #[Searchable(paths: ['name'])]
+    // on an association searches `relation.name`), #[Filter] (`status=draft`, `price[gte]=10`,
+    // `publishedAt[after]=2024-01-01`, `category=5`; label/choices for the admin panel), and the
+    // relations shown by the admin list or the API list group with #[EagerLoad] (no query per row).
+
     public function __toString(): string
     {
         return (string) $this->id;
     }
 
-    public static function getSearchableFields(): array
-    {
-        // TODO: list the fields matched by `filters[search]` (`relation.field` supported).
-        return [];
-    }
-
-<?php if ([] !== $eager_loads): ?>
-    /**
-     * Relations shown by the admin list or the API list group (no query per row).
-     */
-    public static function getEagerLoads(): array
-    {
-        return [<?= implode(', ', $eager_loads) ?>];
-    }
-
-<?php else: ?>
-    // Relations shown by the admin list or the API list group: implement EagerLoadableInterface
-    // and return them from getEagerLoads(), e.g. ['category', 'tags'] (no query per row).
-
-<?php endif ?>
     public function getId(): ?int
     {
         return $this->id;

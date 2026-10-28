@@ -15,7 +15,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[AsCommand(name: 'gingerminds:create:user', description: 'Create a user with its contributor and a role')]
@@ -24,7 +23,6 @@ final class CreateUserCommand extends Command
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ResourceRegistry $resources,
-        private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly ValidatorInterface $validator,
     ) {
         parent::__construct();
@@ -83,13 +81,14 @@ final class CreateUserCommand extends Command
         $contributor->setLastname((string) $lastname);
         $contributor->setFirstname((string) $firstname);
 
-        return $this->saveUser($io, $user, $contributor, (string) $password, (string) $roleName);
+        return $this->saveUser($io, $user, $contributor, (string) $roleName);
     }
 
     /**
-     * Validates the user, then hashes its password and persists it with its contributor.
+     * Validates the user, then persists it with its contributor (its plain password is hashed
+     * on flush by UserPasswordListener).
      */
-    private function saveUser(SymfonyStyle $io, UserInterface $user, ContributorInterface $contributor, string $password, string $roleName): int
+    private function saveUser(SymfonyStyle $io, UserInterface $user, ContributorInterface $contributor, string $roleName): int
     {
         $violations = $this->validator->validate($user);
 
@@ -100,9 +99,6 @@ final class CreateUserCommand extends Command
 
             return Command::FAILURE;
         }
-
-        $user->setPassword($this->passwordHasher->hashPassword($user, $password));
-        $user->setPlainPassword(null);
 
         $this->entityManager->wrapInTransaction(function () use ($user, $contributor): void {
             $this->entityManager->persist($user);
