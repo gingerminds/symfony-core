@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Tests\Application\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Gingerminds\CoreBundle\Model\CacheCascade;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Tests\Application\Repository\CategoryRepository;
@@ -12,6 +13,8 @@ use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 #[ORM\Table(name: 'categories')]
+// Embedded in the product responses.
+#[CacheCascade(['product'])]
 class Category implements ResourceInterface, \Stringable
 {
     #[ORM\Id]

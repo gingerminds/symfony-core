@@ -93,7 +93,7 @@ return static function (DefinitionConfigurator $definition): void {
                 ->addDefaultsIfNotSet()
                 ->children()
                     ->booleanNode('enabled')
-                        ->info('Global switch of the API response cache of CacheableResourceInterface resources.')
+                        ->info('Global switch of the API response cache of the #[Cacheable] resources.')
                         ->defaultTrue()
                     ->end()
                     ->integerNode('default_ttl')->defaultValue(3600)->min(0)->end()

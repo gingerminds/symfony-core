@@ -17,7 +17,7 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `SearchableModelInterface` (`$searchable`) | `#[Searchable]` on the properties | Searched paths are the marked properties only. |
 | `EagerLoadableModelInterface` (`$with`) | `#[EagerLoad]` on the associations | `#[EagerLoad(paths: ['language'])]` for `translations.language`. |
 | `FilterableModelInterface` | `#[Filter]` on the properties | API Platform filters (`QueryParameter`), shared by the API and the admin. See [List parameters](partials/filters.md). |
-| `CacheableResourceInterface`, `CacheCascadeInterface` | same names | Cache stores API responses, see [Cache](Cache.md). |
+| `CacheableResourceInterface`, `CacheCascadeInterface` | `#[Cacheable(key: ..., ttl: ...)]`, `#[CacheCascade([...])]` on the class | Parent classes included. Cache stores API responses, see [Cache](Cache.md). |
 | timestamps | `TimestampableInterface`/`Trait` | Doctrine listener. Soft deletes are not ported: deletions are real. |
 | `AbstractRepository::get(Request)` | `AbstractRepository::paginate(Parameters)` | `FilterParameters::fromQuery()`; repositories no longer read the request. |
 | `AbstractRepository::update(FormRequest, Model)` | form + `save(entity)` (`beforeSave()` hook) | Mapping, unmapped fields included, is done by the form (event listeners); the repository only persists. |

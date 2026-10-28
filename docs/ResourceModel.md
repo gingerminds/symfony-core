@@ -36,8 +36,8 @@ All of them live under `Gingerminds\CoreBundle\Model`.
 | `#[Searchable]` (property attribute) | Enables `search=` (and the admin search field): case-insensitive `LIKE` on the marked properties, or on `relation.field` with `#[Searchable(paths: ['field'])]` on an association; any other field is not searched. `SearchableFields::of(Product::class)` returns the paths (parent classes included). |
 | `#[Filter]` (property attribute) | A list parameter named after the property (`status=draft`, `price[gte]=10`, `publishedAt[after]=2024-01-01`, `category=5`) on the API collections and the admin lists, with its admin panel field (`label`, `choices`, `multiple`, `resource`; `admin: false` for the API only). See [List parameters](partials/filters.md) and [Facets](partials/facets.md). |
 | `#[EagerLoad]` (property attribute) | The marked associations (`#[EagerLoad(paths: ['language'])]` on `$translations` also loads `translations.language`; parents and traits included, `EagerLoads::of()`) are loaded with the entities on every repository read (lists, API reads, admin edit page). Fixes N+1 at the source. To-one paths are fetch-joined; on paginated lists, a path going through a collection is loaded after the page, one `WHERE IN` query per path (joining it would paginate through `DISTINCT` subqueries over the whole table). |
-| `CacheableResourceInterface` | Caches the API responses of the resource. See [Cache](Cache.md). |
-| `CacheCascadeInterface` | Invalidates other resources' cache when this entity changes. See [Cache](Cache.md). |
+| `#[Cacheable(key: 'product')]` (class attribute) | Caches the API responses of the resource (`ttl` in seconds, default `gingerminds_core.cache.default_ttl`). See [Cache](Cache.md). |
+| `#[CacheCascade(['product'])]` (class attribute) | Invalidates the cache of the given `#[Cacheable]` keys when this entity changes. See [Cache](Cache.md). |
 | `TimestampableInterface` + `TimestampableTrait` | `createdAt`/`updatedAt` filled automatically (Eloquent timestamps). |
 
 ## Repository

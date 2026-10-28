@@ -216,6 +216,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `PermissionNameVoter` caches its support (`supportsAttribute()` / `supportsType()`): lowercase
   `{action} {object}` names without subject only.
 
+- **BC break** API response cache: `#[Cacheable(key: 'event', ttl: null)]` and
+  `#[CacheCascade(['event'])]` class attributes instead of `CacheableResourceInterface`
+  (`getCacheKey()` / `getCacheTtl()`), `CacheableResourceTrait` and `CacheCascadeInterface`
+  (`getCascadeCacheKeys()`). They are read on the class or its parents, the closest declaration
+  winning (`CacheMetadata`).
+
 ### Removed
 
 - **BC break** `RepositoryInterface::getEntityClass()`: Doctrine's `getClassName()` instead.

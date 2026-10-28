@@ -11,14 +11,13 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Gingerminds\CoreBundle\Model\CacheableResourceInterface;
+use Gingerminds\CoreBundle\Model\Cacheable;
 use Gingerminds\CoreBundle\Model\EagerLoad;
 use Gingerminds\CoreBundle\Model\Filter;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
-use Gingerminds\CoreBundle\Model\Trait\CacheableResourceTrait;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Gingerminds\CoreBundle\Tests\Application\Enum\ProductStatus;
 use Gingerminds\CoreBundle\Tests\Application\Repository\ProductRepository;
@@ -39,9 +38,9 @@ use Symfony\Component\Validator\Constraints as Assert;
     ],
     paginationClientItemsPerPage: true,
 )]
-class Product implements ResourceInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
+#[Cacheable(key: 'product')]
+class Product implements ResourceInterface, TimestampableInterface, \Stringable
 {
-    use CacheableResourceTrait;
     use TimestampableTrait;
 
     #[ORM\Id]
@@ -102,11 +101,6 @@ class Product implements ResourceInterface, CacheableResourceInterface, Timestam
     public function __construct()
     {
         $this->tags = new ArrayCollection();
-    }
-
-    public static function getCacheKey(): string
-    {
-        return 'product';
     }
 
     public function getId(): ?int

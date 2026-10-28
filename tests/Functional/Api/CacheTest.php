@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Tests\Functional\Api;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
 
 /**
- * API response cache of CacheableResourceInterface resources.
+ * API response cache of the #[Cacheable] resources.
  */
 final class CacheTest extends ApiTestCase
 {
@@ -69,6 +70,28 @@ final class CacheTest extends ApiTestCase
 
         $this->api('GET', '/api/products/' . $id, $this->token);
         $this->assertStatus(404);
+    }
+
+    public function testCascadeEntityInvalidatesTheResourcesItIsEmbeddedIn(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $category = new Category('Computers');
+        $entityManager->persist($category);
+        $product = $this->createProduct('Laptop')->setCategory($category);
+        $entityManager->flush();
+        $id = $product->getId();
+
+        $this->api('GET', '/api/products/' . $id, $this->token);
+        $this->api('GET', '/api/products/' . $id, $this->token);
+        self::assertSame('HIT', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->find(Category::class, $category->getId())?->setName('Laptops');
+        $entityManager->flush();
+
+        $data = $this->api('GET', '/api/products/' . $id, $this->token);
+        self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+        self::assertSame('Laptops', $data['category']['name']);
     }
 
     public function testNonCacheableResourcesAreNotCached(): void
