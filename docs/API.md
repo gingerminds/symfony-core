@@ -4,10 +4,14 @@ The API layer runs on API Platform 4 (Symfony integration, Doctrine ORM).
 
 ## Principle: native API Platform, the admin's repository
 
-- **Reads** — `Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider` calls
-  `RepositoryInterface::paginate()` / `findOneForRead()` with a `ListQuery` built from the
-  request: pagination (`page`, `itemsPerPage`), `sortBy`/`sort`, `filters[...]`,
-  `filters[search]`, eager loads. The API Platform Doctrine filters are not needed.
+- **Reads** — the native API Platform Doctrine providers. They start from the repository's
+  `createListQueryBuilder()` (the `repositoryMethod` of the operations' Doctrine state options,
+  set for every entity whose repository is a bundle `RepositoryInterface`): the context scope of
+  `configureListQueryBuilder()` and the `#[EagerLoad]` associations, collections and items alike.
+  Collections take the list parameters of the entity attributes — `order[<path>]`, `search`, the
+  `#[Filter]` properties, see [List parameters](partials/filters.md) — with the native pagination
+  (`page`, `itemsPerPage`) and API Platform's eager loading; a sorted page ends with the
+  identifier (`IdentifierOrderExtension`). The admin lists apply the same parameters.
 - **Writes** — plain API Platform: the payload is **deserialized** into the entity (the
   `denormalizationContext` groups), **validated** by the entity constraints (`#[Assert\...]`,
   `#[UniqueEntity]`, validation groups in `validationContext`), then **persisted by the Doctrine
@@ -61,23 +65,8 @@ confirmation field (`RepeatedType`); the API takes the password once.
 
 ## Wiring a resource
 
-`bin/console make:gm:resource Catalog/Product --api` generates everything. By hand, a provider
-(the processor is the native one):
-
-```php
-namespace App\State\Catalog;
-
-/**
- * @extends ResourceProvider<Product>
- */
-final class ProductProvider extends ResourceProvider
-{
-    public function __construct(ProductRepository $repository, RequestStack $requestStack)
-    {
-        parent::__construct($repository, $requestStack);
-    }
-}
-```
+`bin/console make:gm:resource Catalog/Product --api` generates everything. By hand, an
+`#[ApiResource]` on the entity is all it takes (no provider, no processor):
 
 ```php
 #[ApiResource(
@@ -93,13 +82,12 @@ final class ProductProvider extends ResourceProvider
     ],
     normalizationContext: ['groups' => ['product:read']],
     denormalizationContext: ['groups' => ['product:edit']],
-    provider: ProductProvider::class,
     paginationClientItemsPerPage: true,
 )]
 class Product implements ResourceInterface { /* ... */ }
 ```
 
-Everything shared by the operations (provider, serialization contexts) is declared once on
+Everything shared by the operations (serialization contexts) is declared once on
 `#[ApiResource]` and inherited by every operation; an operation only overrides what differs
 (`security`, the list group of `GetCollection`, the groups of a creation that differs from an
 edition: `denormalizationContext` + `validationContext` on `Post`, see `User`).
@@ -113,24 +101,21 @@ the decorated processor.
 > The API is open by default: an operation is only closed by its `security` expression, see
 > [Authentication](Authentication.md#protecting-api-operations).
 
-### Mapping URI variables to filters
+### Nested endpoints and forced filters
 
-For nested endpoints (`/api/properties/{property}/rooms`), turn the URI variable into a
-filter in the provider (the Laravel `addFilters()`), then declare the filter on the entity
-(`getFilters()`):
-
-```php
-protected function configureListQuery(ListQuery $query, Operation $operation, array $uriVariables, array $context): ListQuery
-{
-    return isset($uriVariables['property']) ? $query->withFilter('property', $uriVariables['property']) : $query;
-}
-```
+A nested endpoint (`/api/properties/{property}/rooms`) declares its `uriVariables` link
+(`new Link(fromClass: Property::class, toProperty: 'property')`): the native Doctrine provider
+joins it. A filter forced on a collection (the published items only) is a provider decorating the
+native one that sets the parameter's value (see [Facets](partials/facets.md)), or a condition of
+`configureListQueryBuilder()` when every read needs it.
 
 ## Formats and pagination
 
 Use **JSON-LD** (`Accept: application/ld+json`, API Platform's default): collections carry
-`totalItems` and a `view` with the `first`/`last`/`previous`/`next` page links. With plain
-`application/json`, collections are bare arrays without pagination metadata.
+`totalItems`, a `view` with the `first`/`last`/`previous`/`next` page links, a `search` template
+of the list parameters, and the computed filters (`filters`, see [Facets](partials/facets.md)).
+With plain `application/json`, collections are bare arrays without pagination metadata nor
+computed filters. The OpenAPI document (`/api/docs`) lists every list parameter.
 
 ## Overriding a bundle resource's `#[ApiResource]`
 
@@ -143,7 +128,7 @@ Laravel `ClassHierarchyResourceNameCollectionFactory` is needed).
 Serialization groups, validation constraints, the repository hooks and the relation ids, on the
 other hand, live on the base class **properties**, the repository and global services: they are
 inherited. Restate the bundle `#[ApiResource]` (operations, groups, `validationContext`) and
-reuse its provider service; a read-only exposure:
+nothing else (the native providers apply); a read-only exposure:
 
 ```php
 #[ApiResource(
@@ -156,7 +141,6 @@ reuse its provider service; a read-only exposure:
         // no Post/Patch/Delete: read-only
     ],
     normalizationContext: ['groups' => [BaseUser::GROUP_READ]],
-    provider: 'gingerminds_core.api.provider.user',
     paginationClientItemsPerPage: true,
 )]
 class User extends BaseUser {}

@@ -28,7 +28,6 @@ use Gingerminds\CoreBundle\Form\User\ContributorType;
 use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Menu\AdminMenuProviderInterface;
-use Gingerminds\CoreBundle\Repository\Filter\AsFilterHandler;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
 use Gingerminds\CoreBundle\Security\Api\ApiRateLimitListener;
 use Gingerminds\CoreBundle\Security\Api\LoginResponseEnricherInterface;
@@ -180,13 +179,6 @@ final class GingermindsCoreBundle extends AbstractBundle
                 ], static fn (array|string|null $value): bool => null !== $value));
                 $definition->addTag('controller.service_arguments');
                 $definition->setPublic(true);
-            },
-        );
-
-        $builder->registerAttributeForAutoconfiguration(
-            AsFilterHandler::class,
-            static function (ChildDefinition $definition, AsFilterHandler $attribute): void {
-                $definition->addTag('gingerminds_core.filter_handler', ['type' => $attribute->type]);
             },
         );
 

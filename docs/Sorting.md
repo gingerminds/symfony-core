@@ -4,7 +4,7 @@ Two unrelated features.
 
 ## 1. Column sorting (`#[Sortable]`)
 
-`?sortBy=property&sort=asc|desc`, on admin lists and API collections, only on the properties
+`?order[property]=asc|desc` (API Platform `SortFilter`), on admin lists and API collections, only on the properties
 marked `#[Sortable]`; on a to-one association, `paths` lists the sortable fields of the related
 entity (the join is added automatically):
 
@@ -16,17 +16,17 @@ use Gingerminds\CoreBundle\Model\Sortable;
 private string $name = '';
 
 #[ORM\ManyToOne]
-#[Sortable(paths: ['name'])] // sortBy=category.name
+#[Sortable(paths: ['name'])] // order[category.name]=desc
 private ?Category $category = null;
 ```
 
-Any other path is ignored, even a mapped one (`password`, `category.id`): a list never sorts
+Any other path is ignored (no parameter declares it), even a mapped one (`password`, `category.id`): a list never sorts
 on a field nobody chose, nor joins at will. Every list also ends its ordering with the
 identifier, so pagination stays stable. `SortableFields::of(Product::class)` returns the
 allowed paths (parent classes included).
 
 In `crud/list.html.twig`, a column whose `property` is a sortable path renders a sort link
-(`gm_sort_path()`), toggling the direction on each click; `sortable: false` opts a column out.
+(`gm_sort_path(route, property)`), toggling the direction on each click and keeping the filters; `sortable: false` opts a column out.
 
 ## 2. Drag & drop reordering (`crud/list_tree.html.twig`)
 

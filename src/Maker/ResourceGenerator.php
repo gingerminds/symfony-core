@@ -11,7 +11,6 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use Doctrine\Persistence\ManagerRegistry;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
 use Gingerminds\CoreBundle\Controller\AbstractCrudController;
 use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Maker\Extension\SkeletonTemplate;
@@ -26,7 +25,6 @@ use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Serializer\Attribute\Groups;
 
@@ -84,14 +82,12 @@ final readonly class ResourceGenerator
             $uses[] = Patch::class;
             $uses[] = Post::class;
             $uses[] = Groups::class;
-            $uses[] = $resource->providerClass();
         }
 
         $skeleton = $this->skeleton('Entity.tpl.php', $resource, [
             'resource' => $resource,
             'api' => $api,
             'repository_class' => self::shortName($resource->repositoryClass()),
-            'provider_class' => self::shortName($resource->providerClass()),
             // Extra implemented interfaces / used traits (short names, imported with `uses`).
             'interfaces' => [],
             'traits' => [],
@@ -154,28 +150,10 @@ final readonly class ResourceGenerator
         ]);
     }
 
-    /**
-     * API Platform state provider. Writes need no processor: API Platform deserializes and
-     * validates the entity, the Doctrine processor persists it through the repository save hooks.
-     */
-    public function generateApi(Generator $generator, ConsoleStyle $io, ResourceName $resource): void
-    {
-        $this->generateClassFromSkeleton($generator, $io, $resource->providerClass(), $this->skeleton('Provider.tpl.php', $resource, [
-            'entity_class' => self::shortName($resource->entityClass()),
-            'repository_class' => self::shortName($resource->repositoryClass()),
-        ], [
-            ResourceProvider::class,
-            $resource->entityClass(),
-            $resource->repositoryClass(),
-            RequestStack::class,
-        ]));
-    }
-
     public function apiResourceSnippet(ResourceName $resource): string
     {
         return $this->render($this->skeletonDirectory . '/ApiResource.tpl.php', [
             'resource' => $resource,
-            'provider_class' => self::shortName($resource->providerClass()),
         ]);
     }
 

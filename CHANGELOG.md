@@ -8,6 +8,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** Lists: one engine, the API Platform filters, for the API collections and the admin
+  lists, with the same query parameters. Before → after: `page`, `itemsPerPage` (unchanged);
+  `sortBy=x&sort=desc` → `order[x]=desc` (API Platform `SortFilter`, `#[Sortable]` paths only, a
+  wrong direction is a `422` on the API); `filters[search]=` → `search=`; `filters[x]=` → `x=`;
+  number `filters[x][from|to]` → `x[gte|lte]` (also `gt`, `lt`, `ne`); date `filters[x][from|to]`
+  → `x[after|before]` (days of the display timezone); boolean `yes|no|all` → `true|false|1|0`
+  (`false` still matches NULL, any other value is ignored); `all` is no longer a value (an empty
+  admin field is not a filter); relations by id unchanged (`category=5`, `tags[]=3`,
+  `category=null`). `FilterableInterface::getFilters()` is replaced by the `#[Filter]` property
+  attribute, which declares both the filter (`type`: `exact`, `partial`, `number`, `date`,
+  `boolean`, `enum`, `relation`, guessed from the Doctrine mapping, or an API Platform filter
+  service id / class) and the admin panel field (`label`, `choices`, `multiple`, `resource`,
+  `template`; `admin: false` replaces `disabled_for_back`; `entity` is read from the mapping;
+  `select-model` / `select-state` aliases are gone). `FilterParameters` builds the
+  `QueryParameter`s from `#[Sortable]`, `#[Searchable]` and `#[Filter]`, and
+  `FilterParametersResourceMetadataCollectionFactory` adds them to every collection operation of a
+  Doctrine entity resource (OpenAPI, Hydra `search`, validation by API Platform). Custom filters,
+  all API Platform `FilterInterface`s: `DisplayDateFilter`, `NullableBooleanFilter`, `EnumFilter`
+  (value or case name), `RelationFilter` (ids, `null`, to-many by subquery) and `SearchableFilter`
+  (OR of LIKEs, associations LEFT joined); `exact`, `partial`, `number` and the sorts use
+  `ExactFilter`, `PartialSearchFilter`, `ComparisonFilter` and `SortFilter`.
+  `ListQuery`, `FilterHandlerRegistry`, `FilterHandlerInterface`, `AsFilterHandler`, the six
+  handlers, the `gingerminds_core.filter_handler` tag and `ResourceProvider` (and the
+  `gingerminds_core.api.provider.*` services) are removed: the API uses the native Doctrine
+  providers, starting from the repository's `createListQueryBuilder()` (the `repositoryMethod` of
+  the Doctrine state options, set automatically when the repository is a `RepositoryInterface`:
+  `configureListQueryBuilder()` scope and `#[EagerLoad]` joins), with the native pagination (the
+  API Platform default page size, not the repository's) and a final order by identifier
+  (`IdentifierOrderExtension`). Repository: `paginate(Parameters $parameters, int $page = 1,
+  ?int $itemsPerPage = null)`, `createListQueryBuilder()` without argument,
+  `applyParameters(QueryBuilder, Parameters)`, `findOneForRead(int|string $id)`,
+  `configureListQueryBuilder(QueryBuilder $qb)`, `countForList(Parameters)`;
+  `findForList()` and `setFilterHandlerRegistry()` are removed, `setParameterExtension()`
+  (autowired) replaces the latter. Facets (`AbstractFacetRepository`, `AbstractFilterComputeService`)
+  take the valued `Parameters` (the collection operation's on the API) instead of a `ListQuery`;
+  `AbstractFilterComputeService::getEntityClass()` and its template are gone, a computed date
+  filter's `type` is always `date`. Admin: `AbstractCrudController::createListQuery()` becomes
+  `createListParameters(Request): Parameters`; the index template gets `list_parameters` instead
+  of `list_query`, `filters` holds the active values by parameter, `filter_configs` the
+  `#[Filter]` panel fields (`type`: `select`, `text`, `number`, `date`, `boolean`, `entity`; the
+  `_select_entity` partial is renamed `_entity`); `gm_list_path(route, overrides, routeParameters)`,
+  `gm_sort_path(route, property, routeParameters)`, `gm_sort_direction(property)` and the
+  `sort_header(column, route, ...)` macro read the current request (no `ListQuery` argument).
+  `make:gm:api` no longer generates a provider (it prints the `#[ApiResource]`), the
+  `Provider.tpl.php` skeleton and `ResourceName::providerClass()` are removed.
 - **BC break** Sorting: `SortableInterface` is replaced by the `#[Sortable]` property attribute
   (`#[Sortable(paths: ['name'])]` on a to-one association). `?sortBy=` only accepts the marked
   paths, no longer any mapped field (`password`) or join; the admin column headers link the

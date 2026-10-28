@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Controller;
 
+use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
-use Gingerminds\CoreBundle\Model\FilterableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\SearchableFields;
 use Gingerminds\CoreBundle\Model\SortableFields;
 use Gingerminds\CoreBundle\Pagination\Paginator;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Gingerminds\CoreBundle\Resource\ResourceDefinition;
@@ -52,11 +52,18 @@ abstract class AbstractCrudController extends AbstractController
 
     protected const string ID_REQUIREMENT = '[^/]+';
 
+    /**
+     * The pagination parameters of the lists, those of API Platform.
+     */
+    public const string PAGE_PARAMETER = 'page';
+    public const string ITEMS_PER_PAGE_PARAMETER = 'itemsPerPage';
+
     public static function getSubscribedServices(): array
     {
         return [
             ...parent::getSubscribedServices(),
             ResourceRegistry::class => ResourceRegistry::class,
+            FilterParameters::class => FilterParameters::class,
             'doctrine' => ManagerRegistry::class,
             'translator' => TranslatorInterface::class,
             'validator' => ValidatorInterface::class,
@@ -67,14 +74,18 @@ abstract class AbstractCrudController extends AbstractController
     #[IsGranted(ResourceVoter::VIEW, subject: new Expression(self::RESOURCE_SUBJECT))]
     public function index(Request $request): Response
     {
-        $query = $this->createListQuery($request);
-        $items = $this->getRepository()->paginate($query);
+        $parameters = $this->createListParameters($request);
+        $items = $this->getRepository()->paginate(
+            $parameters,
+            $request->query->getInt(self::PAGE_PARAMETER, 1),
+            $request->query->has(self::ITEMS_PER_PAGE_PARAMETER) ? $request->query->getInt(self::ITEMS_PER_PAGE_PARAMETER) : null,
+        );
 
         return $this->render($this->getResource()->template('index'), [
             ...$this->getCommonParameters(),
             'items' => $items,
-            'list_query' => $query,
-            'filters' => $query->filters,
+            'list_parameters' => $parameters,
+            'filters' => FilterParameters::filterValues($parameters),
             ...$this->getIndexParameters($request, $items),
         ]);
     }
@@ -201,9 +212,22 @@ abstract class AbstractCrudController extends AbstractController
         return $translator->trans($key, $parameters, $domain);
     }
 
-    protected function createListQuery(Request $request): ListQuery
+    /**
+     * The list parameters of the resource (FilterParameters: `order[...]`, `search`, `#[Filter]`
+     * properties) valued from the request, applied by the repository as on the API collections.
+     * Override it to force a filter (`$parameters->get('status')?->setValue('published')`).
+     */
+    protected function createListParameters(Request $request): Parameters
     {
-        return ListQuery::fromRequest($request);
+        return $this->getFilterParameters()->fromQuery($this->getResource()->entity, $request->query->all());
+    }
+
+    protected function getFilterParameters(): FilterParameters
+    {
+        $filterParameters = $this->container->get(FilterParameters::class);
+        \assert($filterParameters instanceof FilterParameters);
+
+        return $filterParameters;
     }
 
     protected function createEntity(): object
@@ -332,15 +356,16 @@ abstract class AbstractCrudController extends AbstractController
     protected function getCommonParameters(): array
     {
         $resource = $this->getResource();
+        $filterConfigs = $this->getFilterParameters()->panel($resource->entity);
 
         return [
             'resource' => $resource,
             'route_parameters' => $this->getRouteParameters(),
             'entity_class' => $resource->entity,
             'is_searchable' => [] !== SearchableFields::of($resource->entity),
-            'is_filterable' => is_subclass_of($resource->entity, FilterableInterface::class),
+            'is_filterable' => [] !== $filterConfigs,
             'sortable_fields' => SortableFields::of($resource->entity),
-            'filter_configs' => is_subclass_of($resource->entity, FilterableInterface::class) ? $resource->entity::getFilters() : [],
+            'filter_configs' => $filterConfigs,
         ];
     }
 

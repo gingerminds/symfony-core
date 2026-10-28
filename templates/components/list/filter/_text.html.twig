@@ -1,6 +1,6 @@
-{# Text filter (search). Vars: property, label, value, placeholder? #}
+{# Text filter (`search`, `partial`, `exact` without choices): `<property>`. Vars: property, label, value, placeholder? #}
 <div class="col-md-4">
     <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
-    <input type="text" name="filters[{{ property }}]" id="filter-{{ property }}" class="form-control"
+    <input type="text" name="{{ property }}" id="filter-{{ property }}" class="form-control"
            value="{{ value is iterable ? '' : value }}"{% if placeholder ?? null %} placeholder="{{ placeholder }}"{% endif %}>
 </div>

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Controller;
 
 use Doctrine\Persistence\ManagerRegistry;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceDefinitionValueResolver;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\ResourceDefinition;
 use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
@@ -31,6 +31,7 @@ final class AutocompleteController extends AbstractController
 
     public function __construct(
         private readonly ManagerRegistry $doctrine,
+        private readonly FilterParameters $filterParameters,
     ) {
     }
 
@@ -46,11 +47,11 @@ final class AutocompleteController extends AbstractController
 
         $search = trim((string) $request->query->get('query', ''));
         $page = max(1, $request->query->getInt('page', 1));
-        $items = $repository->paginate(new ListQuery(
-            page: $page,
-            itemsPerPage: self::PER_PAGE,
-            filters: '' !== $search ? [ListQuery::SEARCH_FILTER => $search] : [],
-        ));
+        $items = $repository->paginate(
+            $this->filterParameters->fromQuery($resource->entity, [FilterParameters::SEARCH => $search]),
+            $page,
+            self::PER_PAGE,
+        );
 
         $results = [];
 

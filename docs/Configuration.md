@@ -219,8 +219,8 @@ Templates can also be overridden one by one with Symfony's standard mechanism:
 ### Services
 
 Every bundle service has a `gingerminds_core.*` id: decorate or replace it as usual
-(`bin/console debug:container gingerminds_core`). For instance the API provider of users is
-`gingerminds_core.api.provider.user`.
+(`bin/console debug:container gingerminds_core`). For instance the list parameters factory is
+`gingerminds_core.api.filter_parameters`.
 
 ## Adding a new resource
 
@@ -228,7 +228,7 @@ Every bundle service has a `gingerminds_core.*` id: decorate or replace it as us
 an `#[AsCrudController]` controller: the resource is registered, its CRUD routes generated,
 its permissions picked up by `gingerminds:permissions:sync`. No configuration needed.
 
-A resource without admin controller (e.g. only used by `select-entity` filters and the
+A resource without admin controller (e.g. only used by `relation` filters and the
 autocomplete endpoint) is declared in configuration:
 
 ```yaml

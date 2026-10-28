@@ -73,7 +73,7 @@ return static function (ContainerConfigurator $container): void {
     $controller('gingerminds_core.controller.admin.profile', ProfileController::class)
         ->args([service('doctrine'), service('translator')]);
     $controller('gingerminds_core.controller.admin.autocomplete', AutocompleteController::class)
-        ->args([service('doctrine')]);
+        ->args([service('doctrine'), service('gingerminds_core.api.filter_parameters')]);
     $controller('gingerminds_core.controller.security.login', LoginController::class)
         ->args([service('security.authentication_utils')]);
     $controller('gingerminds_core.controller.security.logout', LogoutController::class);

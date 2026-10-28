@@ -35,7 +35,6 @@ use Gingerminds\CoreBundle\Repository\Role\RoleRepository;
     normalizationContext: ['groups' => [BaseRole::GROUP_READ]],
     denormalizationContext: ['groups' => [BaseRole::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.role',
 )]
 class Role extends BaseRole
 {

@@ -1,121 +1,101 @@
-# Filters
+# List parameters and filters
 
-Implement `Gingerminds\CoreBundle\Model\FilterableInterface` and a static `getFilters()`:
-each key is the `filters[<key>]` query parameter — a mapped field, an association name, or
-a `relation.field` path — and each value configures how the filter is rendered in the admin
-panel and applied by the repository (admin lists **and** API collections).
+The API collections and the admin lists read the **same query parameters**, declared once by
+attributes on the entity properties and applied by the **same API Platform filters**: the API
+through its native Doctrine provider, the admin by applying the same parameters to its
+repository query (`AbstractRepository::paginate()`, through API Platform's `ParameterExtension`).
+`FilterParameters` builds them from the attributes; `FilterParametersResourceMetadataCollectionFactory`
+adds them to every collection operation of a Doctrine entity resource (an operation declaring a
+`QueryParameter` of the same key keeps its own), where API Platform documents (OpenAPI, Hydra)
+and validates them.
 
-Common options: `type` (required), `label` (translation key), `disabled_for_back` (hide it
-from the admin filters panel, API only).
+| Parameter | Declared by | Filter |
+|---|---|---|
+| `page`, `itemsPerPage` | API Platform pagination (`paginationClientItemsPerPage: true`) | admin: repository `$itemsPerPage` (10) / `$maxItemsPerPage` (200) |
+| `order[<path>]=asc\|desc` | `#[Sortable]` (see [Sorting](../Sorting.md)) | API Platform `SortFilter`, then the identifier |
+| `search=text` | `#[Searchable]` | `SearchableFilter` |
+| `<property>=...` | `#[Filter]` | by type, below |
 
-Keys are resolved against the Doctrine metadata: an unknown field is ignored, never injected
-into DQL.
+The front passes **ids**, never IRIs (`category=5`, `tags[]=3`).
 
-## Date
+## `#[Filter]`
 
 ```php
-'publishedAt' => ['type' => 'date', 'label' => 'event.field.published_at'],
+use Gingerminds\CoreBundle\Model\Filter;
+
+#[Filter(label: 'event.field.published_at')]                       // date (guessed)
+private ?\DateTimeImmutable $publishedAt = null;
+
+#[Filter(label: 'event.field.status', choices: ['draft' => 'Draft', 'published' => 'Published'], multiple: true)]
+private EventStatus $status;                                       // enum (guessed)
+
+#[Filter(label: 'event.field.category', resource: 'category')]     // relation, remote autocomplete
+private ?Category $category = null;
+
+#[Filter(type: Filter::PARTIAL, admin: false)]                     // API only
+private string $code = '';
 ```
 
-`filters[publishedAt][from]=2024-01-01&filters[publishedAt][to]=2024-12-31` (`Y-m-d`, both
-optional, whole days inclusive). The days are those of `display_timezone`, converted to UTC
-bounds for a date-time column; a `date` column is compared as is.
+`type` is guessed from the Doctrine mapping when omitted: association → `relation`, enum column
+→ `enum`, `boolean` → `boolean`, date / date-time → `date`, numeric → `number`, else `exact`.
 
-## Number
+| Type | Values | Filter |
+|---|---|---|
+| `exact` | `name=foo`, `name[]=foo&name[]=bar` | API Platform `ExactFilter` |
+| `partial` | `name=fo` (case-insensitive `LIKE`) | API Platform `PartialSearchFilter` |
+| `number` | `price[gte]=10&price[lte]=100` (also `gt`, `lt`, `ne`; `0` is a bound) | API Platform `ComparisonFilter(ExactFilter)` |
+| `date` | `publishedAt[after]=2024-01-01&publishedAt[before]=2024-12-31`, `Y-m-d`, both optional and inclusive | `DisplayDateFilter` |
+| `boolean` | `active=true\|false\|1\|0`, `false` includes NULL | `NullableBooleanFilter` |
+| `enum` | `status=draft`, `status[]=draft&status[]=Archived` (value or case name) | `EnumFilter` |
+| `relation` | `category=5`, `tags[]=3&tags[]=4`, `category=null` (none), combinable | `RelationFilter` |
 
-```php
-'price' => ['type' => 'number', 'label' => 'product.field.price'],
-```
+Any other `type` is the service id of a filter in the API Platform filter locator (`api_platform.filter`
+tag) or the class of a Doctrine ORM filter without constructor arguments; give it a `template`
+for the admin panel.
 
-`filters[price][from]=10&filters[price][to]=100` (both optional, inclusive, `0` is a valid bound).
+Why some filters are the bundle's (`Gingerminds\CoreBundle\ApiPlatform\Filter\*`, all API Platform
+`FilterInterface`s, QueryParameter only):
 
-## Boolean
+- `DisplayDateFilter`: whole days of the display timezone (`gingerminds_core.display_timezone`), the
+  UTC bounds of those days on a date-time column (stored in UTC); API Platform's `DateFilter`
+  compares the raw values;
+- `NullableBooleanFilter`: `false` also matches NULL (a nullable boolean left empty is a "no");
+- `EnumFilter`: the case names as well as the values (`BackedEnumFilter` only takes the values);
+- `RelationFilter`: ids instead of IRIs (`IriFilter`), `null`, and a to-many association matched
+  by a subquery (no joined collection, no duplicated row, a plain `LIMIT`);
+- `SearchableFilter`: several paths OR-ed, the associations LEFT joined (`FreeTextQueryFilter` +
+  `PartialSearchFilter` inner join them: a row without the relation would not be found).
 
-```php
-'active' => ['type' => 'boolean', 'label' => 'product.field.active'],
-```
+## Invalid and empty values
 
-`yes` / `no` (also `1`/`0`, `true`/`false`); `no` also matches `NULL`; `all` disables the filter.
+Unknown parameters are ignored. A declared parameter is validated by API Platform on the API: a
+wrong sort direction is a `422`; the admin ignores it. The admin drops the empty values of its
+panel (an empty field is not a filter); on the API an empty value is a value (`name=` matches the
+empty names).
 
-## Select
+## The admin filters panel
 
-```php
-'type' => [
-    'type' => 'select',
-    'label' => 'event.field.type',
-    'choices' => ['concert' => 'event.type.concert', 'festival' => 'event.type.festival'],
-    'multiple' => true,
-],
-```
+`AbstractCrudController` passes `filter_configs` (the `#[Filter]` fields but `admin: false`, by
+parameter: `type` (`select`, `text`, `number`, `date`, `boolean`, `entity`), `label`, `choices`,
+`multiple`, `entity` (target class of a relation), `resource`, `template`), `filters` (the active
+values by parameter) and `list_parameters` (the valued `Parameters`). A controller changes a field
+by overriding `getCommonParameters()` (`$parameters['filter_configs']['status']['choices'] = ...`).
+The panel fields are named after the parameters (`status[]`, `publishedAt[after]`...), the current
+sort and page size are kept as hidden fields. `templates/components/list/filter/_<type>.html.twig`
+render them; `template` replaces one.
 
-`filters[type]=concert` or `filters[type][]=concert&filters[type][]=festival`; `all` disables it.
-
-## Select enum (replaces `select-state`)
-
-For a field mapped with `enumType` (PHP backed enum — the Symfony replacement of
-`spatie/laravel-model-states`):
-
-```php
-'status' => [
-    'type' => 'select-enum',
-    'label' => 'event.field.status',
-    'choices' => array_combine(
-        array_column(EventStatus::cases(), 'value'),
-        array_map(static fn (EventStatus $s): string => 'event.status.' . $s->value, EventStatus::cases()),
-    ),
-    'multiple' => true,
-],
-```
-
-Values are matched case-insensitively against the backing values **and** the case names
-(`published`, `Published`, `PUBLISHED`); unresolved values are used as-is. `select-state` is
-kept as an alias of this type.
-
-## Select entity (replaces `select-model`)
+Force a filter of an admin list by overriding `createListParameters()`:
 
 ```php
-'category' => [
-    'type' => 'select-entity',
-    'label' => 'product.field.category',
-    'entity' => Category::class,
-    'resource' => 'category',   // optional: remote autocomplete through this resource
-    'multiple' => true,
-],
-```
-
-Filters on related ids through a to-one **or** to-many association (`filters[category]=3`,
-`filters[tags][]=1&filters[tags][]=2`); `null` matches rows without relation, `all` disables
-it. In the admin it renders a Tom Select (UX Autocomplete): remote search through
-`/admin/_autocomplete/{resource}` when `resource` is set (the resource must be registered and its
-entity have a `#[Searchable]` property), otherwise a local list of the entities. `select-model` is
-kept as an alias; the Livewire `SelectModel` component is replaced by the autocomplete endpoint.
-
-## Custom filter types
-
-```php
-use Gingerminds\CoreBundle\Repository\Filter\AsFilterHandler;
-use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerInterface;
-use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
-
-#[AsFilterHandler('geo-radius')]
-final class GeoRadiusFilterHandler implements FilterHandlerInterface
+protected function createListParameters(Request $request): Parameters
 {
-    public function apply(QueryBuilderHelper $query, string $property, mixed $value, array $config): void
-    {
-        $field = $query->resolveField($property);   // DQL path or null if not mapped
-        // $query->getQueryBuilder()->andWhere(...), $query->parameter($value), $query->join(...)
-    }
+    $parameters = parent::createListParameters($request);
+    $parameters->get('site')?->setValue((string) $this->siteContext->id());
+
+    return $parameters;
 }
 ```
 
-Any bundle or project can register a type this way (or with the
-`gingerminds_core.filter_handler` tag and its `type` attribute). Unregistered types are
-silently ignored. To render it in the admin panel, add
-`templates/bundles/GingermindsCoreBundle/components/list/filters/geo-radius.html.twig`
-(see [Layouts](../templating/layouts.md)).
-
-## See also
-
-- [Resource model](../ResourceModel.md#optional-interfaces-and-attributes)
-- [Facets](facets.md)
-- [Sorting](../Sorting.md)
+On the API, the context scope of every read (a site, a status) belongs in
+`configureListQueryBuilder()` (the native providers start from `createListQueryBuilder()`), or in a
+provider decorating the Doctrine one (see [Facets](facets.md)).

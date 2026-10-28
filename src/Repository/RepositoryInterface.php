@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Repository;
 
+use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\QueryBuilder;
 use Gingerminds\CoreBundle\Pagination\Paginator;
 
@@ -18,24 +19,30 @@ interface RepositoryInterface
     public function getEntityClass(): string;
 
     /**
+     * A page of the list query with the list parameters (admin lists): their API Platform filters
+     * applied by the API Platform ParameterExtension, as on the API collections. The page size
+     * defaults to the repository's, bounded by its maximum.
+     *
      * @return Paginator<T>
      */
-    public function paginate(ListQuery $query): Paginator;
+    public function paginate(Parameters $parameters, int $page = 1, ?int $itemsPerPage = null): Paginator;
 
     /**
-     * @return list<T>
+     * The query every read starts from (admin lists and edit pages, API collections and items
+     * through the Doctrine state options `repositoryMethod`): the context scope and the
+     * `#[EagerLoad]` associations, root alias `o`.
      */
-    public function findForList(ListQuery $query): array;
+    public function createListQueryBuilder(): QueryBuilder;
 
     /**
-     * @param list<string> $excludedFilters filter keys not applied (facets)
+     * Applies the valued list parameters (FilterParameters) to a query of the entity.
      */
-    public function createListQueryBuilder(ListQuery $query, array $excludedFilters = []): QueryBuilder;
+    public function applyParameters(QueryBuilder $qb, Parameters $parameters): void;
 
     /**
      * @return T|null
      */
-    public function findOneForRead(int|string $id, ?ListQuery $query = null): ?object;
+    public function findOneForRead(int|string $id): ?object;
 
     /**
      * @param T $entity

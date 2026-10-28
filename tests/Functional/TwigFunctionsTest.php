@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Tests\Functional;
 
 use Gingerminds\CoreBundle\Entity\User\User;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Environment;
 
 /**
@@ -27,16 +28,20 @@ final class TwigFunctionsTest extends KernelTestCase
     public function testFunctionsRenderThroughTheirRuntimes(): void
     {
         $twig = self::getContainer()->get(Environment::class);
+        self::getContainer()->get(RequestStack::class)->push(Request::create('/admin/users', 'GET', [
+            'order' => ['email' => 'asc'],
+            'search' => 'john',
+            'status' => '',
+            'page' => '3',
+        ]));
         $template = $twig->createTemplate(<<<'TWIG'
-            {{ gm_resource('user').name }}|{{ gm_resource_for(entity).name }}|{{ gm_admin_includes('head')|join(',') }}|{{ gm_sort_path('gingerminds_core_user_index', query, 'email') }}|{{ gm_sort_direction(query, 'email') }}
+            {{ gm_resource('user').name }}|{{ gm_resource_for(entity).name }}|{{ gm_admin_includes('head')|join(',') }}|{{ gm_sort_path('gingerminds_core_user_index', 'email') }}|{{ gm_sort_direction('email') }}|{{ gm_list_path('gingerminds_core_user_index', {page: 4}) }}
             TWIG);
 
+        // The sort toggles, keeps the other parameters, drops the page and the empty values.
         self::assertSame(
-            'user|user|admin/_head_include.html.twig|/admin/users?sortBy=email&amp;sort=desc|asc',
-            $template->render([
-                'entity' => User::class,
-                'query' => new ListQuery(sortBy: 'email', sort: ListQuery::SORT_ASC),
-            ]),
+            'user|user|admin/_head_include.html.twig|/admin/users?order%5Bemail%5D=desc&amp;search=john|asc|/admin/users?order%5Bemail%5D=asc&amp;search=john&amp;page=4',
+            $template->render(['entity' => User::class]),
         );
     }
 }

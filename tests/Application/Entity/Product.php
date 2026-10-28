@@ -13,7 +13,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Model\CacheableResourceInterface;
 use Gingerminds\CoreBundle\Model\EagerLoad;
-use Gingerminds\CoreBundle\Model\FilterableInterface;
+use Gingerminds\CoreBundle\Model\Filter;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
 use Gingerminds\CoreBundle\Model\Searchable;
 use Gingerminds\CoreBundle\Model\Sortable;
@@ -35,11 +35,11 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ApiResource(
     operations: [
         new GetCollection(normalizationContext: ['groups' => ['product:list']], provider: ProductProvider::class),
-        new Get(normalizationContext: ['groups' => ['product:list']], provider: ProductProvider::class, extraProperties: ['rate_limiter' => 'test_strict']),
+        new Get(normalizationContext: ['groups' => ['product:list']], extraProperties: ['rate_limiter' => 'test_strict']),
     ],
     paginationClientItemsPerPage: true,
 )]
-class Product implements ResourceInterface, FilterableInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
+class Product implements ResourceInterface, CacheableResourceInterface, TimestampableInterface, \Stringable
 {
     use CacheableResourceTrait;
     use TimestampableTrait;
@@ -55,22 +55,31 @@ class Product implements ResourceInterface, FilterableInterface, CacheableResour
     #[Groups(['product:list'])]
     #[Sortable]
     #[Searchable]
+    #[Filter(label: 'product.field.name', admin: false)]
     private string $name = '';
 
     #[ORM\Column(type: Types::FLOAT)]
     #[Groups(['product:list'])]
+    #[Filter(label: 'product.field.price')]
     private float $price = 0;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['product:list'])]
+    #[Filter(label: 'product.field.active')]
     private ?bool $active = null;
 
     #[ORM\Column(length: 20, enumType: ProductStatus::class)]
     #[Groups(['product:list'])]
+    #[Filter(
+        label: 'product.field.status',
+        choices: ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'],
+        multiple: true,
+    )]
     private ProductStatus $status = ProductStatus::Draft;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     #[Groups(['product:list'])]
+    #[Filter(label: 'product.field.published_at')]
     private ?\DateTimeImmutable $publishedAt = null;
 
     #[ORM\ManyToOne(targetEntity: Category::class)]
@@ -79,6 +88,7 @@ class Product implements ResourceInterface, FilterableInterface, CacheableResour
     #[Sortable(paths: ['name'])]
     #[Searchable(paths: ['name'])]
     #[EagerLoad]
+    #[Filter(label: 'product.field.category', resource: 'category')]
     private ?Category $category = null;
 
     /**
@@ -86,29 +96,12 @@ class Product implements ResourceInterface, FilterableInterface, CacheableResour
      */
     #[ORM\ManyToMany(targetEntity: Category::class)]
     #[ORM\JoinTable(name: 'product_tags')]
+    #[Filter(label: 'product.field.tags', multiple: true)]
     private Collection $tags;
 
     public function __construct()
     {
         $this->tags = new ArrayCollection();
-    }
-
-    public static function getFilters(): array
-    {
-        return [
-            'publishedAt' => ['type' => 'date', 'label' => 'product.field.published_at'],
-            'price' => ['type' => 'number', 'label' => 'product.field.price'],
-            'active' => ['type' => 'boolean', 'label' => 'product.field.active'],
-            'status' => [
-                'type' => 'select-enum',
-                'label' => 'product.field.status',
-                'choices' => ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'],
-                'multiple' => true,
-            ],
-            'category' => ['type' => 'select-entity', 'label' => 'product.field.category', 'entity' => Category::class, 'resource' => 'category'],
-            'tags' => ['type' => 'select-entity', 'label' => 'product.field.tags', 'entity' => Category::class, 'multiple' => true],
-            'name' => ['type' => 'select', 'label' => 'product.field.name', 'disabled_for_back' => true],
-        ];
     }
 
     public static function getCacheKey(): string

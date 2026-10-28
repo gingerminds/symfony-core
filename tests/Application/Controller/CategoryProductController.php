@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Tests\Application\Controller;
 
+use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Controller\AbstractCrudController;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
 use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
@@ -46,7 +46,7 @@ final class CategoryProductController extends AbstractCrudController
         return $this->json([
             'resource' => $this->getResource()->name,
             'route_parameters' => $this->getRouteParameters(),
-            'count' => $this->getRepository()->paginate(new ListQuery())->getTotalItems(),
+            'count' => $this->getRepository()->paginate(new Parameters())->getTotalItems(),
         ]);
     }
 

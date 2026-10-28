@@ -34,7 +34,6 @@ use Gingerminds\CoreBundle\Repository\User\UserRepository;
     normalizationContext: ['groups' => [BaseUser::GROUP_READ]],
     denormalizationContext: ['groups' => [BaseUser::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.user',
 )]
 class User extends BaseUser
 {

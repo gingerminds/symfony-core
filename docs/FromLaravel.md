@@ -16,10 +16,10 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `SortableModelInterface` (`$sortable`) | `#[Sortable]` on the properties | Sort paths are the marked properties only. |
 | `SearchableModelInterface` (`$searchable`) | `#[Searchable]` on the properties | Searched paths are the marked properties only. |
 | `EagerLoadableModelInterface` (`$with`) | `#[EagerLoad]` on the associations | `#[EagerLoad(paths: ['language'])]` for `translations.language`. |
-| `FilterableModelInterface` | `FilterableInterface` | Same contract. Filter keys are whitelisted against Doctrine metadata. |
+| `FilterableModelInterface` | `#[Filter]` on the properties | API Platform filters (`QueryParameter`), shared by the API and the admin. See [List parameters](partials/filters.md). |
 | `CacheableResourceInterface`, `CacheCascadeInterface` | same names | Cache stores API responses, see [Cache](Cache.md). |
 | timestamps | `TimestampableInterface`/`Trait` | Doctrine listener. Soft deletes are not ported: deletions are real. |
-| `AbstractRepository::get(Request)` | `AbstractRepository::paginate(ListQuery)` | `ListQuery::fromRequest()`; repositories no longer read the request. |
+| `AbstractRepository::get(Request)` | `AbstractRepository::paginate(Parameters)` | `FilterParameters::fromQuery()`; repositories no longer read the request. |
 | `AbstractRepository::update(FormRequest, Model)` | form + `save(entity)` (`beforeSave()` hook) | Mapping, unmapped fields included, is done by the form (event listeners); the repository only persists. |
 | `FormRequest` (+ `FormRequestInterface`) | Symfony form type + validator constraints | One form for admin and API. |
 | `Date/DecimalConverterTrait` | form types (`DateType`, `NumberType` with `scale`) | Conversion is a form concern. |
@@ -32,13 +32,13 @@ filters/search/sort/facets, resource cache, generators. This page maps each conc
 | `$user->can('edit users')` | `is_granted('edit users')` (`PermissionNameVoter`) | |
 | `spatie/laravel-permission` | `Role`/`Permission` entities, `user_roles`, `role_permissions` | No direct user permissions (not used by the core). |
 | `PermissionSeeder` | `gingerminds:permissions:sync` | Idempotent, derives resource permissions. |
-| `spatie/laravel-model-states` + `select-state` | PHP backed enums + `select-enum` (`select-state` alias) | Symfony Workflow for transitions if needed. |
+| `spatie/laravel-model-states` + `select-state` | PHP backed enums + `#[Filter]` (`enum`) | Symfony Workflow for transitions if needed. |
 | Session guard + `AuthService` | `form_login`, `login_throttling`, `remember_me`, `AuthorizedDomainListener` | |
 | `gingerminds-core.auth` + `EnsureAdminAreaIsAuthenticated` | firewall `access_control ^/admin` | |
 | Sanctum | `access_token` authenticator + `ApiToken` entity | Hashed, revocable, optional TTL. |
 | `LoginResponseEnricherInterface` (tag) | same, autoconfigured | |
-| `AbstractApiProvider` / `BaseStateProcessor` | `ResourceProvider` / native API Platform writes | Generic: core resources need no class. Writes are deserialized, validated and persisted by API Platform (Doctrine processor run inside the repository save hooks), no form. |
-| `addFilters()` | `configureListQuery()` | |
+| `AbstractApiProvider` / `BaseStateProcessor` | native API Platform Doctrine providers / writes | No class: reads start from the repository list query (`repositoryMethod`). Writes are deserialized, validated and persisted by API Platform (Doctrine processor run inside the repository save hooks), no form. |
+| `addFilters()` | a provider decorating the Doctrine one, or `configureListQueryBuilder()` | |
 | `ClassHierarchyResourceNameCollectionFactory` | not needed | An overridden bundle entity is excluded from the Doctrine mapping and API resources. |
 | `ApiHeaderParameterRegistry` | `HeaderParameterRegistry` + `HeaderParameterProviderInterface` | |
 | `EmbeddedResourceAttributesFixContextBuilder`, `ObjectNormalizer`/`PropertyAccessor` fixes | not needed | Eloquent-specific workarounds. |

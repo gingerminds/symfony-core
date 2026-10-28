@@ -65,7 +65,7 @@ final class AdminTest extends ApiTestCase
             yield $uri => [$uri];
         }
 
-        yield 'list with query' => ['/admin/users?filters[search]=example&sortBy=email&sort=desc&itemsPerPage=5&page=1'];
+        yield 'list with query' => ['/admin/users?search=example&order[email]=desc&itemsPerPage=5&page=1'];
     }
 
     #[DataProvider('pages')]
@@ -82,11 +82,11 @@ final class AdminTest extends ApiTestCase
     {
         $this->client->loginUser($this->fixtures->user('search@example.com', superAdmin: true), 'admin');
 
-        $emails = fn (string $search): array => $this->client->request('GET', '/admin/users?filters[search]=' . $search)
+        $emails = fn (string $search): array => $this->client->request('GET', '/admin/users?search=' . $search)
             ->filter('tbody tr td:nth-child(2)')->each(static fn ($td): string => trim($td->text()));
 
         self::assertSame(['search@example.com'], $emails('SEARCH@'));
-        self::assertCount(1, $this->client->getCrawler()->filter('input[name="filters[search]"]'));
+        self::assertCount(1, $this->client->getCrawler()->filter('input[name="search"]'));
         // `email` is `#[Searchable]`, not the contributor firstname of the user (`First`).
         self::assertSame([], $emails('first'));
     }
@@ -98,7 +98,7 @@ final class AdminTest extends ApiTestCase
         $crawler = $this->client->request('GET', '/admin/users');
 
         self::assertSame(['email', 'contributor.lastname'], $crawler->filter('th.sortable')->each(static fn ($th): ?string => $th->attr('data-sort')));
-        self::assertStringContainsString('sortBy=email', (string) $crawler->filter('th[data-sort="email"] a')->attr('href'));
+        self::assertSame('/admin/users?order%5Bemail%5D=asc', $crawler->filter('th[data-sort="email"] a')->attr('href'));
     }
 
     public function testListHeadHasPaginationLinks(): void
@@ -113,10 +113,10 @@ final class AdminTest extends ApiTestCase
 
         $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1&page=2');
         self::assertSame('http://localhost/admin/users?itemsPerPage=1', $crawler->filter('head link[rel="prev"]')->attr('href'));
-        self::assertSame('http://localhost/admin/users?page=3&itemsPerPage=1', $crawler->filter('head link[rel="next"]')->attr('href'));
+        self::assertSame('http://localhost/admin/users?itemsPerPage=1&page=3', $crawler->filter('head link[rel="next"]')->attr('href'));
 
         $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1&page=3');
-        self::assertSame('http://localhost/admin/users?page=2&itemsPerPage=1', $crawler->filter('head link[rel="prev"]')->attr('href'));
+        self::assertSame('http://localhost/admin/users?itemsPerPage=1&page=2', $crawler->filter('head link[rel="prev"]')->attr('href'));
         self::assertCount(0, $crawler->filter('head link[rel="next"]'));
     }
 

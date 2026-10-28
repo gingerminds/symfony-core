@@ -2,17 +2,30 @@
 
 declare(strict_types=1);
 
-namespace Gingerminds\CoreBundle\Repository\Filter\Handler;
+namespace Gingerminds\CoreBundle\ApiPlatform\Filter;
 
-use Gingerminds\CoreBundle\Repository\Filter\FilterHandlerInterface;
+use ApiPlatform\Metadata\Parameter;
+use ApiPlatform\OpenApi\Model\Parameter as OpenApiParameter;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
 
-final class SelectEnumFilterHandler implements FilterHandlerInterface
+/**
+ * A backed enum column, by case value or case name (case-insensitive): `status=published`,
+ * `status[]=draft&status[]=Archived`. The API Platform BackedEnumFilter only takes the values.
+ */
+final class EnumFilter extends AbstractPropertyFilter
 {
-    public function apply(QueryBuilderHelper $query, string $property, mixed $value, array $config): void
+    /**
+     * @return list<OpenApiParameter>
+     */
+    public function getOpenApiParameters(Parameter $parameter): array
+    {
+        return self::listOpenApiParameters($parameter, 'A case value or name, or a list of them');
+    }
+
+    protected function filter(QueryBuilderHelper $query, string $property, mixed $value, Parameter $parameter): void
     {
         $owner = $query->resolveOwner($property);
-        $values = SelectFilterHandler::normalize($value);
+        $values = self::values($value);
 
         if (null === $owner || [] === $values || !$owner['metadata']->hasField($owner['name'])) {
             return;
@@ -21,7 +34,7 @@ final class SelectEnumFilterHandler implements FilterHandlerInterface
         $enumClass = $owner['metadata']->getFieldMapping($owner['name'])->enumType ?? null;
 
         if (null !== $enumClass && is_subclass_of($enumClass, \BackedEnum::class)) {
-            $values = array_map(static fn (mixed $item): mixed => self::resolve($enumClass, (string) $item), $values);
+            $values = array_map(static fn (int|string|float|bool $item): int|string => self::resolve($enumClass, (string) $item), $values);
         }
 
         $query->getQueryBuilder()->andWhere(

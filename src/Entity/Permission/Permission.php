@@ -30,7 +30,6 @@ use Gingerminds\CoreBundle\Repository\Permission\PermissionRepository;
     normalizationContext: ['groups' => [BasePermission::GROUP_READ]],
     denormalizationContext: ['groups' => [BasePermission::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.permission',
 )]
 class Permission extends BasePermission
 {

@@ -149,7 +149,6 @@ abstract class AbstractResourceMaker extends AbstractMaker implements InputAware
         }
 
         $code = [
-            \sprintf('use %s;', $resource->providerClass()),
             'use ApiPlatform\Metadata\{ApiResource, Delete, Get, GetCollection, Patch, Post};',
             'use Symfony\Component\Serializer\Attribute\Groups;',
             '',

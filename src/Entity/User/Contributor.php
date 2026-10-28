@@ -31,7 +31,6 @@ use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
     normalizationContext: ['groups' => [BaseContributor::GROUP_READ]],
     denormalizationContext: ['groups' => [BaseContributor::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.contributor',
 )]
 class Contributor extends BaseContributor
 {

@@ -4,27 +4,62 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Gingerminds\CoreBundle\ApiPlatform\Doctrine\IdentifierOrderExtension;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\DisplayDateFilter;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\EnumFilter;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\InjectComputedFiltersListener;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\NullableBooleanFilter;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\RelationFilter;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\SearchableFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\ContextHeaderParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\CoreResourceNameCollectionFactory;
+use Gingerminds\CoreBundle\ApiPlatform\Metadata\FilterParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\HeaderParameterRegistry;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\RelationIdDenormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\State\RepositoryProcessor;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
 use Symfony\Component\HttpKernel\KernelEvents;
 
 /*
- * API Platform state providers, write processors, relation denormalizer and metadata decorators.
+ * API Platform list filters and parameters, write processors, relation denormalizer, metadata
+ * decorators and computed filters. Reads use the native Doctrine providers.
  */
 return static function (ContainerConfigurator $container): void {
     $services = $container->services();
 
-    foreach (['user', 'contributor', 'role', 'permission'] as $name) {
-        $services->set('gingerminds_core.api.provider.' . $name, ResourceProvider::class)
-            ->args([service('gingerminds_core.repository.' . $name), service('request_stack')])
-            ->tag('api_platform.state_provider');
+    // The core filters of the list parameters (FilterParameters), in the API Platform filter locator.
+    foreach (
+        [
+            FilterParameters::BOOLEAN_FILTER => NullableBooleanFilter::class,
+            FilterParameters::ENUM_FILTER => EnumFilter::class,
+            FilterParameters::RELATION_FILTER => RelationFilter::class,
+            FilterParameters::SEARCH_FILTER => SearchableFilter::class,
+        ] as $id => $class
+    ) {
+        $services->set($id, $class)->tag('api_platform.filter');
     }
+
+    $services->set(FilterParameters::DATE_FILTER, DisplayDateFilter::class)
+        ->args([service('gingerminds_core.display_timezone')])
+        ->tag('api_platform.filter');
+
+    $services->set('gingerminds_core.api.filter_parameters', FilterParameters::class)
+        ->args([service('doctrine')]);
+    $services->alias(FilterParameters::class, 'gingerminds_core.api.filter_parameters');
+
+    // Before the API Platform parameter factories (998, 1000), which then describe the added
+    // parameters (OpenAPI, Hydra, validation): a higher priority decorates closer to the source.
+    $services->set('gingerminds_core.api.metadata.filter_parameters', FilterParametersResourceMetadataCollectionFactory::class)
+        ->decorate('api_platform.metadata.resource.metadata_collection_factory', null, 1010)
+        ->args([
+            service('.inner'),
+            service('gingerminds_core.api.filter_parameters'),
+            service('doctrine'),
+        ]);
+
+    $services->set('gingerminds_core.api.doctrine.identifier_order_extension', IdentifierOrderExtension::class)
+        ->tag('api_platform.doctrine.orm.query_extension.collection', ['priority' => IdentifierOrderExtension::PRIORITY]);
 
     // Writes: the native Doctrine processors, run inside the repository save / remove hooks.
     foreach (['persist', 'remove'] as $write) {

@@ -62,14 +62,6 @@ final class MakeEntity extends AbstractResourceMaker
             ),
         ];
 
-        if ($api) {
-            $nextSteps[] = \sprintf(
-                'The API needs <comment>%s</comment>: <fg=yellow>bin/console make:gm:api %s</>.',
-                $resource->providerClass(),
-                $resource->argument(),
-            );
-        }
-
         $this->finish($generator, $io, $nextSteps, $input, $resource);
     }
 }

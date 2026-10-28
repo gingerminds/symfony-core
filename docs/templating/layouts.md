@@ -93,7 +93,7 @@ read as `weight: -priority`. The active state matches the route and its CRUD sib
 
 ## `crud/list.html.twig`
 
-Receives `resource`, `items` (Paginator), `list_query`, `filters`, `filter_configs`,
+Receives `resource`, `items` (Paginator), `list_parameters`, `filters` (active values by parameter), `filter_configs` (admin panel fields),
 `is_searchable` (at least one `#[Searchable]` property), `is_filterable`, `sortable_fields` (the `#[Sortable]` paths) from `AbstractCrudController::index()`.
 Renders the collapsible filters panel (when the entity is searchable/filterable), the card
 with the table, the items-per-page selector and the pagination.

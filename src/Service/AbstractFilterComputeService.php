@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Service;
 
+use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\EntityManagerInterface;
-use Gingerminds\CoreBundle\Model\FilterableInterface;
-use Gingerminds\CoreBundle\Repository\ListQuery;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
- * @template T of FilterableInterface
+ * Computed filters (facets) of a collection, from its valued list parameters (the collection
+ * operation's on the API): stored in ComputedFilterStore by a provider, added to the
+ * collection response as `filters` by InjectComputedFiltersListener.
  */
 abstract class AbstractFilterComputeService
 {
@@ -23,40 +25,29 @@ abstract class AbstractFilterComputeService
     }
 
     /**
-     * @return class-string<T>
-     */
-    abstract protected function getEntityClass(): string;
-
-    /**
      * @return array<string, array{min: ?string, max: ?string, years: list<int>}>
      */
-    abstract protected function dateFacetStats(ListQuery $query): array;
+    abstract protected function dateFacetStats(Parameters $parameters): array;
 
     /**
      * @return array<string, array{type: string, options: array{min: ?string, max: ?string, years: list<int>}}>
      */
-    public function computeDateFilters(ListQuery $query): array
+    public function computeDateFilters(Parameters $parameters): array
     {
-        $configs = $this->getEntityClass()::getFilters();
         $filters = [];
 
-        foreach ($this->dateFacetStats($query) as $key => $stats) {
-            if (null === $stats['min']) {
-                continue;
+        foreach ($this->dateFacetStats($parameters) as $key => $stats) {
+            if (null !== $stats['min']) {
+                $filters[$key] = ['type' => 'date', 'options' => $stats];
             }
-
-            $filters[$key] = [
-                'type' => $configs[$key]['type'] ?? 'date',
-                'options' => $stats,
-            ];
         }
 
         return $filters;
     }
 
-    protected function activeFilterValue(ListQuery $query, string $key): mixed
+    protected function activeFilterValue(Parameters $parameters, string $key): mixed
     {
-        return $query->getFilter($key);
+        return FilterParameters::value($parameters, $key);
     }
 
     /**
@@ -75,7 +66,7 @@ abstract class AbstractFilterComputeService
      */
     protected function normalizeIds(mixed $raw): array
     {
-        if (null === $raw || '' === $raw || 'all' === $raw) {
+        if (null === $raw || '' === $raw) {
             return [];
         }
 

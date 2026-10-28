@@ -34,8 +34,10 @@ class <?= $class_name ?> implements <?= implode(', ', ['ResourceInterface', 'Tim
 <?php endif ?>
     private ?int $id = null;
 
-    // TODO: mark the fields matched by `filters[search]` with #[Searchable]
-    // (#[Searchable(paths: ['name'])] on an association searches `relation.name`), and the
+    // TODO: mark the list parameters of the API collection and the admin list on the properties:
+    // #[Sortable] (`order[name]=asc|desc`), #[Searchable] (`search=`; #[Searchable(paths: ['name'])]
+    // on an association searches `relation.name`), #[Filter] (`status=draft`, `price[gte]=10`,
+    // `publishedAt[after]=2024-01-01`, `category=5`; label/choices for the admin panel), and the
     // relations shown by the admin list or the API list group with #[EagerLoad] (no query per row).
 
     public function __toString(): string

@@ -11,6 +11,5 @@
     ],
     normalizationContext: ['groups' => [self::GROUP_READ]],
     denormalizationContext: ['groups' => [self::GROUP_EDIT]],
-    provider: <?= $provider_class ?>::class,
     paginationClientItemsPerPage: true,
 )]

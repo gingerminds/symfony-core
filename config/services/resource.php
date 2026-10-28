@@ -50,6 +50,6 @@ return static function (ContainerConfigurator $container): void {
         ])
         ->autoconfigure();
     $services->set('gingerminds_core.twig.list', ListExtension::class)
-        ->args([service('router')])
+        ->args([service('router'), service('request_stack')])
         ->autoconfigure();
 };

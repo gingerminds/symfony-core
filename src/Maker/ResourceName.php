@@ -85,11 +85,6 @@ final readonly class ResourceName
         return $this->class('Controller', 'Controller');
     }
 
-    public function providerClass(): string
-    {
-        return $this->class('State', 'Provider');
-    }
-
     public function templateDirectory(): string
     {
         return 'admin/' . $this->snake;

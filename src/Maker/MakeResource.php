@@ -72,10 +72,6 @@ final class MakeResource extends AbstractResourceMaker
             $resourceGenerator->generateCrudController($generator, $io, $resource);
         }
 
-        if ($api) {
-            $resourceGenerator->generateApi($generator, $io, $resource);
-        }
-
         $nextSteps = [...$this->entityNextSteps($resource), ...$this->permissionNextSteps($resource)];
 
         if ($controller) {
