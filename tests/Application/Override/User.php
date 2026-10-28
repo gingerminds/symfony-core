@@ -6,6 +6,8 @@ namespace Gingerminds\CoreBundle\Tests\Application\Override;
 
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
+use Gingerminds\CoreBundle\Model\Filter;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 /**
@@ -18,6 +20,8 @@ class User extends BaseUser
 {
     #[ORM\Column(length: 30, nullable: true)]
     #[Groups([BaseUser::GROUP_READ, BaseUser::GROUP_CREATE, BaseUser::GROUP_EDIT])]
+    #[Filter(type: Filter::PARTIAL)]
+    #[Sortable]
     private ?string $phone = null;
 
     public function getPhone(): ?string
