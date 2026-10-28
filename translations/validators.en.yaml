@@ -3,3 +3,5 @@ user:
         mismatch: The passwords do not match.
 role:
     super_admin_delete: The Super-Admin role cannot be deleted.
+tree:
+    parent_cycle: An item cannot be placed under itself or one of its children.

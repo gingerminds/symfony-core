@@ -3,3 +3,5 @@ user:
         mismatch: Les mots de passe ne correspondent pas.
 role:
     super_admin_delete: Le rôle Super-Admin ne peut pas être supprimé.
+tree:
+    parent_cycle: Un élément ne peut pas être placé sous lui-même ni sous un de ses descendants.

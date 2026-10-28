@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Admin trees: `TreeNodeInterface`, `TreeNodes` (group by parent, flatten, parent choices),
+  `TreeRepositoryInterface` / `TreeRepositoryTrait` (`findTreeNodes()`, `reorderLevel()`,
+  `findIdsWithDescendants()`, a new or moved node at the end of its level, `$scope` criteria for
+  several trees in a table), `AbstractTreeCrudController` (tree index, `new?parent_id=`,
+  `reorder` with the EDIT permission and the `X-CSRF-Token` header), the `#[NoTreeCycle]`
+  constraint and the `components/list/_tree.html.twig` partial. They replace the copies of the
+  cms (`AbstractTreeCrudController`, page categories, menu items) and the media manager (media
+  categories).
+
 ### Changed
 
 - **BC break** Bundles: `AbstractResourceBundle` holds what each bundle class repeated (resources
