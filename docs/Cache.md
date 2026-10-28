@@ -30,11 +30,15 @@ overriding a bundle one keeps its cache, or declares its own (`CacheMetadata::ca
 
 ## Security
 
-The listener runs after the firewall (authentication applies) and before API Platform's read.
-A collection operation's `security` expression is evaluated before serving a hit; item
-operations whose `security` uses `object` are never cached. If a response depends on the
-current user in any other way, add the user (or their audience) to the cache context — or
-do not make the resource cacheable.
+Only **anonymous** requests are served from the cache and stored: a request with an
+authenticated user or an `Authorization` header always reaches the application, so the key holds
+no user and a response depending on the viewer (drafts shown to an admin,
+`#[ApiProperty(security: ...)]`, a per-user query) never leaks. The headless fronts read the
+public API without a token.
+
+The listener runs after the firewall and before API Platform's read. A collection operation's
+`security` expression is evaluated (anonymously) before serving a hit; item operations whose
+`security` uses `object` are never cached.
 
 ## Invalidation
 

@@ -28,10 +28,10 @@ final class CacheTest extends ApiTestCase
     {
         $product = $this->createProduct('Cached');
 
-        $this->api('GET', '/api/products', $this->token);
+        $this->api('GET', '/api/products');
         self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
 
-        $data = $this->api('GET', '/api/products', $this->token);
+        $data = $this->api('GET', '/api/products');
         self::assertSame('HIT', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
         self::assertSame('Cached', $data['member'][0]['name']);
 
@@ -40,7 +40,7 @@ final class CacheTest extends ApiTestCase
         $entityManager->find(Product::class, $product->getId())?->setName('Renamed');
         $entityManager->flush();
 
-        $data = $this->api('GET', '/api/products', $this->token);
+        $data = $this->api('GET', '/api/products');
         self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
         self::assertSame('Renamed', $data['member'][0]['name']);
     }
@@ -49,8 +49,8 @@ final class CacheTest extends ApiTestCase
     {
         $this->createProduct('First');
 
-        $this->api('GET', '/api/products?page=1', $this->token);
-        $this->api('GET', '/api/products?page=1&itemsPerPage=5', $this->token);
+        $this->api('GET', '/api/products?page=1');
+        $this->api('GET', '/api/products?page=1&itemsPerPage=5');
 
         self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
     }
@@ -60,15 +60,15 @@ final class CacheTest extends ApiTestCase
         $product = $this->createProduct('Removed');
         $id = $product->getId();
 
-        $this->api('GET', '/api/products/' . $id, $this->token);
-        $this->api('GET', '/api/products/' . $id, $this->token);
+        $this->api('GET', '/api/products/' . $id);
+        $this->api('GET', '/api/products/' . $id);
         self::assertSame('HIT', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->remove($entityManager->find(Product::class, $id));
         $entityManager->flush();
 
-        $this->api('GET', '/api/products/' . $id, $this->token);
+        $this->api('GET', '/api/products/' . $id);
         $this->assertStatus(404);
     }
 
@@ -81,17 +81,33 @@ final class CacheTest extends ApiTestCase
         $entityManager->flush();
         $id = $product->getId();
 
-        $this->api('GET', '/api/products/' . $id, $this->token);
-        $this->api('GET', '/api/products/' . $id, $this->token);
+        $this->api('GET', '/api/products/' . $id);
+        $this->api('GET', '/api/products/' . $id);
         self::assertSame('HIT', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         $entityManager->find(Category::class, $category->getId())?->setName('Laptops');
         $entityManager->flush();
 
-        $data = $this->api('GET', '/api/products/' . $id, $this->token);
+        $data = $this->api('GET', '/api/products/' . $id);
         self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
         self::assertSame('Laptops', $data['category']['name']);
+    }
+
+    public function testAuthenticatedRequestsAreNeitherServedNorStored(): void
+    {
+        $this->createProduct('Private');
+
+        $this->api('GET', '/api/products');
+        $this->api('GET', '/api/products', $this->token);
+        self::assertNull($this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+
+        $this->api('GET', '/api/products', $this->token);
+        self::assertNull($this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+
+        // The anonymous entry is still there, the authenticated responses did not replace it.
+        $this->api('GET', '/api/products');
+        self::assertSame('HIT', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
     }
 
     public function testNonCacheableResourcesAreNotCached(): void

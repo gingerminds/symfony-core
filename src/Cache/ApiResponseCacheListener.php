@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Cache;
 
+use Symfony\Component\Security\Core\User\UserInterface;
 use ApiPlatform\Metadata\CollectionOperationInterface;
 use ApiPlatform\Metadata\HttpOperation;
 use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
@@ -15,7 +16,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
+/**
+ * Caches the API responses of the `#[Cacheable]` resources for the anonymous requests only: the
+ * key holds no user, an authenticated request (or one carrying an `Authorization` header) always
+ * reaches the application, whatever its response depends on.
+ */
 final readonly class ApiResponseCacheListener
 {
     private const string KEY_ATTRIBUTE = '_gingerminds_cache_key';
@@ -27,6 +34,7 @@ final readonly class ApiResponseCacheListener
         private CacheKeyBuilder $keyBuilder,
         private ResourceMetadataCollectionFactoryInterface $resourceMetadataFactory,
         private ?ResourceAccessCheckerInterface $resourceAccessChecker,
+        private ?TokenStorageInterface $tokenStorage,
         private bool $enabled,
         private int $defaultTtl,
     ) {
@@ -129,7 +137,13 @@ final readonly class ApiResponseCacheListener
 
     private function isCacheableRequest(RequestEvent $event): bool
     {
-        return $this->enabled && $event->isMainRequest() && $event->getRequest()->isMethodCacheable();
+        $request = $event->getRequest();
+
+        return $this->enabled
+            && $event->isMainRequest()
+            && $request->isMethodCacheable()
+            && !$request->headers->has('Authorization')
+            && !$this->tokenStorage?->getToken()?->getUser() instanceof UserInterface;
     }
 
     /**

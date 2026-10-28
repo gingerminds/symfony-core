@@ -222,6 +222,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (`getCascadeCacheKeys()`). They are read on the class or its parents, the closest declaration
   winning (`CacheMetadata`).
 
+- **BC break** The API response cache serves and stores the anonymous requests only: a request
+  with an authenticated user or an `Authorization` header always reaches the application (the
+  cache key holds no user). `ApiResponseCacheListener` takes the token storage.
+
 ### Removed
 
 - **BC break** `RepositoryInterface::getEntityClass()`: Doctrine's `getClassName()` instead.
