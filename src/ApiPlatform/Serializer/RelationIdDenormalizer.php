@@ -119,31 +119,46 @@ final class RelationIdDenormalizer implements DenormalizerInterface, Denormalize
 
     private function toIri(mixed $id, string $class): mixed
     {
-        if (!\is_int($id) && (!\is_string($id) || '' === $id || str_starts_with($id, '/') || str_contains($id, '://'))) {
+        $item = $this->isId($id) ? $this->itemOperation($class) : null;
+
+        if (null === $item) {
             return $id;
         }
 
+        [$resourceClass, $operation, $variable] = $item;
+
+        return $this->iriConverter->getIriFromResource($resourceClass, UrlGeneratorInterface::ABS_PATH, $operation, [
+            'uri_variables' => [$variable => $id],
+        ]);
+    }
+
+    /**
+     * An id, not an IRI nor a URL.
+     */
+    private function isId(mixed $id): bool
+    {
+        return \is_int($id) || (\is_string($id) && '' !== $id && !str_starts_with($id, '/') && !str_contains($id, '://'));
+    }
+
+    /**
+     * The item operation of the resource and its single URI variable, null when it has none or
+     * several variables.
+     *
+     * @return array{class-string, HttpOperation, string}|null
+     */
+    private function itemOperation(string $class): ?array
+    {
         /** @var class-string $resourceClass */
         $resourceClass = $this->resourceClassResolver->getResourceClass(null, $class);
 
         try {
             $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation(null, false, true);
         } catch (OperationNotFoundException) {
-            return $id;
+            return null;
         }
 
-        if (!$operation instanceof HttpOperation) {
-            return $id;
-        }
+        $variables = $operation instanceof HttpOperation ? array_keys($operation->getUriVariables() ?? []) : [];
 
-        $variables = array_keys($operation->getUriVariables() ?? []);
-
-        if (1 !== \count($variables)) {
-            return $id;
-        }
-
-        return $this->iriConverter->getIriFromResource($resourceClass, UrlGeneratorInterface::ABS_PATH, $operation, [
-            'uri_variables' => [$variables[0] => $id],
-        ]);
+        return $operation instanceof HttpOperation && 1 === \count($variables) ? [$resourceClass, $operation, (string) $variables[0]] : null;
     }
 }
