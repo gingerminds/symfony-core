@@ -69,7 +69,7 @@ final readonly class OverriddenEntityResourceMetadataCollectionFactory implement
         }
 
         if (null !== $graphQlOperations = $resource->getGraphQlOperations()) {
-            $resource = $resource->withGraphQlOperations(array_map(static fn (object $operation): object => $operation->withClass($class), $graphQlOperations));
+            return $resource->withGraphQlOperations(array_map(static fn (object $operation): object => $operation->withClass($class), $graphQlOperations));
         }
 
         return $resource;

@@ -79,7 +79,7 @@ final class AdminMenuBuiltEvent extends Event
                 return $item;
             }
 
-            if (null !== $found = self::find($item->children, $id)) {
+            if (($found = self::find($item->children, $id)) instanceof MenuItem) {
                 return $found;
             }
         }

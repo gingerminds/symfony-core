@@ -61,18 +61,18 @@ final class OverriddenEntityResourceMetadataCollectionFactoryTest extends TestCa
     private function factory(): OverriddenEntityResourceMetadataCollectionFactory
     {
         $resources = [
-            User::class => new ApiResource(class: User::class, shortName: 'User', operations: [
+            User::class => new ApiResource(shortName: 'User', operations: [
                 'get_collection' => new GetCollection(class: User::class),
                 'get' => new Get(class: User::class),
-            ]),
-            Role::class => new ApiResource(class: Role::class, shortName: 'Role', operations: [
+            ], class: User::class),
+            Role::class => new ApiResource(shortName: 'Role', operations: [
                 'get_collection' => new GetCollection(class: Role::class),
                 'get' => new Get(class: Role::class),
-            ]),
-            self::PROJECT_ROLE => new ApiResource(class: self::PROJECT_ROLE, shortName: 'ProjectRole', operations: [
+            ], class: Role::class),
+            self::PROJECT_ROLE => new ApiResource(shortName: 'ProjectRole', operations: [
                 'get' => new Get(class: self::PROJECT_ROLE),
-            ]),
-            Permission::class => new ApiResource(class: Permission::class, shortName: 'Permission'),
+            ], class: self::PROJECT_ROLE),
+            Permission::class => new ApiResource(shortName: 'Permission', class: Permission::class),
         ];
         $inner = $this->createStub(ResourceMetadataCollectionFactoryInterface::class);
         $inner->method('create')->willReturnCallback(static fn (string $class): ResourceMetadataCollection => new ResourceMetadataCollection($class, isset($resources[$class]) ? [$resources[$class]] : []));
