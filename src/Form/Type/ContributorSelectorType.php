@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Form\Type;
 
 use Gingerminds\CoreBundle\Form\ChoiceList\ContributorSelectorChoiceLoader;
-use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
+use Gingerminds\CoreBundle\Repository\User\ContributorRepositoryInterface;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\OptionsResolver\Options;
@@ -23,7 +23,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 final class ContributorSelectorType extends AbstractType
 {
     public function __construct(
-        private readonly ContributorRepository $contributors,
+        private readonly ContributorRepositoryInterface $contributors,
         private readonly TranslatorInterface $translator,
         private readonly UrlGeneratorInterface $urlGenerator,
     ) {

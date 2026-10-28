@@ -18,3 +18,8 @@ gingerminds_core:
             entity: Gingerminds\CoreBundle\Tests\Application\Override\User
     profile:
         form: Gingerminds\CoreBundle\Tests\Application\Form\ProfileType
+
+services:
+    Gingerminds\CoreBundle\Tests\Application\Override\UserRepository:
+        arguments: ['@doctrine', '%gingerminds_core.resource.user.entity%']
+        tags: ['doctrine.repository_service']

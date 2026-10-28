@@ -17,6 +17,7 @@ use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Gingerminds\CoreBundle\Tests\Application\Kernel;
 use Gingerminds\CoreBundle\Tests\Application\Override\User;
+use Gingerminds\CoreBundle\Tests\Application\Override\UserRepository;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Component\Filesystem\Filesystem;
@@ -163,6 +164,33 @@ final class EntityOverrideTest extends TestCase
         self::assertSame(303, $client->getResponse()->getStatusCode(), (string) $client->getResponse()->getContent());
         $entityManager->clear();
         self::assertSame('0102030405', $entityManager->getRepository(User::class)->findOneBy(['email' => 'profile@example.com'])?->getPhone());
+    }
+
+    /**
+     * The `repositoryClass` of the project entity is the one of the authentication: the API
+     * login and the session user provider sign in by phone through it.
+     */
+    public function testTheAuthenticationUsesTheProjectRepository(): void
+    {
+        $container = self::$kernel->getContainer()->get('test.service_container');
+        self::assertInstanceOf(UserRepository::class, $container->get('gingerminds_core.repository.user'));
+
+        $entityManager = $this->resetSchema();
+        $user = new User();
+        $user->setEmail('phone@example.com');
+        $user->setPhone('0102030405');
+        $user->setPlainPassword('secret-password');
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        $client = new KernelBrowser(self::$kernel);
+        $client->request('POST', '/api/login', server: ['HTTP_ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json'], content: json_encode([
+            'email' => '0102030405',
+            'password' => 'secret-password',
+        ], \JSON_THROW_ON_ERROR));
+
+        self::assertSame(200, $client->getResponse()->getStatusCode(), (string) $client->getResponse()->getContent());
+        self::assertSame('phone@example.com', $container->get('gingerminds_core.security.user_provider')->loadUserByIdentifier('0102030405')->getUserIdentifier());
     }
 
     private function resetSchema(): EntityManagerInterface

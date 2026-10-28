@@ -17,8 +17,6 @@ use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\ProfileController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 
@@ -72,8 +70,8 @@ return static function (ContainerConfigurator $container): void {
     $controller('gingerminds_core.controller.health', HealthController::class);
     $controller('gingerminds_core.controller.api.auth', AuthController::class)
         ->args([
-            service(UserRepository::class),
-            service(ApiTokenRepository::class),
+            service('gingerminds_core.repository.user'),
+            service('gingerminds_core.repository.api_token'),
             service('security.user_password_hasher'),
             service('limiter.gingerminds_core_api_login'),
             tagged_iterator('gingerminds_core.login_response_enricher'),

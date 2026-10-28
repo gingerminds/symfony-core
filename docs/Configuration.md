@@ -181,6 +181,27 @@ The bundle then:
   relation (`Contributor::$user`, `ApiToken::$user`...) targets it;
 - uses it in forms, commands, the resource voter and repositories.
 
+### Repository
+
+The `repositoryClass` of the project entity is used everywhere, the authentication and the
+forms included: `gingerminds_core.repository.<name>` (`user`, `contributor`, `role`,
+`permission`) is the repository Doctrine gives for the configured entity, autowired by
+`UserRepositoryInterface` / `ContributorRepositoryInterface`. Extend the bundle repository
+(or implement its interface) and register it as usual (`ServiceEntityRepository`, autoconfigured):
+
+```php
+#[ORM\Entity(repositoryClass: App\Repository\UserRepository::class)]
+class User extends BaseUser {}
+
+final class UserRepository extends \Gingerminds\CoreBundle\Repository\User\UserRepository
+{
+    public function loadUserByIdentifier(string $identifier): ?UserInterface { /* sign in by phone too */ }
+}
+```
+
+The API tokens (entity not overridable) go through `ApiTokenRepositoryInterface`
+(`gingerminds_core.repository.api_token`): decorate it to change their storage.
+
 Property mapping, validation constraints and serialization groups **are** inherited from the
 base class; only `#[ORM\Entity]`, `#[ORM\Table]` and `#[ApiResource]` must be restated.
 The same works for `contributor` (`BaseContributor`), `role` (`BaseRole`, keep the

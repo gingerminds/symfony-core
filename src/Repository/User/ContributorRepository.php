@@ -12,7 +12,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 /**
  * @extends AbstractRepository<ContributorInterface>
  */
-class ContributorRepository extends AbstractRepository
+class ContributorRepository extends AbstractRepository implements ContributorRepositoryInterface
 {
     protected int $itemsPerPage = 25;
 

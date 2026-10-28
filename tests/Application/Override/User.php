@@ -12,7 +12,6 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 /**

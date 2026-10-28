@@ -7,16 +7,14 @@ namespace Gingerminds\CoreBundle\Repository\User;
 use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Repository\AbstractRepository;
-use Symfony\Bridge\Doctrine\Security\User\UserLoaderInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
-use Symfony\Component\Security\Core\User\PasswordUpgraderInterface;
 
 /**
  * @extends AbstractRepository<UserInterface>
  */
-class UserRepository extends AbstractRepository implements UserLoaderInterface, PasswordUpgraderInterface
+class UserRepository extends AbstractRepository implements UserRepositoryInterface
 {
     /**
      * @param class-string<UserInterface> $entityClass
@@ -39,7 +37,7 @@ class UserRepository extends AbstractRepository implements UserLoaderInterface, 
     {
         $contributors = $this->getEntityManager()->getRepository($this->getClassMetadata()->getAssociationTargetClass('contributor'));
 
-        if (!$contributors instanceof ContributorRepository) {
+        if (!$contributors instanceof ContributorRepositoryInterface) {
             return parent::saveWith($entity, $write);
         }
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
 use Gingerminds\CoreBundle\Security\Api\ApiAuthenticationFailureHandler;
 use Gingerminds\CoreBundle\Security\Api\ApiLoginAuthenticator;
 use Gingerminds\CoreBundle\Security\Api\ApiLoginFailureHandler;
@@ -39,7 +37,7 @@ return static function (ContainerConfigurator $container): void {
         ->tag('security.voter');
 
     $services->set('gingerminds_core.security.user_provider', UserProvider::class)
-        ->args([service(UserRepository::class)]);
+        ->args([service('gingerminds_core.repository.user')]);
     $services->alias(UserProvider::class, 'gingerminds_core.security.user_provider');
 
     $services->set('gingerminds_core.security.api_failure_handler', ApiAuthenticationFailureHandler::class)
@@ -47,7 +45,7 @@ return static function (ContainerConfigurator $container): void {
     $services->alias(ApiAuthenticationFailureHandler::class, 'gingerminds_core.security.api_failure_handler');
 
     $services->set('gingerminds_core.security.api_token_handler', ApiTokenHandler::class)
-        ->args([service(ApiTokenRepository::class), service('clock')]);
+        ->args([service('gingerminds_core.repository.api_token'), service('clock')]);
     $services->alias(ApiTokenHandler::class, 'gingerminds_core.security.api_token_handler');
 
     // API login (`custom_authenticators` + `login_throttling.limiter` of the login firewall).

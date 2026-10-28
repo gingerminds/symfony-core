@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Controller\Security\Api;
 
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepositoryInterface;
+use Gingerminds\CoreBundle\Repository\User\UserRepositoryInterface;
 use Gingerminds\CoreBundle\Security\Api\LoginResponseEnricherInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -24,8 +24,8 @@ final class AuthController extends AbstractController
      * @param iterable<LoginResponseEnricherInterface> $enrichers
      */
     public function __construct(
-        private readonly UserRepository $users,
-        private readonly ApiTokenRepository $tokens,
+        private readonly UserRepositoryInterface $users,
+        private readonly ApiTokenRepositoryInterface $tokens,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly RateLimiterFactoryInterface $loginLimiter,
         private readonly iterable $enrichers,

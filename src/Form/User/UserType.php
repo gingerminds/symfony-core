@@ -9,7 +9,7 @@ use Gingerminds\CoreBundle\Entity\User\ContributorInterface;
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Enum\Civility;
 use Gingerminds\CoreBundle\Form\Type\ContributorSelectorType;
-use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
+use Gingerminds\CoreBundle\Repository\User\ContributorRepositoryInterface;
 use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -40,7 +40,7 @@ class UserType extends AbstractType
 
     public function __construct(
         protected readonly ResourceRegistry $resources,
-        protected readonly ContributorRepository $contributors,
+        protected readonly ContributorRepositoryInterface $contributors,
         protected readonly TranslatorInterface $translator,
     ) {
     }
