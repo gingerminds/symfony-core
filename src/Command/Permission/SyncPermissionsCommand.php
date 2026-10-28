@@ -19,13 +19,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class SyncPermissionsCommand extends Command
 {
     private const array CORE_PERMISSIONS = [
-        'access admin',
-        'view dashboard',
-        'view settings',
-        'manage roles',
+        PermissionInterface::ACCESS_ADMIN,
+        PermissionInterface::VIEW_DASHBOARD,
+        PermissionInterface::VIEW_SETTINGS,
+        PermissionInterface::MANAGE_ROLES,
     ];
 
-    private const array ADMIN_PERMISSIONS = ['access admin', 'view dashboard'];
+    private const array ADMIN_PERMISSIONS = [PermissionInterface::ACCESS_ADMIN, PermissionInterface::VIEW_DASHBOARD];
 
     /**
      * @param list<string> $extraPermissions

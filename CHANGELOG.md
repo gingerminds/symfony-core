@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `PermissionInterface::ACCESS_ADMIN`, `VIEW_DASHBOARD`, `VIEW_SETTINGS` and `MANAGE_ROLES`: the
+  core permission names.
 - Admin trees: `TreeNodeInterface`, `TreeNodes` (group by parent, flatten, parent choices),
   `TreeRepositoryInterface` / `TreeRepositoryTrait` (`findTreeNodes()`, `reorderLevel()`,
   `findIdsWithDescendants()`, a new or moved node at the end of its level, `$scope` criteria for

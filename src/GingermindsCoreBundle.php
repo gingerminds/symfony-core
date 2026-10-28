@@ -68,10 +68,10 @@ final class GingermindsCoreBundle extends AbstractResourceBundle
             'path' => 'roles',
             'permission' => 'roles',
             'permissions' => [
-                ResourceVoter::VIEW => 'manage roles',
-                ResourceVoter::CREATE => 'manage roles',
-                ResourceVoter::EDIT => 'manage roles',
-                ResourceVoter::DELETE => 'manage roles',
+                ResourceVoter::VIEW => PermissionInterface::MANAGE_ROLES,
+                ResourceVoter::CREATE => PermissionInterface::MANAGE_ROLES,
+                ResourceVoter::EDIT => PermissionInterface::MANAGE_ROLES,
+                ResourceVoter::DELETE => PermissionInterface::MANAGE_ROLES,
             ],
         ],
         'permission' => [
