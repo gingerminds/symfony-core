@@ -132,6 +132,7 @@ final class GingermindsCoreBundle extends AbstractResourceBundle
         $parameters->set('gingerminds_core.admin_title', $config['admin_title']);
         $parameters->set('gingerminds_core.admin_title_translation_domain', $config['admin_title_translation_domain']);
         $parameters->set('gingerminds_core.display_timezone', $config['display_timezone']);
+        $parameters->set('gingerminds_core.profile.form', $config['profile']['form']);
         $parameters->set('gingerminds_core.health_check_path', trim((string) $config['health_check_path'], '/'));
         $parameters->set('gingerminds_core.api.prefix', trim((string) $config['api']['prefix'], '/'));
         $parameters->set('gingerminds_core.api.token_ttl', $config['api']['token_ttl']);

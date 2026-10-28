@@ -95,10 +95,7 @@ final class EntityOverrideTest extends TestCase
      */
     public function testTheProjectUserIsWrittenThroughTheApi(): void
     {
-        $entityManager = $this->entityManager();
-        $schemaTool = new SchemaTool($entityManager);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
+        $entityManager = $this->resetSchema();
 
         $superAdmin = new Role();
         $superAdmin->setName(UserInterface::SUPER_ADMIN_ROLE);
@@ -141,6 +138,43 @@ final class EntityOverrideTest extends TestCase
         self::assertNotNull($user->getPassword());
         self::assertNotSame('secret-password', $user->getPassword());
         self::assertSame('Lovelace', $user->getContributor()?->getLastname());
+    }
+
+    /**
+     * The project profile form (`profile.form`) on the bundle profile page: its extra field is
+     * rendered by the bundle template and saved.
+     */
+    public function testTheProfilePageUsesTheProjectForm(): void
+    {
+        $entityManager = $this->resetSchema();
+        $user = new User();
+        $user->setEmail('profile@example.com');
+        $entityManager->persist($user);
+        $entityManager->flush();
+
+        $client = new KernelBrowser(self::$kernel);
+        $client->loginUser($user, 'admin');
+
+        $crawler = $client->request('GET', '/admin/profile');
+        $form = $crawler->filter('form[name="profile"]')->form();
+        $form['profile[phone]'] = '0102030405';
+        $client->submit($form);
+
+        self::assertSame(303, $client->getResponse()->getStatusCode(), (string) $client->getResponse()->getContent());
+        $entityManager->clear();
+        self::assertSame('0102030405', $entityManager->getRepository(User::class)->findOneBy(['email' => 'profile@example.com'])?->getPhone());
+    }
+
+    private function resetSchema(): EntityManagerInterface
+    {
+        // The kernel is shared by the tests: no entity of a previous test in the identity map.
+        $entityManager = $this->entityManager();
+        $entityManager->clear();
+        $schemaTool = new SchemaTool($entityManager);
+        $schemaTool->dropDatabase();
+        $schemaTool->createSchema($entityManager->getMetadataFactory()->getAllMetadata());
+
+        return $entityManager;
     }
 
     private function entityManager(): EntityManagerInterface

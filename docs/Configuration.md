@@ -11,6 +11,9 @@ gingerminds_core:
     health_check_path: health        # public GET /health -> {"status": "ok"}
     display_timezone: Europe/Paris   # dates typed and displayed in this timezone, stored in UTC
 
+    profile:
+        form: Gingerminds\CoreBundle\Form\User\ProfileType   # form type of the profile page (/admin/profile)
+
     security:
         authorized_domains: []       # allowed "Origin" hosts of the admin login, [] = no check
 
@@ -243,6 +246,17 @@ gingerminds_core:
             controller: App\Controller\User\UserController    # a class extending the bundle UserController
             form: App\Form\UserType                           # extends the bundle UserType
             template_prefix: admin/user
+```
+
+The profile page of the logged in user (`/admin/profile`) is not a resource: its form type is
+the `profile.form` option, a `FormTypeInterface` (usually a class extending the bundle
+`ProfileType`). The bundle template renders the `ProfileType` fields, the extra ones under them
+(`form_rest()`); override `pages/profile/edit.html.twig` to place them.
+
+```yaml
+gingerminds_core:
+    profile:
+        form: App\Form\ProfileType                            # extends the bundle ProfileType
 ```
 
 Templates can also be overridden one by one with Symfony's standard mechanism:

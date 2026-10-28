@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Gingerminds\CoreBundle\Form\User\ProfileType;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Gingerminds\CoreBundle\Service\DisplayTimezone;
 use Symfony\Component\Config\Definition\Configurator\DefinitionConfigurator;
+use Symfony\Component\Form\FormTypeInterface;
 
 return static function (DefinitionConfigurator $definition): void {
     $definition->rootNode()
@@ -32,6 +34,20 @@ return static function (DefinitionConfigurator $definition): void {
                 ->info('Timezone of the dates typed and displayed (forms, Twig "date" filter, date filters and facets). Dates are always stored in UTC.')
                 ->defaultValue(DisplayTimezone::DEFAULT)
                 ->cannotBeEmpty()
+            ->end()
+            ->arrayNode('profile')
+                ->addDefaultsIfNotSet()
+                ->children()
+                    ->scalarNode('form')
+                        ->info('Form type of the current user\'s profile page. The bundle template renders the ProfileType fields (email, password, contributor*).')
+                        ->defaultValue(ProfileType::class)
+                        ->cannotBeEmpty()
+                        ->validate()
+                            ->ifTrue(static fn (string $class): bool => !is_a($class, FormTypeInterface::class, true))
+                            ->thenInvalid('The profile form must be a class implementing ' . FormTypeInterface::class . ', %s given.')
+                        ->end()
+                    ->end()
+                ->end()
             ->end()
             ->arrayNode('security')
                 ->addDefaultsIfNotSet()

@@ -9,6 +9,7 @@ use Gingerminds\CoreBundle\Entity\User\UserInterface;
 use Gingerminds\CoreBundle\Form\User\ProfileType;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -22,7 +23,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 class ProfileController extends AbstractController
 {
     /**
-     * @param class-string<ProfileType> $formType
+     * @param class-string<FormTypeInterface<UserInterface>> $formType the `profile.form` option
      */
     public function __construct(
         protected readonly ManagerRegistry $doctrine,

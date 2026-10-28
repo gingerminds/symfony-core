@@ -65,7 +65,7 @@ return static function (ContainerConfigurator $container): void {
 
     $controller('gingerminds_core.controller.admin.dashboard', DashboardController::class);
     $controller('gingerminds_core.controller.admin.profile', ProfileController::class)
-        ->args([service('doctrine'), service('translator')]);
+        ->args([service('doctrine'), service('translator'), param('gingerminds_core.profile.form')]);
     $controller('gingerminds_core.controller.security.login', LoginController::class)
         ->args([service('security.authentication_utils')]);
     $controller('gingerminds_core.controller.security.logout', LogoutController::class);
