@@ -85,9 +85,10 @@ return static function (ContainerConfigurator $container): void {
             param('gingerminds_core.api.disabled_resources'),
         ]);
 
-    // Right above the attributes reading (API Platform's innermost decorator is at 1000).
+    // Right above the attributes reading, below the filter parameters (1010): those of an
+    // inherited resource are read from the project entity.
     $services->set('gingerminds_core.api.metadata.overridden_entity_resources', OverriddenEntityResourceMetadataCollectionFactory::class)
-        ->decorate('api_platform.metadata.resource.metadata_collection_factory', null, 1001)
+        ->decorate('api_platform.metadata.resource.metadata_collection_factory', null, 1020)
         ->args([
             service('.inner'),
             param('gingerminds_core.overridden_entities'),
