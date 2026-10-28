@@ -110,28 +110,33 @@ final readonly class ApiResponseCacheListener
      */
     private function resolveCacheableOperation(RequestEvent $event): ?array
     {
-        if (!$this->isCacheableRequest($event)) {
+        $apiOperation = $this->isCacheableRequest($event) ? $this->apiOperation($event->getRequest()) : null;
+        $attribute = null !== $apiOperation ? CacheMetadata::cacheable($apiOperation[0]) : null;
+
+        if (null === $apiOperation || !$attribute instanceof Cacheable) {
             return null;
         }
 
-        $request = $event->getRequest();
-        $resourceClass = $request->attributes->get('_api_resource_class');
-        $operationName = $request->attributes->get('_api_operation_name');
-
-        if (!\is_string($resourceClass) || !\is_string($operationName) || !class_exists($resourceClass)) {
-            return null;
-        }
-
-        $attribute = CacheMetadata::cacheable($resourceClass);
-
-        if (!$attribute instanceof Cacheable) {
-            return null;
-        }
-
+        [$resourceClass, $operationName] = $apiOperation;
         $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
 
         return $operation instanceof HttpOperation && $this->isCacheableOperation($operation, $resourceClass)
             ? [$attribute, $operation]
+            : null;
+    }
+
+    /**
+     * The resource class and operation name of an API Platform request.
+     *
+     * @return array{class-string, string}|null
+     */
+    private function apiOperation(Request $request): ?array
+    {
+        $resourceClass = $request->attributes->get('_api_resource_class');
+        $operationName = $request->attributes->get('_api_operation_name');
+
+        return \is_string($resourceClass) && \is_string($operationName) && class_exists($resourceClass)
+            ? [$resourceClass, $operationName]
             : null;
     }
 
