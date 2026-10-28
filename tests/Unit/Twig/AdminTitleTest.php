@@ -7,6 +7,7 @@ namespace Gingerminds\CoreBundle\Tests\Unit\Twig;
 use Gingerminds\CoreBundle\Menu\AdminMenu;
 use Gingerminds\CoreBundle\Twig\AdminExtension;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 use Symfony\Component\Translation\Loader\ArrayLoader;
@@ -27,7 +28,7 @@ final class AdminTitleTest extends TestCase
     private function title(Translator $translator, string $title, string $domain): string
     {
         $extension = new AdminExtension(
-            new AdminMenu([], $this->createStub(AuthorizationCheckerInterface::class)),
+            new AdminMenu([], $this->createStub(AuthorizationCheckerInterface::class), new EventDispatcher()),
             new RequestStack(),
             $translator,
             $title,

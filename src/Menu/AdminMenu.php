@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Menu;
 
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 
 final class AdminMenu
 {
@@ -17,6 +18,7 @@ final class AdminMenu
     public function __construct(
         private readonly iterable $providers,
         private readonly AuthorizationCheckerInterface $authorizationChecker,
+        private readonly EventDispatcherInterface $dispatcher,
     ) {
     }
 
@@ -37,12 +39,14 @@ final class AdminMenu
             }
         }
 
-        return $this->items = $this->filter($items);
+        $event = $this->dispatcher->dispatch(new AdminMenuBuiltEvent($this->merge($items)));
+
+        return $this->items = $this->filter($event->getItems());
     }
 
     /**
-     * Merges the sections sharing an id, sorts by weight (stable: registration order on a tie),
-     * drops the entries not granted and the empty sections, at every level.
+     * Sorts by weight (stable: registration order on a tie), drops the entries not granted and
+     * the empty sections, at every level.
      *
      * @param list<MenuItem> $items
      *
@@ -50,7 +54,6 @@ final class AdminMenu
      */
     private function filter(array $items): array
     {
-        $items = $this->merge($items);
         usort($items, static fn (MenuItem $a, MenuItem $b): int => $a->weight <=> $b->weight);
         $visible = [];
 
@@ -72,6 +75,8 @@ final class AdminMenu
     }
 
     /**
+     * Merges the entries sharing an id, at every level.
+     *
      * @param list<MenuItem> $items
      *
      * @return list<MenuItem>
@@ -96,6 +101,10 @@ final class AdminMenu
 
             $sections[$item->id] = $item;
             $merged[] = $item;
+        }
+
+        foreach ($merged as $item) {
+            $item->children = $this->merge($item->children);
         }
 
         return $merged;

@@ -10,7 +10,8 @@ use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 /**
  * Core entries. Their weights leave room on both sides: Dashboard -100, Administration 100,
  * whose children (users 0, contributors 10, roles 20, permissions 30) a bundle extends by
- * declaring the `administration` section too.
+ * declaring the `administration` section too. The id of a resource entry is the resource name
+ * (`user`, `contributor`, `role`, `permission`).
  */
 final readonly class CoreAdminMenuProvider implements AdminMenuProviderInterface
 {
@@ -47,6 +48,7 @@ final readonly class CoreAdminMenuProvider implements AdminMenuProviderInterface
                 permission: ResourceVoter::VIEW,
                 permissionSubject: $name,
                 translationDomain: $resource->translationDomain,
+                id: $name,
                 weight: $weight,
             );
         }

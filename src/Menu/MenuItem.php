@@ -15,8 +15,9 @@ final class MenuItem
      * @param array<string, mixed> $routeParameters
      * @param list<MenuItem>       $children
      * @param int                  $priority        deprecated since 1.5, use $weight (ascending): highest first
-     * @param string|null          $id              section identifier: the entries of every provider sharing it are
-     *                                              merged into one (children added, label/icon of the first one)
+     * @param string|null          $id              entry identifier, found by the AdminMenuBuiltEvent listeners; the
+     *                                              entries of one level sharing it are merged into one (children
+     *                                              added, label/icon of the first one)
      * @param int|null             $weight          ascending order (lowest first), 0 by default
      */
     public function __construct(
@@ -37,6 +38,26 @@ final class MenuItem
         }
 
         $this->weight = $weight ?? -$priority;
+    }
+
+    /**
+     * A copy with the given constructor arguments changed, e.g. `$item->with(icon: 'bi-person', weight: 5)`.
+     */
+    public function with(mixed ...$changes): self
+    {
+        return new self(...[
+            'label' => $this->label,
+            'route' => $this->route,
+            'routeParameters' => $this->routeParameters,
+            'icon' => $this->icon,
+            'permission' => $this->permission,
+            'permissionSubject' => $this->permissionSubject,
+            'children' => $this->children,
+            'translationDomain' => $this->translationDomain,
+            'id' => $this->id,
+            'weight' => $this->weight,
+            ...$changes,
+        ]);
     }
 
     public function getActivePrefix(): ?string

@@ -28,6 +28,7 @@ return static function (ContainerConfigurator $container): void {
         ->args([
             tagged_iterator('gingerminds_core.admin_menu_provider'),
             service('security.authorization_checker'),
+            service('event_dispatcher'),
         ]);
     $services->alias(AdminMenu::class, 'gingerminds_core.admin_menu');
 
