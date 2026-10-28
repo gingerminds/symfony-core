@@ -24,18 +24,17 @@ use Gingerminds\CoreBundle\Repository\Role\RoleRepository;
             security: "is_granted('VIEW', 'role')",
         ),
         new Get(security: "is_granted('VIEW', object)"),
-        new Post(
-            security: "is_granted('CREATE', 'role')",
-            deserialize: false,
+        new Post(security: "is_granted('CREATE', 'role')"),
+        new Patch(security: "is_granted('EDIT', object)"),
+        new Delete(
+            security: "is_granted('DELETE', object)",
+            validationContext: ['groups' => [BaseRole::GROUP_DELETE]],
+            validate: true,
         ),
-        new Patch(security: "is_granted('EDIT', object)", deserialize: false),
-        new Delete(security: "is_granted('DELETE', object)"),
     ],
     normalizationContext: ['groups' => [BaseRole::GROUP_READ]],
     denormalizationContext: ['groups' => [BaseRole::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.role',
-    processor: 'gingerminds_core.api.processor.role',
 )]
 class Role extends BaseRole
 {

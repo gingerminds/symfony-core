@@ -12,16 +12,13 @@ use Gingerminds\CoreBundle\Entity\User\UserInterface;
 /**
  * @extends ServiceEntityRepository<ApiToken>
  */
-class ApiTokenRepository extends ServiceEntityRepository
+class ApiTokenRepository extends ServiceEntityRepository implements ApiTokenRepositoryInterface
 {
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, ApiToken::class);
     }
 
-    /**
-     * Creates and stores a token; returns the plain value, only available now.
-     */
     public function createToken(UserInterface $user, string $name = 'api-token', ?\DateTimeImmutable $expiresAt = null): string
     {
         $plainToken = ApiToken::generatePlainToken();

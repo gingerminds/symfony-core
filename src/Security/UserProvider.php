@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Security;
 
 use Gingerminds\CoreBundle\Entity\User\UserInterface;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Repository\User\UserRepositoryInterface;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\Exception\UserNotFoundException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -19,7 +19,7 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 final readonly class UserProvider implements UserProviderInterface, PasswordUpgraderInterface
 {
     public function __construct(
-        private UserRepository $users,
+        private UserRepositoryInterface $users,
     ) {
     }
 
@@ -57,7 +57,7 @@ final readonly class UserProvider implements UserProviderInterface, PasswordUpgr
 
     public function supportsClass(string $class): bool
     {
-        return is_a($class, $this->users->getEntityClass(), true);
+        return is_a($class, $this->users->getClassName(), true);
     }
 
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void

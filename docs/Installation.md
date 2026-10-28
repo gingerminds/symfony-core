@@ -54,6 +54,15 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js|assets)/
             security: false
+        # Before `api`: POST /api/login, Symfony authenticator + native login throttling
+        api_login:
+            pattern: ^/api/login$
+            stateless: true
+            provider: gingerminds_users
+            custom_authenticators:
+                - gingerminds_core.security.api_login_authenticator
+            login_throttling:
+                limiter: gingerminds_core.security.api_login_rate_limiter
         api:
             pattern: ^/api
             stateless: true
@@ -87,7 +96,11 @@ security:
 There is no `^/api` rule: the API is open by default and every operation is protected by its
 `security` expression (resource voter), see [Authentication](Authentication.md#protecting-api-operations).
 
-`login_throttling` requires `symfony/rate-limiter` (already a dependency of the bundle).
+`login_throttling` requires `symfony/rate-limiter` (already a dependency of the bundle). On
+`api_login`, its `limiter` is built by the bundle from `gingerminds_core.api.login_throttling`
+(Symfony's `DefaultLoginRateLimiter`: per username + IP, and 5x the attempts per IP). The login
+gets its own firewall so that the throttling and the login authenticator never apply to the
+bearer token requests of `api`.
 Keep the default `affirmative` access decision strategy: the Super-Admin bypass relies on it.
 
 ## 4. API Platform

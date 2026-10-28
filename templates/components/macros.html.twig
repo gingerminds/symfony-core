@@ -20,16 +20,18 @@
 {#
  # Table header cell of a list column:
  # {label, property?, sortable?, align?, class?, translation_domain?}.
- # Sortable columns link to gm_sort_path() when the entity is sortable.
+ # Columns whose property is `#[Sortable]` (sortable_fields) link to gm_sort_path()
+ # (`order[property]=asc|desc`),
+ # unless `sortable: false`.
  #}
-{% macro sort_header(column, list_query, route, route_parameters = {}, is_sortable = true, domain = null) -%}
-    {%- set direction = column.property is defined and column.property ? gm_sort_direction(list_query, column.property) : null -%}
-    {%- set sortable = is_sortable and (column.sortable ?? false) and (column.property ?? null) -%}
+{% macro sort_header(column, route, route_parameters = {}, sortable_fields = [], domain = null) -%}
+    {%- set direction = column.property is defined and column.property ? gm_sort_direction(column.property) : null -%}
+    {%- set sortable = (column.property ?? null) and column.property in sortable_fields and (column.sortable ?? true) -%}
     {%- set label = column.label is defined and column.label is not same as(false) ? _self.trans(column.label, column.translation_domain ?? domain) : '' -%}
     {%- set classes = [column.class ?? null, column.align is defined ? 'text-' ~ column.align : null, sortable ? 'sortable' : null, direction]|filter(c => c) -%}
     <th scope="col"{% if classes is not empty %} class="{{ classes|join(' ') }}"{% endif %}{% if column.property is defined and column.property %} data-sort="{{ column.property }}"{% endif %}>
         {%- if sortable -%}
-            <a href="{{ gm_sort_path(route, list_query, column.property, route_parameters) }}" class="text-reset text-decoration-none">
+            <a href="{{ gm_sort_path(route, column.property, route_parameters) }}" class="text-reset text-decoration-none">
                 {{- label -}}
                 {%- if 'desc' == direction -%}
                     <i class="bi bi-chevron-down ms-1"></i>

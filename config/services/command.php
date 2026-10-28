@@ -24,7 +24,6 @@ return static function (ContainerConfigurator $container): void {
         ->args([
             service('doctrine.orm.entity_manager'),
             service('gingerminds_core.resource_registry'),
-            service('security.user_password_hasher'),
             service('validator'),
         ])
         ->tag('console.command');

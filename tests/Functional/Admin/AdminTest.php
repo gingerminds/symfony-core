@@ -7,11 +7,16 @@ namespace Gingerminds\CoreBundle\Tests\Functional\Admin;
 use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
+use Gingerminds\CoreBundle\Entity\User\Contributor;
+use Gingerminds\CoreBundle\Entity\User\User;
+use Gingerminds\CoreBundle\Form\Autocomplete\ResourceAutocompleter;
+use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
 use Gingerminds\CoreBundle\Tests\Functional\Fixtures;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AdminTest extends ApiTestCase
 {
@@ -61,7 +66,7 @@ final class AdminTest extends ApiTestCase
             yield $uri => [$uri];
         }
 
-        yield 'list with query' => ['/admin/users?filters[search]=example&sortBy=email&sort=desc&itemsPerPage=5&page=1'];
+        yield 'list with query' => ['/admin/users?search=example&order[email]=desc&itemsPerPage=5&page=1'];
     }
 
     #[DataProvider('pages')]
@@ -72,6 +77,29 @@ final class AdminTest extends ApiTestCase
         $this->client->request('GET', $uri);
 
         self::assertResponseIsSuccessful();
+    }
+
+    public function testSearchFieldOfASearchableResource(): void
+    {
+        $this->client->loginUser($this->fixtures->user('search@example.com', superAdmin: true), 'admin');
+
+        $emails = fn (string $search): array => $this->client->request('GET', '/admin/users?search=' . $search)
+            ->filter('tbody tr td:nth-child(2)')->each(static fn ($td): string => trim($td->text()));
+
+        self::assertSame(['search@example.com'], $emails('SEARCH@'));
+        self::assertCount(1, $this->client->getCrawler()->filter('input[name="search"]'));
+        // `email` is `#[Searchable]`, not the contributor firstname of the user (`First`).
+        self::assertSame([], $emails('first'));
+    }
+
+    public function testOnlySortableColumnsLinkToASort(): void
+    {
+        $this->client->loginUser($this->fixtures->user('sort@example.com', superAdmin: true), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/users');
+
+        self::assertSame(['email', 'contributor.lastname'], $crawler->filter('th.sortable')->each(static fn ($th): ?string => $th->attr('data-sort')));
+        self::assertSame('/admin/users?order%5Bemail%5D=asc', $crawler->filter('th[data-sort="email"] a')->attr('href'));
     }
 
     public function testListHeadHasPaginationLinks(): void
@@ -86,10 +114,10 @@ final class AdminTest extends ApiTestCase
 
         $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1&page=2');
         self::assertSame('http://localhost/admin/users?itemsPerPage=1', $crawler->filter('head link[rel="prev"]')->attr('href'));
-        self::assertSame('http://localhost/admin/users?page=3&itemsPerPage=1', $crawler->filter('head link[rel="next"]')->attr('href'));
+        self::assertSame('http://localhost/admin/users?itemsPerPage=1&page=3', $crawler->filter('head link[rel="next"]')->attr('href'));
 
         $crawler = $this->client->request('GET', '/admin/users?itemsPerPage=1&page=3');
-        self::assertSame('http://localhost/admin/users?page=2&itemsPerPage=1', $crawler->filter('head link[rel="prev"]')->attr('href'));
+        self::assertSame('http://localhost/admin/users?itemsPerPage=1&page=2', $crawler->filter('head link[rel="prev"]')->attr('href'));
         self::assertCount(0, $crawler->filter('head link[rel="next"]'));
     }
 
@@ -181,13 +209,78 @@ final class AdminTest extends ApiTestCase
         $deleteUrl = $base . '/' . $product->getId() . '/delete';
         $token = (string) $crawler->filter(\sprintf('[data-gm-delete-url="%s"]', $deleteUrl))->attr('data-gm-delete-token');
 
+        // An invalid token without referer: back to the list of the same parent.
         $this->client->request('POST', $deleteUrl, ['_token' => 'invalid']);
-        self::assertResponseRedirects($base);
+        self::assertResponseRedirects($base, 303);
 
         $this->client->request('POST', $deleteUrl, ['_token' => $token]);
         self::assertResponseRedirects($base);
         $entityManager->clear();
         self::assertNull($entityManager->find(Product::class, $product->getId()));
+    }
+
+    public function testNestedResourceRefusesAnEntityOfAnotherParent(): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $tractors = new Category('Tractors');
+        $boats = new Category('Boats');
+        $product = new Product();
+        $product->setName('T-800');
+        $product->setCategory($tractors);
+        $entityManager->persist($tractors);
+        $entityManager->persist($boats);
+        $entityManager->persist($product);
+        $entityManager->flush();
+        $this->client->loginUser($this->fixtures->user('parent@example.com', superAdmin: true), 'admin');
+        $own = '/admin/categories/' . $tractors->getId() . '/products/' . $product->getId();
+        $foreign = '/admin/categories/' . $boats->getId() . '/products/' . $product->getId();
+
+        $this->client->request('GET', $own . '/edit');
+        self::assertResponseIsSuccessful();
+        // A valid token: the 404 is not the CSRF check.
+        $token = $this->deleteToken('/admin/categories/' . $tractors->getId() . '/products', $own . '/delete');
+
+        // AbstractCrudController::entityBelongsToRoute(): {categoryId} must be the product's category.
+        $this->client->request('GET', $foreign . '/edit');
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('POST', $foreign . '/edit', ['category_product' => ['name' => 'Hijacked']]);
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('POST', $foreign . '/delete', ['_token' => $token]);
+        self::assertResponseStatusCodeSame(404);
+
+        // Before the access check: a user without the permission gets the same 404.
+        $this->client->loginUser($this->fixtures->user('parent-none@example.com', ['view categories']), 'admin');
+        $this->client->request('GET', $foreign . '/edit');
+        self::assertResponseStatusCodeSame(404);
+
+        $entityManager->clear();
+        self::assertSame('T-800', $entityManager->find(Product::class, $product->getId())?->getName());
+    }
+
+    public function testInvalidDeleteTokenRedirectsBackWithAFlash(): void
+    {
+        $role = $this->fixtures->role('Editors');
+        $this->client->loginUser($this->fixtures->user('csrf@example.com', superAdmin: true), 'admin');
+        $deleteUrl = '/admin/roles/' . $role->getId() . '/delete';
+        $editUrl = 'http://localhost/admin/roles/' . $role->getId() . '/edit';
+
+        // InvalidCsrfTokenListener, before the firewall: no login page, back to the referer.
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid'], server: ['HTTP_REFERER' => $editUrl]);
+        self::assertResponseRedirects($editUrl, 303);
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.alert-danger', 'Invalid security token');
+
+        // A referer of another host is not followed: the resource list.
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid'], server: ['HTTP_REFERER' => 'https://evil.example.com/']);
+        self::assertResponseRedirects('/admin/roles', 303);
+
+        // A JSON request keeps the firewall's handling.
+        $this->client->request('POST', $deleteUrl, ['_token' => 'invalid'], server: ['HTTP_ACCEPT' => 'application/json']);
+        self::assertResponseRedirects('/admin/login');
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        self::assertNotNull($entityManager->find(Role::class, $role->getId()));
     }
 
     public function testFormColumnsRenderTheFormIncludes(): void
@@ -279,6 +372,84 @@ final class AdminTest extends ApiTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    public function testRoleAdminRequiresManageRoles(): void
+    {
+        $this->client->loginUser($this->fixtures->user('role-viewer@example.com', ['view roles', 'edit roles']), 'admin');
+        $this->client->request('GET', '/admin/roles');
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->loginUser($this->fixtures->user('role-manager@example.com', ['manage roles']), 'admin');
+        $this->client->request('GET', '/admin/roles');
+        self::assertResponseIsSuccessful();
+        $this->client->request('GET', '/admin/roles/new');
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testUserEditsButCannotDeleteTheirOwnAccount(): void
+    {
+        $user = $this->fixtures->user('own-account@example.com', ['delete users']);
+        $other = $this->fixtures->user('other-account@example.com');
+        $this->client->loginUser($user, 'admin');
+
+        $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+        $this->client->request('GET', '/admin/users/' . $other->getId() . '/edit');
+        self::assertResponseStatusCodeSame(403);
+
+        $this->client->request('POST', '/admin/users/' . $user->getId() . '/delete');
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testResourceRegisteredByConfigurationIsSecuredByPermission(): void
+    {
+        $category = new Category('Boots');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($category);
+        $entityManager->flush();
+
+        // `category` has no voter of its own: the core ResourceVoter maps `{VIEW|EDIT} categories`.
+        $this->client->loginUser($this->fixtures->user('category-viewer@example.com', ['view categories']), 'admin');
+        $this->client->request('GET', '/admin/_autocomplete/category');
+        self::assertResponseIsSuccessful();
+
+        $this->client->loginUser($this->fixtures->user('category-none@example.com', ['view products']), 'admin');
+        $this->client->request('GET', '/admin/_autocomplete/category');
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testEditAndDeleteResolveTheEntityBeforeCheckingAccess(): void
+    {
+        $permission = $this->fixtures->permission('view gadgets');
+        $this->client->loginUser($this->fixtures->user('reader@example.com', ['view permissions']), 'admin');
+
+        // ResourceEntityValueResolver: an unknown id is a 404, whatever the permissions.
+        $this->client->request('GET', '/admin/permissions/999999/edit');
+        self::assertResponseStatusCodeSame(404);
+        $this->client->request('POST', '/admin/permissions/999999/delete');
+        self::assertResponseStatusCodeSame(404);
+
+        // #[IsGranted('EDIT'|'DELETE', subject: 'entity')] on the resolved entity, before the CSRF check.
+        $this->client->request('GET', '/admin/permissions/' . $permission->getId() . '/edit');
+        self::assertResponseStatusCodeSame(403);
+        $this->client->request('POST', '/admin/permissions/' . $permission->getId() . '/delete', ['_token' => 'invalid']);
+        self::assertResponseStatusCodeSame(403);
+        self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Permission::class, $permission->getId()));
+    }
+
+    public function testEditPageOfAnAuthorizedUser(): void
+    {
+        $permission = $this->fixtures->permission('view widgets');
+        $this->client->loginUser($this->fixtures->user('editor@example.com', ['view permissions', 'edit permissions']), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/permissions/' . $permission->getId() . '/edit');
+        self::assertResponseIsSuccessful();
+
+        $this->client->submit($crawler->filter('form[name="permission"]')->form(['permission[name]' => 'view gizmos']));
+        self::assertResponseStatusCodeSame(303);
+        $this->client->followRedirect();
+        self::assertSelectorTextContains('.alert-success', 'view gizmos');
+    }
+
     public function testCreateRole(): void
     {
         $this->client->loginUser($this->fixtures->user('creator@example.com', superAdmin: true), 'admin');
@@ -333,8 +504,9 @@ final class AdminTest extends ApiTestCase
         $this->client->loginUser($this->fixtures->user('deleter@example.com', superAdmin: true), 'admin');
         $role = $this->fixtures->role('To delete');
 
+        // #[IsCsrfTokenValid]: nothing deleted, back to the list (testInvalidDeleteTokenRedirectsBackWithAFlash).
         $this->client->request('POST', '/admin/roles/' . $role->getId() . '/delete', ['_token' => 'invalid']);
-        self::assertResponseRedirects('/admin/roles');
+        self::assertResponseRedirects('/admin/roles', 303);
         self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Role::class, $role->getId()));
 
         $csrf = $this->deleteToken('/admin/roles', '/admin/roles/' . $role->getId() . '/delete');
@@ -358,6 +530,92 @@ final class AdminTest extends ApiTestCase
         self::assertInputValueSame('profile[contributorLastname]', 'Updated');
     }
 
+    public function testProfilePasswordChangeAloneIsHashed(): void
+    {
+        $this->client->loginUser($this->fixtures->user('password@example.com'), 'admin');
+
+        // Only the unmapped plain password changes: hashed on flush all the same.
+        $crawler = $this->client->request('GET', '/admin/profile');
+        $form = $crawler->filter('form[name="profile"]')->form();
+        $form['profile[password][first]'] = 'changed-password';
+        $form['profile[password][second]'] = 'changed-password';
+        $this->client->submit($form);
+        self::assertResponseRedirects('/admin/profile');
+
+        $user = self::getContainer()->get(EntityManagerInterface::class)->getRepository(User::class)->findOneBy(['email' => 'password@example.com']);
+        self::assertInstanceOf(User::class, $user);
+        self::assertNull($user->getPlainPassword());
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'changed-password'));
+    }
+
+    public function testUserFormCreatesTheUserWithANewContributor(): void
+    {
+        $this->client->loginUser($this->fixtures->user('admin-contributor@example.com', superAdmin: true), 'admin');
+
+        $crawler = $this->client->request('GET', '/admin/users/new');
+        $form = $crawler->filter('form[name="user"]')->form();
+        $form['user[email]'] = 'grace@example.com';
+        $form['user[password][first]'] = 'grace-password';
+        $form['user[password][second]'] = 'grace-password';
+        $form['user[contributorId]']->setValue(UserType::NEW_CONTRIBUTOR);
+        $form['user[contributorFirstname]'] = 'Grace';
+        $form['user[contributorLastname]'] = 'Hopper';
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $user = $entityManager->getRepository(User::class)->findOneBy(['email' => 'grace@example.com']);
+
+        self::assertInstanceOf(User::class, $user);
+        self::assertSame('Grace Hopper', $user->getContributor()?->getFullName());
+        self::assertTrue(self::getContainer()->get(UserPasswordHasherInterface::class)->isPasswordValid($user, 'grace-password'));
+    }
+
+    public function testUserFormReplacesTheContributorByANewOne(): void
+    {
+        $this->client->loginUser($this->fixtures->user('admin-replace@example.com', superAdmin: true), 'admin');
+        $user = $this->fixtures->user('replaced@example.com');
+        $oldId = $user->getContributor()?->getId();
+
+        // contributors.user_id is unique: the old contributor is released before the new one is inserted.
+        $crawler = $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        $form = $crawler->filter('form[name="user"]')->form();
+        $form['user[contributorId]']->setValue(UserType::NEW_CONTRIBUTOR);
+        $form['user[contributorFirstname]'] = 'Katherine';
+        $form['user[contributorLastname]'] = 'Johnson';
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $this->assertContributorReplaced($user->getId(), $oldId, 'Katherine Johnson');
+    }
+
+    public function testUserFormReplacesTheContributorByAnotherExistingOne(): void
+    {
+        $this->client->loginUser($this->fixtures->user('admin-swap@example.com', superAdmin: true), 'admin');
+        $user = $this->fixtures->user('swapped@example.com');
+        $oldId = $user->getContributor()?->getId();
+        $free = new Contributor();
+        $free->setFirstname('Dorothy');
+        $free->setLastname('Vaughan');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->persist($free);
+        $entityManager->flush();
+
+        $crawler = $this->client->request('GET', '/admin/users/' . $user->getId() . '/edit');
+        // A remote autocomplete: the options are loaded by search, the submitted id is checked server side.
+        $form = $crawler->filter('form[name="user"]')->form()->disableValidation();
+        $form['user[contributorId]']->setValue((string) $free->getId());
+        // The contributor fields are applied to the selected contributor.
+        $form['user[contributorFirstname]'] = 'Dorothy';
+        $form['user[contributorLastname]'] = 'Vaughan';
+        $this->client->submit($form);
+        self::assertResponseRedirects();
+
+        $this->assertContributorReplaced($user->getId(), $oldId, 'Dorothy Vaughan');
+        self::assertSame($free->getId(), self::getContainer()->get(EntityManagerInterface::class)->find(User::class, $user->getId())?->getContributor()?->getId());
+    }
+
     public function testAutocompleteEndpoint(): void
     {
         $this->client->loginUser($this->fixtures->user('autocomplete@example.com', ['view categories']), 'admin');
@@ -376,6 +634,32 @@ final class AdminTest extends ApiTestCase
 
         $this->client->request('GET', '/admin/_autocomplete/role?query=a');
         self::assertResponseStatusCodeSame(403);
+
+        // No autocompleter for an unknown resource: a 404, not a 403.
+        $this->client->request('GET', '/admin/_autocomplete/unknown?query=a');
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testAutocompleteEndpointPaginates(): void
+    {
+        $this->client->loginUser($this->fixtures->user('autocomplete-pages@example.com', ['view categories']), 'admin');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+
+        foreach (range(1, ResourceAutocompleter::MAX_RESULTS + 1) as $i) {
+            $entityManager->persist(new Category(\sprintf('Page %02d', $i)));
+        }
+
+        $entityManager->flush();
+
+        $this->client->request('GET', '/admin/_autocomplete/category?query=page');
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertCount(ResourceAutocompleter::MAX_RESULTS, $data['results']);
+        self::assertSame('/admin/_autocomplete/category?query=page&page=2', $data['next_page']);
+
+        $this->client->request('GET', $data['next_page']);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame([\sprintf('Page %02d', ResourceAutocompleter::MAX_RESULTS + 1)], array_column($data['results'], 'text'));
+        self::assertNull($data['next_page']);
     }
 
     public function testSuperAdminRoleCannotBeDeletedFromTheAdmin(): void
@@ -390,6 +674,23 @@ final class AdminTest extends ApiTestCase
 
         self::assertResponseRedirects('/admin/roles');
         self::assertNotNull(self::getContainer()->get(EntityManagerInterface::class)->find(Role::class, $role->getId()));
+    }
+
+    /**
+     * The user now has the $fullName contributor; the previous one is kept, without user.
+     */
+    private function assertContributorReplaced(?int $userId, ?int $oldContributorId, string $fullName): void
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->clear();
+        $user = $entityManager->find(User::class, $userId);
+        $old = $entityManager->find(Contributor::class, $oldContributorId);
+
+        self::assertInstanceOf(User::class, $user);
+        self::assertSame($fullName, $user->getContributor()?->getFullName());
+        self::assertNotSame($oldContributorId, $user->getContributor()->getId());
+        self::assertInstanceOf(Contributor::class, $old, 'The previous contributor is kept.');
+        self::assertNull($old->getUser());
     }
 
     /**

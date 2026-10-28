@@ -1,7 +1,7 @@
 # Facets
 
 Faceted search: each filter option shows how many results it would yield ("Concerts (12)"),
-computed against every **other** active filter. Built on `getFilters()`.
+computed against every **other** active list parameter (see [List parameters](filters.md)).
 
 ## `AbstractFacetRepository`
 
@@ -20,95 +20,63 @@ final class EventRepository extends AbstractFacetRepository
 }
 ```
 
-- `buildFacetedQuery(ListQuery $query, array $excludedKeys = []): QueryBuilder` — the list
-  query (search, every filter handler, `configureListQueryBuilder()` context) without the
-  excluded keys, sort and pagination. Build any facet on it.
-- `getDateFacetStats(ListQuery $query, string $property): array{min, max, years}` — bounds and
-  distinct years of a date field (years computed in PHP, database-agnostic).
-- `getAssociationFacetCounts(ListQuery $query, string $association): array<id, total>` —
+The methods take the valued list parameters (`ApiPlatform\Metadata\Parameters`): on the API the
+collection operation's (`$operation->getParameters()`, valued by API Platform), on the admin
+`FilterParameters::fromQuery()`.
+
+- `buildFacetedQuery(Parameters $parameters, array $excludedKeys = []): QueryBuilder` — the list
+  query (`configureListQueryBuilder()` scope) with the parameters but the excluded keys and the
+  sorts, without eager loads. Build any facet on it.
+- `getDateFacetStats(Parameters $parameters, string $property): array{min, max, years}` — bounds
+  and distinct years of a date field (years computed in PHP, database-agnostic).
+- `getAssociationFacetCounts(Parameters $parameters, string $association): array<id, total>` —
   counts per related id (categories...).
 - `extraFacetQuerySetup(QueryBuilder $qb)` — hook for anything every facet query needs.
 - `COUNT_TOTAL` — `COUNT(DISTINCT %s) AS total` for your own grouped counts.
 
-> Change from the Laravel core: facets reuse the registered filter handlers instead of a
-> separate dispatch, so a filter behaves identically in lists and facets. Declare
-> relation filters as `select-entity`.
-
 `Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator::compute(QueryBuilder, string $dqlField, DisplayTimezone)`
 is also available directly. Bounds and years are days of the display timezone.
 
-## `AbstractFilterComputeService`
-
-Turns facet stats into the front-end shape:
-
-```php
-/**
- * @extends AbstractFilterComputeService<Event>
- */
-final class EventFilterComputeService extends AbstractFilterComputeService
-{
-    public function __construct(private readonly EventRepository $events) {}
-
-    protected function getEntityClass(): string
-    {
-        return Event::class;
-    }
-
-    protected function dateFacetStats(ListQuery $query): array
-    {
-        return ['publishedAt' => $this->events->getDateFacetStats($query, 'publishedAt')];
-    }
-
-    /**
-     * @return list<array{value: int, label: string, total: int}>
-     */
-    public function categories(ListQuery $query): array
-    {
-        return $this->resolveCategoryOptions(
-            Category::class,
-            $this->events->getAssociationFacetCounts($query, 'categories'),
-            $this->normalizeIds($this->activeFilterValue($query, 'categories')),
-        );
-    }
-}
-```
-
-Helpers: `computeDateFilters()`, `activeFilterValue()`, `mergeWithSelected()`,
-`normalizeIds()`, `resolveCategoryOptions()` (same behaviour as the Laravel core).
-
 ## Exposing computed filters through the API
 
-Store them from the provider in `Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore`;
-`InjectComputedFiltersListener` adds them as a `filters` key of the collection response:
+A provider decorating the native Doctrine collection provider stores them in
+`Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore`; `ComputedFiltersCollectionNormalizer`
+(decorating the Hydra collection normalizer) adds them as a `filters` key of the JSON-LD collection,
+entries without options dropped. A forced filter is set on the operation's parameter before both:
 
 ```php
-final class EventProvider extends ResourceProvider
+final readonly class EventProvider implements ProviderInterface
 {
     public function __construct(
-        EventRepository $events,
-        RequestStack $requestStack,
-        private readonly EventFilterComputeService $filters,
-        private readonly ComputedFilterStore $store,
+        #[Autowire(service: CollectionProvider::class)]
+        private ProviderInterface $collectionProvider,
+        private EventRepository $events,
+        private ComputedFilterStore $store,
     ) {
-        parent::__construct($events, $requestStack);
     }
 
-    protected function configureListQuery(ListQuery $query, Operation $operation, array $uriVariables, array $context): ListQuery
+    public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        if ($operation instanceof CollectionOperationInterface) {
-            $this->store->set(Event::class, [
-                ...$this->filters->computeDateFilters($query),
-                'categories' => ['type' => 'select-entity', 'options' => $this->filters->categories($query)],
-            ]);
-        }
+        $parameters = $operation->getParameters() ?? new Parameters();
+        $parameters->get('status')?->setValue('published');
 
-        return $query;
+        $categories = $this->events->getAssociationFacetCounts($parameters, 'categories');
+
+        $this->store->set(Event::class, [
+            'publishedAt' => ['type' => 'date', 'options' => $this->events->getDateFacetStats($parameters, 'publishedAt')],
+            'categories' => [
+                'type' => 'relation',
+                'options' => array_map(
+                    static fn (int|string $id, int $total): array => ['value' => $id, 'total' => $total],
+                    array_keys($categories),
+                    $categories,
+                ),
+            ],
+        ]);
+
+        return $this->collectionProvider->provide($operation, $uriVariables, $context);
     }
 }
 ```
 
-> Change from the Laravel core: a single request-scoped store keyed by resource class
-> replaces the per-resource `FilterStore` subclasses and `AbstractInjectFiltersMiddleware`
-> subclasses — nothing to register on the operation.
-
-Entries without options are dropped; a bare JSON list is wrapped as `{member, filters}`.
+`#[ApiResource(operations: [new GetCollection(provider: EventProvider::class), ...])]`.

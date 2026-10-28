@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Gingerminds\CoreBundle\Form\Autocomplete\ResourceAutocompleter;
 use Gingerminds\CoreBundle\Form\Extension\DisplayTimezoneTypeExtension;
 use Gingerminds\CoreBundle\Form\Extension\InputGroupTypeExtension;
 use Gingerminds\CoreBundle\Form\Extension\SizeTypeExtension;
@@ -14,7 +15,6 @@ use Gingerminds\CoreBundle\Form\Type\ResourceAutocompleteType;
 use Gingerminds\CoreBundle\Form\User\ContributorType;
 use Gingerminds\CoreBundle\Form\User\ProfileType;
 use Gingerminds\CoreBundle\Form\User\UserType;
-use Gingerminds\CoreBundle\Repository\User\ContributorRepository;
 
 /*
  * Form types and extensions.
@@ -23,10 +23,10 @@ return static function (ContainerConfigurator $container): void {
     $services = $container->services();
 
     $services->set('gingerminds_core.form.type.user', UserType::class)
-        ->args([service('gingerminds_core.resource_registry'), service(ContributorRepository::class), service('translator')])
+        ->args([service('gingerminds_core.resource_registry'), service('gingerminds_core.repository.contributor')])
         ->tag('form.type');
     $services->set('gingerminds_core.form.type.profile', ProfileType::class)
-        ->args([service('gingerminds_core.resource_registry'), service(ContributorRepository::class), service('translator')])
+        ->args([service('gingerminds_core.resource_registry'), service('gingerminds_core.repository.contributor')])
         ->tag('form.type');
 
     foreach (
@@ -41,11 +41,16 @@ return static function (ContainerConfigurator $container): void {
             ->tag('form.type');
     }
 
+    // One child per resource, aliased by its name (ResourceRegistryPass).
+    $services->set('gingerminds_core.form.autocompleter', ResourceAutocompleter::class)
+        ->abstract()
+        ->args([abstract_arg('resource name'), service('gingerminds_core.resource_registry'), service('gingerminds_core.api.filter_parameters')]);
+
     $services->set('gingerminds_core.form.type.resource_autocomplete', ResourceAutocompleteType::class)
         ->args([service('gingerminds_core.resource_registry'), service('router')])
         ->tag('form.type');
     $services->set('gingerminds_core.form.type.contributor_selector', ContributorSelectorType::class)
-        ->args([service(ContributorRepository::class), service('translator'), service('router')])
+        ->args([service('gingerminds_core.repository.contributor'), service('translator'), service('router')])
         ->tag('form.type');
 
     $services->set('gingerminds_core.form.extension.size', SizeTypeExtension::class)

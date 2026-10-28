@@ -63,9 +63,8 @@ final class MakerExtensionTest extends TestCase
 
         $entity = (string) file_get_contents($this->directory . '/src/Entity/Catalog/Product.php');
         self::assertStringContainsString('use Countable;', $entity);
-        self::assertStringContainsString('implements ResourceInterface, SearchableInterface, SortableInterface, TimestampableInterface, Countable, EagerLoadableInterface, \Stringable' . "\n{", $entity);
-        self::assertStringContainsString('use Gingerminds\CoreBundle\Model\EagerLoadableInterface;', $entity);
-        self::assertStringContainsString("return ['category'];", $entity);
+        self::assertStringContainsString('implements ResourceInterface, TimestampableInterface, Countable, \Stringable' . "\n{", $entity);
+        self::assertStringContainsString('use TimestampableTrait;' . "\n    use CountableTrait;", $entity);
 
         $form = (string) file_get_contents($this->directory . '/src/Form/Catalog/ProductType.php');
         self::assertStringContainsString("\$builder->add('flagged');", $form);
@@ -89,7 +88,6 @@ final class MakerExtensionTest extends TestCase
 
         $entity = (string) file_get_contents($this->directory . '/src/Entity/Catalog/Product.php');
         self::assertStringNotContainsString('Countable', $entity);
-        self::assertStringNotContainsString('public static function getEagerLoads', $entity);
         self::assertFileDoesNotExist($this->directory . '/src/Entity/Catalog/ProductExtra.php');
         self::assertSame([], $extension->generatedFor);
     }
@@ -159,6 +157,6 @@ final class TestMakerExtension implements ResourceMakerExtensionInterface
     {
         $template->addUse('Countable');
         $template->append('interfaces', 'Countable');
-        $template->append('eager_loads', "'category'");
+        $template->append('traits', 'CountableTrait');
     }
 }

@@ -64,10 +64,9 @@ final class MakeCrudController extends AbstractResourceMaker
                 $resource->snake,
             ),
             \sprintf(
-                'It requires <comment>%s</comment>, <comment>%s</comment>, its repository and <comment>%s</comment> (make:gm:resource generates them all).',
+                'It requires <comment>%s</comment>, <comment>%s</comment> and its repository (make:gm:resource generates them all).',
                 $resource->entityClass(),
                 $resource->formClass(),
-                $resource->voterClass(),
             ),
             \sprintf('Add columns/fields in <comment>templates/%s/</comment> and labels in <comment>translations/admin.*.yaml</comment>.', $resource->templateDirectory()),
         ];

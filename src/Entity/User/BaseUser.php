@@ -9,9 +9,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\User\Trait\UserRolesTrait;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
+use Gingerminds\CoreBundle\Model\Searchable;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -20,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['email'])]
-abstract class BaseUser implements UserInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseUser implements UserInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
     use UserRolesTrait;
@@ -49,22 +49,36 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
         BaseContributor::GROUP_LIST,
         BaseContributor::GROUP_READ,
     ])]
+    #[Sortable]
+    #[Searchable]
     protected ?string $email = null;
 
     #[ORM\Column(nullable: true)]
     protected ?string $password = null;
 
     /**
-     * Never persisted: hashed into $password by UserRepository::beforeSave().
+     * Never persisted: hashed into $password on flush by UserPasswordListener. Write only,
+     * required on creation.
      */
+    #[Assert\NotBlank(groups: [self::GROUP_CREATE])]
     #[Assert\Length(min: 8, max: 4096)]
+    #[Groups([self::GROUP_CREATE, self::GROUP_EDIT])]
     protected ?string $plainPassword = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     protected ?\DateTimeImmutable $emailVerifiedAt = null;
 
-    #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user')]
-    #[Groups([self::GROUP_LIST, self::GROUP_READ])]
+    /**
+     * Eager loaded: shown by the admin list and the `user:list` group, and the inverse side of a
+     * one-to-one, which Doctrine can't lazy load (one query per user otherwise). A new
+     * contributor given to the user (user form, nested API document) is persisted with it.
+     * Written as an existing contributor (id or IRI) or a new one (nested document).
+     */
+    #[ORM\OneToOne(targetEntity: ContributorInterface::class, mappedBy: 'user', cascade: ['persist'])]
+    #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_CREATE, self::GROUP_EDIT])]
+    #[Assert\Valid]
+    #[Sortable(paths: ['lastname'])]
+    #[EagerLoad]
     protected ?ContributorInterface $contributor = null;
 
     public function __construct()
@@ -131,23 +145,26 @@ abstract class BaseUser implements UserInterface, TimestampableInterface, Sortab
         return $this->contributor;
     }
 
+    /**
+     * Keeps both sides in sync: the contributor left is released (its user, the owning side,
+     * set to null), the new one is given this user.
+     */
     public function setContributor(?ContributorInterface $contributor): void
     {
+        if ($this->contributor === $contributor) {
+            return;
+        }
+
+        $previous = $this->contributor;
         $this->contributor = $contributor;
-    }
 
-    public static function getSearchableFields(): array
-    {
-        return ['email'];
-    }
+        if ($previous?->getUser() === $this) {
+            $previous->setUser(null);
+        }
 
-    /**
-     * Shown by the admin list and the `user:list` group. `contributor` is the inverse side
-     * of a one-to-one: Doctrine can't lazy load it, it would cost one query per user.
-     */
-    public static function getEagerLoads(): array
-    {
-        return ['contributor', 'roleEntities'];
+        if ($contributor instanceof ContributorInterface && $contributor->getUser() !== $this) {
+            $contributor->setUser($this);
+        }
     }
 
     /**

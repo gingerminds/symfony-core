@@ -10,9 +10,10 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Permission\PermissionInterface;
 use Gingerminds\CoreBundle\Entity\User\BaseUser;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Entity\User\UserInterface;
+use Gingerminds\CoreBundle\Model\EagerLoad;
+use Gingerminds\CoreBundle\Model\Searchable;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -23,13 +24,18 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['name'])]
-abstract class BaseRole implements RoleInterface, TimestampableInterface, SortableInterface, SearchableInterface, EagerLoadableInterface, \Stringable
+abstract class BaseRole implements RoleInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
 
     public const string GROUP_LIST = 'role:list';
     public const string GROUP_READ = 'role:read';
     public const string GROUP_EDIT = 'role:edit';
+
+    /**
+     * Validation group of a deletion (admin and API Delete).
+     */
+    public const string GROUP_DELETE = 'role:delete';
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -41,7 +47,10 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Sortab
     #[ORM\Column(length: 255, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
+    #[Assert\NotEqualTo(value: UserInterface::SUPER_ADMIN_ROLE, message: 'role.super_admin_delete', groups: [self::GROUP_DELETE])]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT, BaseUser::GROUP_LIST, BaseUser::GROUP_READ])]
+    #[Sortable]
+    #[Searchable]
     protected ?string $name = null;
 
     #[ORM\Column(name: 'is_external', options: ['default' => false])]
@@ -55,13 +64,17 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Sortab
     protected ?bool $default = null;
 
     /**
+     * Counted on the list (getPermissionsCount(), `role:list` group) and serialized on reads:
+     * loaded for the whole page at once on lists, fetch-joined on reads.
+     *
      * @var Collection<int, PermissionInterface>
      */
     #[ORM\ManyToMany(targetEntity: PermissionInterface::class)]
     #[ORM\JoinTable(name: 'role_permissions')]
     #[ORM\JoinColumn(name: 'role_id', onDelete: 'CASCADE')]
     #[ORM\InverseJoinColumn(name: 'permission_id', onDelete: 'CASCADE')]
-    #[Groups([self::GROUP_READ])]
+    #[Groups([self::GROUP_READ, self::GROUP_EDIT])]
+    #[EagerLoad]
     protected Collection $permissions;
 
     public function __construct()
@@ -146,20 +159,6 @@ abstract class BaseRole implements RoleInterface, TimestampableInterface, Sortab
         $slug = new AsciiSlugger()->slug((string) $this->name, '_')->upper()->toString();
 
         return 'ROLE_' . $slug;
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['name'];
-    }
-
-    /**
-     * Counted on the list (getPermissionsCount(), `role:list` group) and serialized on reads:
-     * loaded for the whole page at once on lists, fetch-joined on reads.
-     */
-    public static function getEagerLoads(): array
-    {
-        return ['permissions'];
     }
 
     public function __toString(): string

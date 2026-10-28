@@ -96,7 +96,7 @@ page uses `profile_form_main` / `profile_form_sidebar`. Pass another name to the
 | `basic` (`type=text\|number\|email\|date\|color`) | `TextType`, `NumberType`/`IntegerType`, `EmailType`, `DateType` (`widget: single_text`), `ColorType` — `attr: {min, max, step, placeholder}`, `help`, `required`, `disabled`, `input_prefix` / `input_suffix` (`prefix` / `suffix`) |
 | `textarea` | `TextareaType` (`attr: {rows: 10}`) |
 | `select` (Select2) | `ChoiceType` / `EnumType` / `EntityType` with `'autocomplete' => true` (UX Autocomplete, Tom Select) |
-| `select` with `ajax-url` | `EntityType` + `'autocomplete' => true` and UX Autocomplete's `#[AsEntityAutocompleteField]`, or `autocomplete_url` pointing at `/admin/_autocomplete/{resource}` |
+| `select` with `ajax-url` | `ResourceAutocompleteType` (`'resource' => 'user'`) for a registered resource, or UX Autocomplete's `#[AsEntityAutocompleteField]` with `autocomplete_url` at `gingerminds_core_autocomplete` (`{alias}`), under the admin firewall |
 | `toggle` | `CheckboxType` with `'label_attr' => ['class' => 'checkbox-switch']` — unchecked submits `false`, no hidden input needed |
 
 Validation errors and old values are handled by the form component; nested/array fields are
@@ -107,5 +107,5 @@ embedded forms or `CollectionType`.
 
 ## Passwords
 
-`RepeatedType` rows (password + confirmation) are rendered side by side. The API expects the
-same structure: `"password": {"first": "...", "second": "..."}`.
+`RepeatedType` rows (password + confirmation) are rendered side by side. The confirmation is
+admin only: the API takes a single `"plainPassword": "..."`.

@@ -19,13 +19,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class SyncPermissionsCommand extends Command
 {
     private const array CORE_PERMISSIONS = [
-        'access admin',
-        'view dashboard',
-        'view settings',
-        'manage roles',
+        PermissionInterface::ACCESS_ADMIN,
+        PermissionInterface::VIEW_DASHBOARD,
+        PermissionInterface::VIEW_SETTINGS,
+        PermissionInterface::MANAGE_ROLES,
     ];
 
-    private const array ADMIN_PERMISSIONS = ['access admin', 'view dashboard'];
+    private const array ADMIN_PERMISSIONS = [PermissionInterface::ACCESS_ADMIN, PermissionInterface::VIEW_DASHBOARD];
 
     /**
      * @param list<string> $extraPermissions
@@ -110,13 +110,7 @@ final class SyncPermissionsCommand extends Command
         $names = self::CORE_PERMISSIONS;
 
         foreach ($this->resources->all() as $resource) {
-            if ('role' === $resource->name) {
-                continue;
-            }
-
-            foreach (['view', 'edit', 'delete'] as $action) {
-                $names[] = $action . ' ' . $resource->permission;
-            }
+            $names = [...$names, ...$resource->permissionNames()];
         }
 
         return array_values(array_unique([...$names, ...$this->extraPermissions]));

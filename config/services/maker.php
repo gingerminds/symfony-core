@@ -11,7 +11,6 @@ use Gingerminds\CoreBundle\Maker\MakeEntity;
 use Gingerminds\CoreBundle\Maker\MakeForm;
 use Gingerminds\CoreBundle\Maker\MakeRepository;
 use Gingerminds\CoreBundle\Maker\MakeResource;
-use Gingerminds\CoreBundle\Maker\MakeVoter;
 use Gingerminds\CoreBundle\Maker\ResourceGenerator;
 
 /*
@@ -29,7 +28,6 @@ return static function (ContainerConfigurator $container): void {
         'repository' => MakeRepository::class,
         'form' => MakeForm::class,
         'crud_controller' => MakeCrudController::class,
-        'voter' => MakeVoter::class,
         'api' => MakeApi::class,
     ];
 

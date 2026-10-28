@@ -44,6 +44,7 @@ list:
     pagination: Pagination
     first: First page
     last: Last page
+    invalid_parameters: 'Invalid list parameters ignored: %parameters%'
 
 flash:
     created: '%resource% "%label%" successfully created.'
@@ -173,8 +174,6 @@ role:
     form:
         resource: Resource
         check_all: Check all
-    error:
-        super_admin_delete: The Super-Admin role cannot be deleted.
     message:
         no_items: No roles
 
@@ -192,10 +191,6 @@ permission:
         name: '"action resource" convention, e.g. "edit users": permissions are grouped by resource on the role form.'
     message:
         no_items: No permissions
-
-api:
-    error:
-        invalid_json: The request JSON payload is invalid.
 
 admin:
     title: Administration

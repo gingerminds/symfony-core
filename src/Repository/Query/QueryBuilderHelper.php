@@ -198,14 +198,18 @@ final readonly class QueryBuilderHelper
         return false;
     }
 
-    private function uniqueAlias(string $association): string
+    /**
+     * An alias no part of the query uses yet (`gm_<name>`, `gm_<name>1`...), subqueries included.
+     */
+    public function uniqueAlias(string $name): string
     {
-        $base = 'gm_' . preg_replace('/\W/', '', $association);
+        $base = 'gm_' . preg_replace('/\W/', '', $name);
         $aliases = $this->queryBuilder->getAllAliases();
+        $dql = $this->queryBuilder->getDQL();
         $alias = $base;
         $i = 1;
 
-        while (\in_array($alias, $aliases, true)) {
+        while (\in_array($alias, $aliases, true) || 1 === preg_match('/\b' . $alias . '\b/', $dql)) {
             $alias = $base . $i++;
         }
 

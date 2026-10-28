@@ -13,8 +13,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Form\AbstractType;
 
 /**
- * make:gm:form Namespace/Name: `App\Form\Namespace\NameType`, the form shared
- * by the admin CRUD and the API processor (translation domain `admin`).
+ * make:gm:form Namespace/Name: `App\Form\Namespace\NameType`, the form of the
+ * admin CRUD (translation domain `admin`).
  */
 final class MakeForm extends AbstractResourceMaker
 {

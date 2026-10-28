@@ -13,10 +13,10 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 
 /**
- * make:gm:api Namespace/Name (Laravel make:api-provider + make:state-processor):
- * `App\State\Namespace\NameProvider` (ResourceProvider) and
- * `App\State\Namespace\NameProcessor` (ResourceProcessor submitting the
- * payload to the resource form type).
+ * make:gm:api Namespace/Name: prints the `#[ApiResource]` to add to an existing entity. Nothing
+ * to generate: reads use the native Doctrine providers (the repository's list query, the list
+ * parameters of the entity attributes), writes its Doctrine processors through the repository
+ * save hooks.
  */
 final class MakeApi extends AbstractResourceMaker
 {
@@ -27,7 +27,7 @@ final class MakeApi extends AbstractResourceMaker
 
     public static function getCommandDescription(): string
     {
-        return 'Create the API Platform state provider and processor of a Gingerminds resource';
+        return 'Print the API Platform #[ApiResource] of an existing Gingerminds resource';
     }
 
     public function configureCommand(Command $command, InputConfiguration $inputConfig): void
@@ -45,10 +45,9 @@ final class MakeApi extends AbstractResourceMaker
     public function generate(InputInterface $input, ConsoleStyle $io, Generator $generator): void
     {
         $resource = $this->getResourceName($input, $generator);
-        $this->generatorFor($input)->generateApi($generator, $io, $resource);
 
         $this->finish($generator, $io, [
-            \sprintf('They require <comment>%s</comment> and <comment>%s</comment>.', $resource->repositoryClass(), $resource->formClass()),
+            \sprintf('It requires <comment>%s</comment>.', $resource->repositoryClass()),
         ], $input, $resource);
 
         $this->writeApiResourceSnippet($io, $resource);

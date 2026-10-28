@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Tests\Functional\Repository;
 
+use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\PersistentCollection;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Entity\User\Contributor;
 use Gingerminds\CoreBundle\Entity\User\User;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Application\Repository\ProductRepository;
@@ -71,7 +72,7 @@ final class PaginationTest extends KernelTestCase
     #[DataProvider('pages')]
     public function testPagesWithToOneEagerLoad(int $page, array $expected): void
     {
-        $items = $this->products->paginate(new ListQuery(page: $page, itemsPerPage: 2, sortBy: 'name'));
+        $items = $this->products->paginate($this->parameters(Product::class, ['order' => ['name' => 'asc']]), $page, 2);
 
         self::assertSame($expected, array_map(static fn (Product $product): string => $product->getName(), $items->getItems()));
         self::assertSame(5, $items->getTotalItems());
@@ -106,7 +107,7 @@ final class PaginationTest extends KernelTestCase
         $entityManager->clear();
 
         // Full page of users having 2 roles each: no duplicate, order kept, roles loaded.
-        $items = $entityManager->getRepository(User::class)->paginate(new ListQuery(itemsPerPage: 2, sortBy: 'email'));
+        $items = $entityManager->getRepository(User::class)->paginate($this->parameters(User::class, ['order' => ['email' => 'asc']]), 1, 2);
 
         self::assertSame(['u1@example.com', 'u2@example.com'], array_map(static fn (User $user): string => $user->getEmail(), $items->getItems()));
         self::assertSame(3, $items->getTotalItems());
@@ -122,11 +123,20 @@ final class PaginationTest extends KernelTestCase
 
     public function testCollectionFilterCountsEachEntityOnce(): void
     {
-        $filters = ['tags' => [(string) $this->tags['red']->getId(), (string) $this->tags['blue']->getId()]];
+        $query = ['tags' => [(string) $this->tags['red']->getId(), (string) $this->tags['blue']->getId()], 'order' => ['name' => 'asc']];
 
-        $items = $this->products->paginate(new ListQuery(page: 1, itemsPerPage: 2, sortBy: 'name', filters: $filters));
+        $items = $this->products->paginate($this->parameters(Product::class, $query), 1, 2);
 
         self::assertSame(['A', 'B'], array_map(static fn (Product $product): string => $product->getName(), $items->getItems()));
         self::assertSame(3, $items->getTotalItems());
+    }
+
+    /**
+     * @param class-string         $entityClass
+     * @param array<string, mixed> $query
+     */
+    private function parameters(string $entityClass, array $query): Parameters
+    {
+        return self::getContainer()->get(FilterParameters::class)->fromQuery($entityClass, $query);
     }
 }

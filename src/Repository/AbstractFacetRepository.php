@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Repository;
 
+use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\QueryBuilder;
-use Gingerminds\CoreBundle\Model\FilterableInterface;
+use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\Repository\Facet\DateFacetCalculator;
 use Gingerminds\CoreBundle\Repository\Query\QueryBuilderHelper;
 use Gingerminds\CoreBundle\Service\DisplayTimezone;
 use Symfony\Contracts\Service\Attribute\Required;
 
 /**
- * @template T of FilterableInterface
+ * Facets of a list: each one computed against every other active list parameter (the
+ * collection operation's parameters on the API, FilterParameters::fromQuery() on the admin),
+ * not its own.
+ *
+ * @template T of object
  *
  * @extends AbstractRepository<T>
  */
@@ -29,14 +34,15 @@ abstract class AbstractFacetRepository extends AbstractRepository
     }
 
     /**
+     * The list query (context scope) with the parameters but those of $excludedKeys and the
+     * sorts, without eager loads.
+     *
      * @param list<string> $excludedKeys
      */
-    public function buildFacetedQuery(ListQuery $query, array $excludedKeys = []): QueryBuilder
+    public function buildFacetedQuery(Parameters $parameters, array $excludedKeys = []): QueryBuilder
     {
-        $qb = $this->createListQueryBuilder($query->withSort(null)->withoutPagination(), $excludedKeys)
-            ->select(self::ALIAS)
-            ->resetDQLPart('orderBy');
-
+        $qb = $this->createScopedQueryBuilder();
+        $this->applyParameters($qb, FilterParameters::without($parameters, $excludedKeys));
         $this->extraFacetQuerySetup($qb);
 
         return $qb;
@@ -45,9 +51,9 @@ abstract class AbstractFacetRepository extends AbstractRepository
     /**
      * @return array{min: ?string, max: ?string, years: list<int>}
      */
-    public function getDateFacetStats(ListQuery $query, string $property): array
+    public function getDateFacetStats(Parameters $parameters, string $property): array
     {
-        $qb = $this->buildFacetedQuery($query, [$property]);
+        $qb = $this->buildFacetedQuery($parameters, [$property]);
         $field = new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager())->resolveField($property);
 
         if (null === $field) {
@@ -58,11 +64,11 @@ abstract class AbstractFacetRepository extends AbstractRepository
     }
 
     /**
-     * @return array<int|string, int>
+     * @return array<int|string, int> related id => rows
      */
-    public function getAssociationFacetCounts(ListQuery $query, string $association): array
+    public function getAssociationFacetCounts(Parameters $parameters, string $association): array
     {
-        $qb = $this->buildFacetedQuery($query, [$association]);
+        $qb = $this->buildFacetedQuery($parameters, [$association]);
         $helper = new QueryBuilderHelper($qb, self::ALIAS, $this->getEntityManager());
         $alias = $helper->join(self::ALIAS, $association);
 

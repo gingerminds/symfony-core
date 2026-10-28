@@ -7,7 +7,7 @@ namespace <?= $namespace ?>;
 <?= $use_statements ?>
 
 /**
- * Used by the admin CRUD and the API processor.
+ * Used by the admin CRUD; the API deserializes the entity itself.
  *
  * @extends AbstractType<<?= $entity_class ?>>
  */

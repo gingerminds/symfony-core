@@ -8,7 +8,6 @@ use Doctrine\Persistence\ManagerRegistry;
 use Gingerminds\CoreBundle\Entity\Role\RoleInterface;
 use Gingerminds\CoreBundle\Repository\AbstractRepository;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\Form\FormInterface;
 
 /**
  * @extends AbstractRepository<RoleInterface>
@@ -26,11 +25,6 @@ class RoleRepository extends AbstractRepository
         parent::__construct($registry, $entityClass);
     }
 
-    public function findDefaultRole(bool $isExternal = false): ?RoleInterface
-    {
-        return $this->findOneBy(['default' => true, 'external' => $isExternal]);
-    }
-
     public function findOneByName(string $name): ?RoleInterface
     {
         return $this->findOneBy(['name' => $name]);
@@ -45,9 +39,20 @@ class RoleRepository extends AbstractRepository
     }
 
     /**
+     * In a transaction: a failed flush never leaves the audience without its previous default
+     * role, and concurrent saves of a default role are serialized.
+     *
      * @param RoleInterface $entity
      */
-    protected function beforeSave(object $entity, ?FormInterface $form): void
+    public function saveWith(object $entity, \Closure $write): mixed
+    {
+        return $this->getEntityManager()->wrapInTransaction(fn (): mixed => parent::saveWith($entity, $write));
+    }
+
+    /**
+     * @param RoleInterface $entity
+     */
+    protected function beforeSave(object $entity): void
     {
         if (!$entity->isDefault()) {
             return;

@@ -1,6 +1,6 @@
 {#
  # Pagination (2 pages around the current one), links built with gm_list_path().
- # Vars: items (Paginator), list_query, route, route_parameters?
+ # Vars: items (Paginator), route, route_parameters?
  #}
 {% trans_default_domain 'GingermindsCore' %}
 {% set route_parameters = route_parameters ?? {} %}
@@ -16,7 +16,7 @@
                 {page: current - 1, icon: 'bi-chevron-left', label: 'common.previous', disabled: not items.hasPreviousPage},
             ] %}
                 <li class="page-item{{ link.disabled ? ' disabled' }}">
-                    <a class="page-link" href="{{ link.disabled ? '#' : gm_list_path(route, list_query, {page: link.page}, route_parameters) }}" aria-label="{{ link.label|trans }}">
+                    <a class="page-link" href="{{ link.disabled ? '#' : gm_list_path(route, {page: link.page}, route_parameters) }}" aria-label="{{ link.label|trans }}">
                         <i class="bi {{ link.icon }}"></i>
                     </a>
                 </li>
@@ -24,7 +24,7 @@
 
             {% for page in start..end %}
                 <li class="page-item{{ page == current ? ' active' }}"{% if page == current %} aria-current="page"{% endif %}>
-                    <a class="page-link" href="{{ gm_list_path(route, list_query, {page: page}, route_parameters) }}">{{ page }}</a>
+                    <a class="page-link" href="{{ gm_list_path(route, {page: page}, route_parameters) }}">{{ page }}</a>
                 </li>
             {% endfor %}
 
@@ -33,7 +33,7 @@
                 {page: last, icon: 'bi-chevron-double-right', label: 'list.last', disabled: current == last},
             ] %}
                 <li class="page-item{{ link.disabled ? ' disabled' }}">
-                    <a class="page-link" href="{{ link.disabled ? '#' : gm_list_path(route, list_query, {page: link.page}, route_parameters) }}" aria-label="{{ link.label|trans }}">
+                    <a class="page-link" href="{{ link.disabled ? '#' : gm_list_path(route, {page: link.page}, route_parameters) }}" aria-label="{{ link.label|trans }}">
                         <i class="bi {{ link.icon }}"></i>
                     </a>
                 </li>

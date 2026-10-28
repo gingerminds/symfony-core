@@ -11,27 +11,20 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use Doctrine\Persistence\ManagerRegistry;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProcessor;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
 use Gingerminds\CoreBundle\Controller\AbstractCrudController;
 use Gingerminds\CoreBundle\Maker\Extension\ResourceMakerExtensionInterface;
 use Gingerminds\CoreBundle\Maker\Extension\SkeletonTemplate;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
 use Gingerminds\CoreBundle\Model\ResourceInterface;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Gingerminds\CoreBundle\Repository\AbstractRepository;
 use Gingerminds\CoreBundle\Resource\AsCrudController;
-use Gingerminds\CoreBundle\Security\Voter\AbstractResourceVoter;
 use Symfony\Bundle\MakerBundle\ConsoleStyle;
 use Symfony\Bundle\MakerBundle\Exception\RuntimeCommandException;
 use Symfony\Bundle\MakerBundle\Generator;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\FormBuilderInterface;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Serializer\Attribute\Groups;
 
@@ -76,8 +69,7 @@ final readonly class ResourceGenerator
             'Doctrine\\ORM\\Mapping as ORM',
             $resource->repositoryClass(),
             ResourceInterface::class,
-            SearchableInterface::class,
-            SortableInterface::class,
+            Sortable::class,
             TimestampableInterface::class,
             TimestampableTrait::class,
         ];
@@ -90,27 +82,16 @@ final readonly class ResourceGenerator
             $uses[] = Patch::class;
             $uses[] = Post::class;
             $uses[] = Groups::class;
-            $uses[] = $resource->providerClass();
-            $uses[] = $resource->processorClass();
         }
 
         $skeleton = $this->skeleton('Entity.tpl.php', $resource, [
             'resource' => $resource,
             'api' => $api,
             'repository_class' => self::shortName($resource->repositoryClass()),
-            'provider_class' => self::shortName($resource->providerClass()),
-            'processor_class' => self::shortName($resource->processorClass()),
             // Extra implemented interfaces / used traits (short names, imported with `uses`).
             'interfaces' => [],
             'traits' => [],
-            // Non-empty: the entity implements EagerLoadableInterface and returns these
-            // paths (PHP expressions, e.g. `'category'` or `...self::getTranslationEagerLoads()`).
-            'eager_loads' => [],
         ], $uses);
-
-        if ([] !== $skeleton->variables['eager_loads']) {
-            $skeleton->addUse(EagerLoadableInterface::class);
-        }
 
         return $this->generateClassFromSkeleton($generator, $io, $resource->entityClass(), $skeleton);
     }
@@ -169,52 +150,10 @@ final readonly class ResourceGenerator
         ]);
     }
 
-    public function generateVoter(Generator $generator, ConsoleStyle $io, ResourceName $resource): bool
-    {
-        return $this->generateClassFromSkeleton($generator, $io, $resource->voterClass(), $this->skeleton('Voter.tpl.php', $resource, [
-            'resource' => $resource,
-            'entity_class' => self::shortName($resource->entityClass()),
-        ], [
-            AbstractResourceVoter::class,
-            $resource->entityClass(),
-        ]));
-    }
-
-    /**
-     * API Platform state provider and processor.
-     */
-    public function generateApi(Generator $generator, ConsoleStyle $io, ResourceName $resource): void
-    {
-        $this->generateClassFromSkeleton($generator, $io, $resource->providerClass(), $this->skeleton('Provider.tpl.php', $resource, [
-            'entity_class' => self::shortName($resource->entityClass()),
-            'repository_class' => self::shortName($resource->repositoryClass()),
-        ], [
-            ResourceProvider::class,
-            $resource->entityClass(),
-            $resource->repositoryClass(),
-            RequestStack::class,
-        ]));
-
-        $this->generateClassFromSkeleton($generator, $io, $resource->processorClass(), $this->skeleton('Processor.tpl.php', $resource, [
-            'entity_class' => self::shortName($resource->entityClass()),
-            'repository_class' => self::shortName($resource->repositoryClass()),
-            'form_class' => self::shortName($resource->formClass()),
-        ], [
-            ResourceProcessor::class,
-            $resource->entityClass(),
-            $resource->formClass(),
-            $resource->repositoryClass(),
-            FormFactoryInterface::class,
-            RequestStack::class,
-        ]));
-    }
-
     public function apiResourceSnippet(ResourceName $resource): string
     {
         return $this->render($this->skeletonDirectory . '/ApiResource.tpl.php', [
             'resource' => $resource,
-            'provider_class' => self::shortName($resource->providerClass()),
-            'processor_class' => self::shortName($resource->processorClass()),
         ]);
     }
 

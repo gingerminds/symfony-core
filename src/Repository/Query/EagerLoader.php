@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Gingerminds\CoreBundle\Repository\Query;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Gingerminds\CoreBundle\Model\EagerLoadableInterface;
+use Gingerminds\CoreBundle\Model\EagerLoads;
 
 /**
- * Eager loads of an EagerLoadableInterface entity: to-one paths are fetch-joined in the
+ * Eager loads of an entity (`#[EagerLoad]` associations): to-one paths are fetch-joined in the
  * list query, paths going through a collection are loaded after the page.
  */
 final readonly class EagerLoader
@@ -66,7 +66,7 @@ final readonly class EagerLoader
      */
     private function paths(): array
     {
-        return is_subclass_of($this->entityClass, EagerLoadableInterface::class) ? $this->entityClass::getEagerLoads() : [];
+        return EagerLoads::of($this->entityClass);
     }
 
     private function isCollectionPath(string $path): bool

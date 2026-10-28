@@ -9,11 +9,6 @@ use Gingerminds\CoreBundle\Entity\User\UserInterface;
 
 class UserController extends AbstractCrudController
 {
-    protected function getResourceName(): string
-    {
-        return 'user';
-    }
-
     protected function getFormOptions(object $entity, bool $isNew): array
     {
         return ['password_required' => $isNew];

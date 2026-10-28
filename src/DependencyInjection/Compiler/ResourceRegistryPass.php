@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\DependencyInjection\Compiler;
 
-use Gingerminds\CoreBundle\GingermindsCoreBundle;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
@@ -13,10 +13,31 @@ use Symfony\Component\String\Inflector\EnglishInflector;
 
 use function Symfony\Component\String\u;
 
+/**
+ * The resource registry, by precedence: the bundle resources (AbstractResourceBundle), the
+ * `#[AsCrudController]` controllers, the `gingerminds_core.resources` configuration.
+ */
 final class ResourceRegistryPass implements CompilerPassInterface
 {
     public const string CRUD_CONTROLLER_TAG = 'gingerminds_core.crud_controller';
+    public const string BUNDLE_RESOURCE_TAG = 'gingerminds_core.bundle_resource';
     private const string REGISTRY_ID = 'gingerminds_core.resource_registry';
+    private const string ROUTING_CONTROLLER_TAG = 'routing.controller';
+    private const string AUTOCOMPLETER_ID = 'gingerminds_core.form.autocompleter';
+    private const string UX_AUTOCOMPLETER_TAG = 'ux.entity_autocompleter';
+
+    /**
+     * A resource of a bundle, from its extension (whatever the bundle registration order).
+     *
+     * @param array<string, mixed> $resource
+     */
+    public static function registerBundleResource(ContainerBuilder $builder, string $name, array $resource): void
+    {
+        // Placeholder definition, only read (then removed) by process().
+        $builder->register(self::BUNDLE_RESOURCE_TAG . '.' . $name, \stdClass::class)
+            ->setAbstract(true)
+            ->addTag(self::BUNDLE_RESOURCE_TAG, ['resource' => $name, ...$resource]);
+    }
 
     public function process(ContainerBuilder $container): void
     {
@@ -26,18 +47,14 @@ final class ResourceRegistryPass implements CompilerPassInterface
 
         $resources = [];
 
-        foreach (GingermindsCoreBundle::CORE_RESOURCES as $name => $core) {
-            $resources[$name] = [
-                'entity' => $core['entity'],
-                'controller' => $core['controller'],
-                'form' => $core['form'],
-                'path' => $core['path'],
-                'permission' => $core['permission'],
-                'route_prefix' => 'gingerminds_core_' . $name,
-                'translation_prefix' => $name,
-                'translation_domain' => 'GingermindsCore',
-                'template_prefix' => '@GingermindsCore/pages/' . $name,
-            ];
+        foreach ($container->findTaggedServiceIds(self::BUNDLE_RESOURCE_TAG) as $id => $tags) {
+            foreach ($tags as $attributes) {
+                $name = $attributes['resource'];
+                unset($attributes['resource']);
+                $resources[$name] = $attributes;
+            }
+
+            $container->removeDefinition($id);
         }
 
         foreach ($container->findTaggedServiceIds(self::CRUD_CONTROLLER_TAG) as $id => $tags) {
@@ -53,11 +70,13 @@ final class ResourceRegistryPass implements CompilerPassInterface
             }
         }
 
-        /** @var array<string, array<string, string|null>> $configured */
+        /** @var array<string, array<string, array<string, string>|string|bool|null>> $configured */
         $configured = $container->getParameter('gingerminds_core.resources_config');
 
         foreach ($configured as $name => $config) {
-            $resources[$name] = [...$resources[$name] ?? [], ...array_filter($config, static fn (?string $value): bool => null !== $value)];
+            // Read by AbstractResourceBundle (OverriddenEntityPass), not a registry key.
+            unset($config['api']);
+            $resources[$name] = [...$resources[$name] ?? [], ...array_filter($config, static fn (mixed $value): bool => null !== $value && [] !== $value)];
         }
 
         /** @var array{new: string, edit: string} $redirectAfterSave */
@@ -70,13 +89,61 @@ final class ResourceRegistryPass implements CompilerPassInterface
         }
 
         $container->getDefinition(self::REGISTRY_ID)->setArgument('$resources', $resources);
+        $this->excludeFromRoutingControllers($container, $resources);
+        $this->registerAutocompleters($container, array_keys($resources));
     }
 
     /**
-     * @param array<string, string|null>       $resource
+     * A UX Autocomplete source per resource, aliased by its name. This pass runs before
+     * AutocompleteFormTypePass, which collects the tag.
+     *
+     * @param list<int|string> $names
+     */
+    private function registerAutocompleters(ContainerBuilder $container, array $names): void
+    {
+        if (!$container->hasDefinition(self::AUTOCOMPLETER_ID)) {
+            return;
+        }
+
+        foreach ($names as $name) {
+            $container->setDefinition(self::AUTOCOMPLETER_ID . '.' . $name, new ChildDefinition(self::AUTOCOMPLETER_ID))
+                ->replaceArgument(0, (string) $name)
+                ->addTag(self::UX_AUTOCOMPLETER_TAG, ['alias' => (string) $name]);
+        }
+    }
+
+    /**
+     * The CRUD controllers are routed by CrudRouteLoader, under their resource path: the
+     * `routing.controllers` import must not load their #[Route] (inherited from
+     * AbstractCrudController) a second time, without prefix. This pass runs before
+     * RoutingControllerPass.
+     *
+     * @param array<string, array<string, mixed>> $resources
+     */
+    private function excludeFromRoutingControllers(ContainerBuilder $container, array $resources): void
+    {
+        $routed = [];
+
+        foreach ($resources as $resource) {
+            if (\is_string($resource['controller'] ?? null)) {
+                $routed[$resource['controller']] = true;
+            }
+        }
+
+        foreach (array_keys($container->findTaggedServiceIds(self::ROUTING_CONTROLLER_TAG)) as $id) {
+            $class = $container->getParameterBag()->resolveValue($container->getDefinition($id)->getClass());
+
+            if (isset($routed[$id]) || (\is_string($class) && isset($routed[$class]))) {
+                $container->getDefinition($id)->clearTag(self::ROUTING_CONTROLLER_TAG);
+            }
+        }
+    }
+
+    /**
+     * @param array<string, mixed>             $resource
      * @param array{new: string, edit: string} $redirectAfterSave global defaults
      *
-     * @return array<string, string|null>
+     * @return array<string, mixed>
      */
     private function withDefaults(string $name, array $resource, array $redirectAfterSave): array
     {
@@ -98,6 +165,7 @@ final class ResourceRegistryPass implements CompilerPassInterface
             'template_prefix' => $resource['template_prefix'] ?? 'admin/' . u($name)->snake()->toString(),
             'redirect_after_new' => $resource['redirect_after_new'] ?? $redirectAfterSave['new'],
             'redirect_after_edit' => $resource['redirect_after_edit'] ?? $redirectAfterSave['edit'],
+            'permissions' => $resource['permissions'] ?? [],
         ];
     }
 }

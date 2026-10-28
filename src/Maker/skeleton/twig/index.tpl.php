@@ -2,7 +2,7 @@
 
 {# Column labels are translation keys, looked up in the resource domain then GingermindsCore. #}
 {% set columns = [
-    {label: '<?= $resource->snake ?>.field.id', property: 'id', sortable: true},
+    {label: '<?= $resource->snake ?>.field.id', property: 'id'},
     {label: 'common.actions', align: 'end'},
 ] %}
 

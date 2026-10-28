@@ -1,19 +1,25 @@
 {#
- # Collapsible filters panel of a list (search + FilterableInterface filters).
+ # Collapsible filters panel of a list: the search (`search`) and the `#[Filter]` fields.
  #
- # Expects the CRUD index variables: resource, list_query, filters,
- # is_searchable, is_filterable, filter_configs; optional route /
+ # Expects the CRUD index variables: resource, filters (active values by
+ # parameter), is_searchable, is_filterable, filter_configs; optional
+ # filter_errors (message of each ignored invalid parameter), route /
  # route_parameters (defaults to the resource index).
  #
- # Filter inputs are named `filters[<property>]` (`[from]`/`[to]` for date and
- # number ranges); the current sort and page size are kept, the page is reset.
+ # The fields are named after the list parameters, as the API reads them:
+ # `<property>` (`<property>[]` multiple), `[after]`/`[before]` for a date,
+ # `[gte]`/`[lte]` for a number. The current sort (`order[...]`) and page size
+ # are kept, the page is reset; empty fields are ignored.
  #}
 {% trans_default_domain 'GingermindsCore' %}
 {% set route = route ?? resource.route('index') %}
 {% set route_parameters = route_parameters ?? {} %}
-{% set filters = filters ?? list_query.filters %}
-{% set is_filtered = filters is not empty %}
+{% set filters = filters ?? {} %}
+{% set filter_errors = filter_errors ?? {} %}
+{% set is_filtered = filters is not empty or filter_errors is not empty %}
 {% set domain = resource.translationDomain %}
+{% set query = app.request.query.all %}
+{% set kept = {itemsPerPage: query.itemsPerPage ?? null, order: query.order ?? null}|filter(v => v is not empty) %}
 <div class="card shadow-sm mb-4">
     <div class="card-body p-0">
         <div class="accordion accordion-flush" id="gm-filters-accordion">
@@ -29,10 +35,11 @@
                 <div id="gm-filters" class="accordion-collapse collapse{{ is_filtered ? ' show' }}" data-bs-parent="#gm-filters-accordion">
                     <div class="p-4 border-top">
                         <form method="get" action="{{ path(route, route_parameters) }}" class="row g-3 align-items-end">
-                            {% if list_query.itemsPerPage %}<input type="hidden" name="itemsPerPage" value="{{ list_query.itemsPerPage }}">{% endif %}
-                            {% if list_query.sortBy %}
-                                <input type="hidden" name="sortBy" value="{{ list_query.sortBy }}">
-                                <input type="hidden" name="sort" value="{{ list_query.sort }}">
+                            {% if kept.itemsPerPage is defined and kept.itemsPerPage is not iterable %}<input type="hidden" name="itemsPerPage" value="{{ kept.itemsPerPage }}">{% endif %}
+                            {% if kept.order is defined and kept.order is iterable %}
+                                {% for path, direction in kept.order %}
+                                    {% if direction is not iterable %}<input type="hidden" name="order[{{ path }}]" value="{{ direction }}">{% endif %}
+                                {% endfor %}
                             {% endif %}
 
                             {% if is_searchable %}
@@ -45,34 +52,20 @@
                             {% endif %}
 
                             {% if is_filterable %}
-                                {% set templates = {
-                                    date: 'date',
-                                    number: 'number',
-                                    boolean: 'boolean',
-                                    select: 'select',
-                                    'select-enum': 'select',
-                                    'select-state': 'select',
-                                    'select-entity': 'select_entity',
-                                    'select-model': 'select_entity',
-                                } %}
                                 {% for property, config in filter_configs %}
-                                    {# `disabled_for_back: true` = API-only filter, hidden from the admin (Laravel filters_collection). #}
-                                    {% if not (config.disabled_for_back ?? false) %}
-                                        {% set template = config.template ?? (templates[config.type] is defined ? '@GingermindsCore/components/list/filter/_' ~ templates[config.type] ~ '.html.twig' : null) %}
-                                        {% if template %}
-                                            {% include template with {
-                                                property: property,
-                                                config: config,
-                                                value: filters[property] ?? null,
-                                                label: config.label is defined ? config.label|trans({}, config.translation_domain ?? domain) : property|humanize,
-                                            } only %}
-                                        {% endif %}
-                                    {% endif %}
+                                    {% set template = config.template ?? ('@GingermindsCore/components/list/filter/_' ~ config.type ~ '.html.twig') %}
+                                    {% include template with {
+                                        property: property,
+                                        config: config,
+                                        value: filters[property] ?? null,
+                                        error: filter_errors[property] ?? null,
+                                        label: (config.label ?? null) is not null ? config.label|trans({}, config.translation_domain ?? domain) : property|humanize,
+                                    } only %}
                                 {% endfor %}
                             {% endif %}
 
                             <div class="col-md-12 d-flex justify-content-end gap-2 mt-4">
-                                <a href="{{ gm_list_path(route, list_query, {filters: null, page: null}, route_parameters) }}" class="btn btn-light px-4">
+                                <a href="{{ path(route, route_parameters|merge(kept)) }}" class="btn btn-light px-4">
                                     {{- 'action.clear_filters'|trans -}}
                                 </a>
                                 <button class="btn btn-primary px-4" type="submit">

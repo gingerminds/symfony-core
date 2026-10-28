@@ -31,6 +31,7 @@ return static function (ContainerConfigurator $container): void {
             service('gingerminds_core.cache.key_builder'),
             service('api_platform.metadata.resource.metadata_collection_factory'),
             service('api_platform.security.resource_access_checker')->nullOnInvalid(),
+            service('security.token_storage')->nullOnInvalid(),
             param('gingerminds_core.cache.enabled'),
             param('gingerminds_core.cache.default_ttl'),
         ])

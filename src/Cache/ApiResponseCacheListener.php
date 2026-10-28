@@ -8,13 +8,21 @@ use ApiPlatform\Metadata\CollectionOperationInterface;
 use ApiPlatform\Metadata\HttpOperation;
 use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use ApiPlatform\Metadata\ResourceAccessCheckerInterface;
-use Gingerminds\CoreBundle\Model\CacheableResourceInterface;
+use Gingerminds\CoreBundle\Model\Cacheable;
+use Gingerminds\CoreBundle\Model\CacheMetadata;
 use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
 
+/**
+ * Caches the API responses of the `#[Cacheable]` resources for the anonymous requests only: the
+ * key holds no user, an authenticated request (or one carrying an `Authorization` header) always
+ * reaches the application, whatever its response depends on.
+ */
 final readonly class ApiResponseCacheListener
 {
     private const string KEY_ATTRIBUTE = '_gingerminds_cache_key';
@@ -26,6 +34,7 @@ final readonly class ApiResponseCacheListener
         private CacheKeyBuilder $keyBuilder,
         private ResourceMetadataCollectionFactoryInterface $resourceMetadataFactory,
         private ?ResourceAccessCheckerInterface $resourceAccessChecker,
+        private ?TokenStorageInterface $tokenStorage,
         private bool $enabled,
         private int $defaultTtl,
     ) {
@@ -39,9 +48,9 @@ final readonly class ApiResponseCacheListener
             return;
         }
 
-        [$resourceClass, $operation] = $cacheable;
+        [$attribute, $operation] = $cacheable;
         $request = $event->getRequest();
-        $resourceTag = $resourceClass::getCacheKey();
+        $resourceTag = $attribute->key;
         $key = $this->keyBuilder->responseKey($resourceTag, $request);
         $item = $this->cache->getItem($key);
         $cached = $item->isHit() ? $item->get() : null;
@@ -62,7 +71,7 @@ final readonly class ApiResponseCacheListener
 
         $request->attributes->set(self::KEY_ATTRIBUTE, $key);
         $request->attributes->set(self::TAGS_ATTRIBUTE, $tags);
-        $request->attributes->set(self::TTL_ATTRIBUTE, $resourceClass::getCacheTtl() ?? $this->defaultTtl);
+        $request->attributes->set(self::TTL_ATTRIBUTE, $attribute->ttl ?? $this->defaultTtl);
     }
 
     public function onKernelResponse(ResponseEvent $event): void
@@ -94,34 +103,52 @@ final readonly class ApiResponseCacheListener
     }
 
     /**
-     * The resource class and operation of a cacheable API request, null when the response must not be cached.
+     * The `#[Cacheable]` of the resource and the operation of a cacheable API request, null when the
+     * response must not be cached.
      *
-     * @return array{class-string<CacheableResourceInterface>, HttpOperation}|null
+     * @return array{Cacheable, HttpOperation}|null
      */
     private function resolveCacheableOperation(RequestEvent $event): ?array
     {
-        if (!$this->isCacheableRequest($event)) {
+        $apiOperation = $this->isCacheableRequest($event) ? $this->apiOperation($event->getRequest()) : null;
+        $attribute = null !== $apiOperation ? CacheMetadata::cacheable($apiOperation[0]) : null;
+
+        if (null === $apiOperation || !$attribute instanceof Cacheable) {
             return null;
         }
 
-        $request = $event->getRequest();
-        $resourceClass = $request->attributes->get('_api_resource_class');
-        $operationName = $request->attributes->get('_api_operation_name');
-
-        if (!\is_string($resourceClass) || !\is_string($operationName) || !is_subclass_of($resourceClass, CacheableResourceInterface::class)) {
-            return null;
-        }
-
+        [$resourceClass, $operationName] = $apiOperation;
         $operation = $this->resourceMetadataFactory->create($resourceClass)->getOperation($operationName);
 
         return $operation instanceof HttpOperation && $this->isCacheableOperation($operation, $resourceClass)
-            ? [$resourceClass, $operation]
+            ? [$attribute, $operation]
+            : null;
+    }
+
+    /**
+     * The resource class and operation name of an API Platform request.
+     *
+     * @return array{class-string, string}|null
+     */
+    private function apiOperation(Request $request): ?array
+    {
+        $resourceClass = $request->attributes->get('_api_resource_class');
+        $operationName = $request->attributes->get('_api_operation_name');
+
+        return \is_string($resourceClass) && \is_string($operationName) && class_exists($resourceClass)
+            ? [$resourceClass, $operationName]
             : null;
     }
 
     private function isCacheableRequest(RequestEvent $event): bool
     {
-        return $this->enabled && $event->isMainRequest() && $event->getRequest()->isMethodCacheable();
+        $request = $event->getRequest();
+
+        return $this->enabled
+            && $event->isMainRequest()
+            && $request->isMethodCacheable()
+            && !$request->headers->has('Authorization')
+            && !$this->tokenStorage?->getToken()?->getUser() instanceof UserInterface;
     }
 
     /**

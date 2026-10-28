@@ -7,8 +7,8 @@ namespace Gingerminds\CoreBundle\Entity\Permission;
 use ApiPlatform\Metadata\ApiProperty;
 use Doctrine\ORM\Mapping as ORM;
 use Gingerminds\CoreBundle\Entity\Role\BaseRole;
-use Gingerminds\CoreBundle\Model\SearchableInterface;
-use Gingerminds\CoreBundle\Model\SortableInterface;
+use Gingerminds\CoreBundle\Model\Searchable;
+use Gingerminds\CoreBundle\Model\Sortable;
 use Gingerminds\CoreBundle\Model\TimestampableInterface;
 use Gingerminds\CoreBundle\Model\Trait\TimestampableTrait;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -17,7 +17,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\MappedSuperclass]
 #[UniqueEntity(fields: ['name'])]
-abstract class BasePermission implements PermissionInterface, TimestampableInterface, SortableInterface, SearchableInterface, \Stringable
+abstract class BasePermission implements PermissionInterface, TimestampableInterface, \Stringable
 {
     use TimestampableTrait;
 
@@ -36,6 +36,8 @@ abstract class BasePermission implements PermissionInterface, TimestampableInter
     #[Assert\NotBlank]
     #[Assert\Length(max: 255)]
     #[Groups([self::GROUP_LIST, self::GROUP_READ, self::GROUP_EDIT, BaseRole::GROUP_READ])]
+    #[Sortable]
+    #[Searchable]
     protected ?string $name = null;
 
     public function getId(): ?int
@@ -58,11 +60,6 @@ abstract class BasePermission implements PermissionInterface, TimestampableInter
         $parts = explode(' ', (string) $this->name, 2);
 
         return $parts[1] ?? 'other';
-    }
-
-    public static function getSearchableFields(): array
-    {
-        return ['name'];
     }
 
     public function __toString(): string

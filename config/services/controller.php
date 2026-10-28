@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
-use Gingerminds\CoreBundle\Controller\AutocompleteController;
-use Gingerminds\CoreBundle\Controller\CrudContext;
 use Gingerminds\CoreBundle\Controller\Dashboard\DashboardController;
+use Gingerminds\CoreBundle\Controller\EventListener\InvalidCsrfTokenListener;
+use Gingerminds\CoreBundle\Controller\EventListener\ResourceEntityRouteListener;
 use Gingerminds\CoreBundle\Controller\HealthController;
 use Gingerminds\CoreBundle\Controller\Permission\PermissionController;
 use Gingerminds\CoreBundle\Controller\Role\RoleController;
@@ -16,28 +16,25 @@ use Gingerminds\CoreBundle\Controller\Security\LogoutController;
 use Gingerminds\CoreBundle\Controller\User\ContributorController;
 use Gingerminds\CoreBundle\Controller\User\ProfileController;
 use Gingerminds\CoreBundle\Controller\User\UserController;
-use Gingerminds\CoreBundle\Repository\Security\ApiTokenRepository;
-use Gingerminds\CoreBundle\Repository\User\UserRepository;
+use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
+use Psr\Container\ContainerInterface;
+use Symfony\Component\HttpKernel\KernelEvents;
 
 /*
  * Admin, security and API controllers.
+ *
+ * They extend AbstractController: a service subscriber (`container.service_subscriber`, its
+ * helpers' services in a locator injected by setContainer()), public, with action arguments
+ * (`controller.service_arguments`). The project's own controllers get the same by autoconfiguration.
  */
 return static function (ContainerConfigurator $container): void {
     $services = $container->services();
 
-    $services->set('gingerminds_core.controller.context', CrudContext::class)
-        ->args([
-            service('twig'),
-            service('form.factory'),
-            service('router'),
-            service('security.authorization_checker'),
-            service('security.csrf.token_manager'),
-            service('translator'),
-            service('gingerminds_core.resource_registry'),
-            service('doctrine'),
-            service('request_stack'),
-        ]);
-    $services->alias(CrudContext::class, 'gingerminds_core.controller.context');
+    $controller = static fn (string $id, string $class): ServiceConfigurator => $services->set($id, $class)
+        ->public()
+        ->tag('controller.service_arguments')
+        ->tag('container.service_subscriber')
+        ->call('setContainer', [service(ContainerInterface::class)]);
 
     foreach (
         [
@@ -47,45 +44,44 @@ return static function (ContainerConfigurator $container): void {
             'permission' => PermissionController::class,
         ] as $name => $class
     ) {
-        $services->set('gingerminds_core.controller.admin.' . $name, $class)
-            ->args([service('gingerminds_core.controller.context')])
-            ->tag('controller.service_arguments');
+        $controller('gingerminds_core.controller.admin.' . $name, $class);
         $services->alias($class, 'gingerminds_core.controller.admin.' . $name)->public();
     }
 
-    $services->set('gingerminds_core.controller.admin.dashboard', DashboardController::class)
-        ->args([service('twig')])
-        ->tag('controller.service_arguments')
-        ->public();
-    $services->set('gingerminds_core.controller.admin.profile', ProfileController::class)
-        ->args([service('gingerminds_core.controller.context'), service('security.helper')])
-        ->tag('controller.service_arguments')
-        ->public();
-    $services->set('gingerminds_core.controller.admin.autocomplete', AutocompleteController::class)
-        ->args([service('gingerminds_core.controller.context')])
-        ->tag('controller.service_arguments')
-        ->public();
-    $services->set('gingerminds_core.controller.security.login', LoginController::class)
-        ->args([service('twig'), service('security.authentication_utils')])
-        ->tag('controller.service_arguments')
-        ->public();
-    $services->set('gingerminds_core.controller.security.logout', LogoutController::class)
-        ->tag('controller.service_arguments')
-        ->public();
-    $services->set('gingerminds_core.controller.health', HealthController::class)
-        ->tag('controller.service_arguments')
-        ->public();
-    $services->set('gingerminds_core.controller.api.auth', AuthController::class)
-        ->args([
-            service(UserRepository::class),
-            service(ApiTokenRepository::class),
-            service('security.user_password_hasher'),
-            service('limiter.gingerminds_core_api_login'),
-            service('security.helper'),
-            tagged_iterator('gingerminds_core.login_response_enricher'),
-            param('gingerminds_core.api.token_ttl'),
-            service('translator'),
-        ])
-        ->tag('controller.service_arguments')
-        ->public();
+    $services->set('gingerminds_core.value_resolver.resource_entity', ResourceEntityValueResolver::class)
+        ->args([service('gingerminds_core.resource_registry'), service('doctrine')])
+        ->tag('controller.targeted_value_resolver', ['name' => ResourceEntityValueResolver::class]);
+
+    // Before the #[IsGranted] / #[IsCsrfTokenValid] checks: an entity of another parent is a 404.
+    $services->set('gingerminds_core.listener.resource_entity_route', ResourceEntityRouteListener::class)
+        ->tag('kernel.event_listener', ['event' => KernelEvents::CONTROLLER_ARGUMENTS, 'priority' => ResourceEntityRouteListener::PRIORITY]);
+
+    // Before the firewall's ExceptionListener (priority 1), which sends to the login page.
+    $services->set('gingerminds_core.listener.invalid_csrf_token', InvalidCsrfTokenListener::class)
+        ->args([service('gingerminds_core.resource_registry'), service('router'), service('translator')])
+        ->tag('kernel.event_listener', ['event' => KernelEvents::EXCEPTION, 'priority' => InvalidCsrfTokenListener::PRIORITY]);
+
+    $controller('gingerminds_core.controller.admin.dashboard', DashboardController::class);
+    $controller('gingerminds_core.controller.admin.profile', ProfileController::class)
+        ->args([service('doctrine'), service('translator'), param('gingerminds_core.profile.form')]);
+    $controller('gingerminds_core.controller.security.login', LoginController::class)
+        ->args([service('security.authentication_utils')]);
+    $controller('gingerminds_core.controller.security.logout', LogoutController::class);
+    $controller('gingerminds_core.controller.health', HealthController::class);
+    $controller('gingerminds_core.controller.api.auth', AuthController::class)
+        ->args([service('security.helper'), service('translator')]);
+
+    // The #[Route] attributes name the controller class: `_controller: Class` / `Class::action`.
+    foreach (
+        [
+            'admin.dashboard' => DashboardController::class,
+            'admin.profile' => ProfileController::class,
+            'security.login' => LoginController::class,
+            'security.logout' => LogoutController::class,
+            'health' => HealthController::class,
+            'api.auth' => AuthController::class,
+        ] as $id => $class
+    ) {
+        $services->alias($class, 'gingerminds_core.controller.' . $id)->public();
+    }
 };

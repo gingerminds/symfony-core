@@ -60,13 +60,11 @@ Turbo submits forms with `fetch` and only renders the response when it follows t
 | Error page | 4xx/5xx, rendered as is | — |
 
 A form re-rendered with a **200** is ignored by Turbo: the page does not change and the user sees
-no error. `AbstractCrudController` already answers 422 on an invalid form; a custom action must
-do the same:
+no error. `AbstractController::render()` answers 422 by itself when a submitted, invalid form
+is passed as a `FormInterface` (not its `createView()`), as `AbstractCrudController` does:
 
 ```php
-return $this->render('admin/import.html.twig', ['form' => $form], new Response(
-    status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK,
-));
+return $this->render('admin/import.html.twig', ['form' => $form]);
 ```
 
 Add `data-turbo="false"` to a form whose response breaks these rules (file download, external

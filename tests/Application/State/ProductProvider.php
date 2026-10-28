@@ -4,48 +4,51 @@ declare(strict_types=1);
 
 namespace Gingerminds\CoreBundle\Tests\Application\State;
 
-use ApiPlatform\Metadata\CollectionOperationInterface;
+use ApiPlatform\Doctrine\Orm\State\CollectionProvider;
 use ApiPlatform\Metadata\Operation;
+use ApiPlatform\Metadata\Parameters;
+use ApiPlatform\State\ProviderInterface;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\ComputedFilterStore;
-use Gingerminds\CoreBundle\ApiPlatform\State\ResourceProvider;
-use Gingerminds\CoreBundle\Repository\ListQuery;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Application\Repository\ProductRepository;
-use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
- * Computes facets (published date bounds, category counts) for collections.
+ * The product collection of the native Doctrine provider, with its facets (published date
+ * bounds, category counts) computed against the request's list parameters.
  *
- * @extends ResourceProvider<Product>
+ * @implements ProviderInterface<Product>
  */
-final class ProductProvider extends ResourceProvider
+final readonly class ProductProvider implements ProviderInterface
 {
+    /**
+     * @param ProviderInterface<Product> $collectionProvider
+     */
     public function __construct(
-        private readonly ProductRepository $products,
-        RequestStack $requestStack,
-        private readonly ComputedFilterStore $filterStore,
+        #[Autowire(service: CollectionProvider::class)]
+        private ProviderInterface $collectionProvider,
+        private ProductRepository $products,
+        private ComputedFilterStore $filterStore,
     ) {
-        parent::__construct($products, $requestStack);
     }
 
-    protected function configureListQuery(ListQuery $query, Operation $operation, array $uriVariables, array $context): ListQuery
+    public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        if ($operation instanceof CollectionOperationInterface) {
-            $counts = $this->products->getAssociationFacetCounts($query, 'category');
+        $parameters = $operation->getParameters() ?? new Parameters();
+        $counts = $this->products->getAssociationFacetCounts($parameters, 'category');
 
-            $this->filterStore->set(Product::class, [
-                'publishedAt' => ['type' => 'date', 'options' => $this->products->getDateFacetStats($query, 'publishedAt')],
-                'category' => [
-                    'type' => 'select-entity',
-                    'options' => array_map(
-                        static fn (int|string $id, int $total): array => ['value' => $id, 'total' => $total],
-                        array_keys($counts),
-                        $counts,
-                    ),
-                ],
-            ]);
-        }
+        $this->filterStore->set(Product::class, [
+            'publishedAt' => ['type' => 'date', 'options' => $this->products->getDateFacetStats($parameters, 'publishedAt')],
+            'category' => [
+                'type' => 'relation',
+                'options' => array_map(
+                    static fn (int|string $id, int $total): array => ['value' => $id, 'total' => $total],
+                    array_keys($counts),
+                    $counts,
+                ),
+            ],
+        ]);
 
-        return $query;
+        return $this->collectionProvider->provide($operation, $uriVariables, $context);
     }
 }

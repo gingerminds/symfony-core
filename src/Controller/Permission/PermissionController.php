@@ -8,8 +8,4 @@ use Gingerminds\CoreBundle\Controller\AbstractCrudController;
 
 class PermissionController extends AbstractCrudController
 {
-    protected function getResourceName(): string
-    {
-        return 'permission';
-    }
 }

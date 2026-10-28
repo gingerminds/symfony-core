@@ -23,18 +23,13 @@ use Gingerminds\CoreBundle\Repository\Permission\PermissionRepository;
             security: "is_granted('VIEW', 'permission')",
         ),
         new Get(security: "is_granted('VIEW', object)"),
-        new Post(
-            security: "is_granted('CREATE', 'permission')",
-            deserialize: false,
-        ),
-        new Patch(security: "is_granted('EDIT', object)", deserialize: false),
+        new Post(security: "is_granted('CREATE', 'permission')"),
+        new Patch(security: "is_granted('EDIT', object)"),
         new Delete(security: "is_granted('DELETE', object)"),
     ],
     normalizationContext: ['groups' => [BasePermission::GROUP_READ]],
     denormalizationContext: ['groups' => [BasePermission::GROUP_EDIT]],
     paginationClientItemsPerPage: true,
-    provider: 'gingerminds_core.api.provider.permission',
-    processor: 'gingerminds_core.api.processor.permission',
 )]
 class Permission extends BasePermission
 {

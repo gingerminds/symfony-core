@@ -3,6 +3,9 @@
  # Port of the Laravel core `layouts/crud/list-tree`: same filters and card
  # chrome as crud/list.html.twig, with a `tree` block instead of a table.
  #
+ # AbstractTreeCrudController renders it with `roots`, `children` and the tree_*
+ # variables; components/list/_tree.html.twig renders the levels (docs/Sorting.md).
+ #
  # Variables (top of the child template): page_title, list_title, breadcrumb,
  # route / route_parameters (as crud/list.html.twig) and
  #   tree_reorder_url      URL receiving the new order (drag & drop disabled when null)

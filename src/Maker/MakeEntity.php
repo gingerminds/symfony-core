@@ -15,9 +15,9 @@ use Symfony\Component\Console\Input\InputOption;
 
 /**
  * make:gm:entity Namespace/Name [--api]: `App\Entity\Namespace\Name`, a
- * resource entity (sortable, searchable, timestampable) with only an `id`.
+ * resource entity (timestampable) with only an `id` (#[Sortable]).
  * `--api` adds the #[ApiResource] wired to the generated
- * provider/processor and secured by the resource voter.
+ * provider and secured by the resource voter.
  */
 final class MakeEntity extends AbstractResourceMaker
 {
@@ -61,15 +61,6 @@ final class MakeEntity extends AbstractResourceMaker
                 $resource->argument(),
             ),
         ];
-
-        if ($api) {
-            $nextSteps[] = \sprintf(
-                'The API needs <comment>%s</comment> and <comment>%s</comment>: <fg=yellow>bin/console make:gm:api %s</>.',
-                $resource->providerClass(),
-                $resource->processorClass(),
-                $resource->argument(),
-            );
-        }
 
         $this->finish($generator, $io, $nextSteps, $input, $resource);
     }
