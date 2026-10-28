@@ -48,26 +48,38 @@ final class ParameterValueValidator extends ConstraintValidator
             return [] === $constraint->operators ? ['' => $value] : null;
         }
 
-        if (!\is_array($value) || [] === $value) {
-            return null;
-        }
-
-        $isList = array_is_list($value);
-
-        if ([] !== $constraint->operators ? $isList || [] !== array_diff(array_keys($value), $constraint->operators) : !$constraint->list || !$isList) {
+        if (!\is_array($value) || !$this->hasExpectedKeys($value, $constraint)) {
             return null;
         }
 
         $items = [];
 
         foreach ($value as $key => $item) {
-            if (!\is_scalar($item)) {
-                return null;
+            if (\is_scalar($item)) {
+                $items['[' . $key . ']'] = $item;
             }
-
-            $items['[' . $key . ']'] = $item;
         }
 
-        return $items;
+        // A non scalar item makes the whole value invalid.
+        return \count($items) === \count($value) ? $items : null;
+    }
+
+    /**
+     * Operators (`[gte]`, `[after]`...) as the only keys of a parameter with operators, a list for
+     * a list parameter.
+     *
+     * @param array<mixed> $value
+     */
+    private function hasExpectedKeys(array $value, ParameterValue $constraint): bool
+    {
+        if ([] === $value) {
+            return false;
+        }
+
+        $isList = array_is_list($value);
+
+        return [] !== $constraint->operators
+            ? !$isList && [] === array_diff(array_keys($value), $constraint->operators)
+            : $constraint->list && $isList;
     }
 }
