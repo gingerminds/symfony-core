@@ -6,7 +6,6 @@ namespace Gingerminds\CoreBundle\Controller;
 
 use ApiPlatform\Metadata\Parameters;
 use Doctrine\ORM\Mapping\ClassMetadata;
-use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\ObjectManager;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\FilterParameters;
 use Gingerminds\CoreBundle\Controller\ValueResolver\ResourceEntityValueResolver;
@@ -17,20 +16,16 @@ use Gingerminds\CoreBundle\Pagination\Paginator;
 use Gingerminds\CoreBundle\Repository\RepositoryInterface;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
 use Gingerminds\CoreBundle\Resource\ResourceDefinition;
-use Gingerminds\CoreBundle\Resource\ResourceRegistry;
 use Gingerminds\CoreBundle\Security\Voter\ResourceVoter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\ExpressionLanguage\Expression;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\ValueResolver;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsCsrfTokenValid;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Admin CRUD of a resource.
@@ -45,6 +40,8 @@ use Symfony\Contracts\Translation\TranslatorInterface;
  */
 abstract class AbstractCrudController extends AbstractController
 {
+    use ResourceControllerTrait;
+
     /**
      * The resource name of the current route, subject of the list/create access checks.
      */
@@ -57,18 +54,6 @@ abstract class AbstractCrudController extends AbstractController
      */
     public const string PAGE_PARAMETER = 'page';
     public const string ITEMS_PER_PAGE_PARAMETER = 'itemsPerPage';
-
-    public static function getSubscribedServices(): array
-    {
-        return [
-            ...parent::getSubscribedServices(),
-            ResourceRegistry::class => ResourceRegistry::class,
-            FilterParameters::class => FilterParameters::class,
-            'doctrine' => ManagerRegistry::class,
-            'translator' => TranslatorInterface::class,
-            'validator' => ValidatorInterface::class,
-        ];
-    }
 
     #[Route('', name: 'index', methods: ['GET'])]
     #[IsGranted(ResourceVoter::VIEW, subject: new Expression(self::RESOURCE_SUBJECT))]
@@ -193,33 +178,6 @@ abstract class AbstractCrudController extends AbstractController
         return $repository;
     }
 
-    protected function getResourceRegistry(): ResourceRegistry
-    {
-        $resources = $this->container->get(ResourceRegistry::class);
-        \assert($resources instanceof ResourceRegistry);
-
-        return $resources;
-    }
-
-    protected function getDoctrine(): ManagerRegistry
-    {
-        $doctrine = $this->container->get('doctrine');
-        \assert($doctrine instanceof ManagerRegistry);
-
-        return $doctrine;
-    }
-
-    /**
-     * @param array<string, mixed> $parameters
-     */
-    protected function trans(string $key, array $parameters = [], string $domain = 'GingermindsCore'): string
-    {
-        $translator = $this->container->get('translator');
-        \assert($translator instanceof TranslatorInterface);
-
-        return $translator->trans($key, $parameters, $domain);
-    }
-
     /**
      * The list parameters of the resource (FilterParameters: `order[...]`, `search`, `#[Filter]`
      * properties) valued from the request, applied by the repository as on the API collections.
@@ -228,14 +186,6 @@ abstract class AbstractCrudController extends AbstractController
     protected function createListParameters(Request $request): Parameters
     {
         return $this->getFilterParameters()->fromQuery($this->getResource()->entity, $request->query->all());
-    }
-
-    protected function getFilterParameters(): FilterParameters
-    {
-        $filterParameters = $this->container->get(FilterParameters::class);
-        \assert($filterParameters instanceof FilterParameters);
-
-        return $filterParameters;
     }
 
     protected function createEntity(): object
@@ -322,20 +272,28 @@ abstract class AbstractCrudController extends AbstractController
                 continue;
             }
 
-            $parent = $metadata->getFieldValue($entity, $association);
-
-            if (!\is_object($parent)) {
-                return false;
-            }
-
-            $identifier = array_values($manager->getClassMetadata($parent::class)->getIdentifierValues($parent));
-
-            if (1 !== \count($identifier) || !\is_scalar($identifier[0]) || (string) $identifier[0] !== (string) $value) {
+            if (!$this->hasIdentifier($manager, $metadata->getFieldValue($entity, $association), $value)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Whether $parent is an entity with the single identifier $value.
+     *
+     * @param scalar $value
+     */
+    private function hasIdentifier(ObjectManager $manager, mixed $parent, mixed $value): bool
+    {
+        if (!\is_object($parent)) {
+            return false;
+        }
+
+        $identifier = array_values($manager->getClassMetadata($parent::class)->getIdentifierValues($parent));
+
+        return 1 === \count($identifier) && \is_scalar($identifier[0]) && (string) $identifier[0] === (string) $value;
     }
 
     /**
@@ -345,10 +303,7 @@ abstract class AbstractCrudController extends AbstractController
      */
     protected function getDeleteError(object $entity): ?string
     {
-        $validator = $this->container->get('validator');
-        \assert($validator instanceof ValidatorInterface);
-
-        $violations = $validator->validate($entity, null, [$this->getResource()->name . ':delete']);
+        $violations = $this->getValidator()->validate($entity, null, [$this->getResource()->name . ':delete']);
 
         return 0 === \count($violations) ? null : (string) $violations->get(0)->getMessage();
     }
@@ -410,13 +365,5 @@ abstract class AbstractCrudController extends AbstractController
             '%resource%' => $this->trans($resource->translationKey('name_s'), [], $resource->translationDomain),
             '%label%' => $label,
         ]));
-    }
-
-    private function getRequestStack(): RequestStack
-    {
-        $requestStack = $this->container->get('request_stack');
-        \assert($requestStack instanceof RequestStack);
-
-        return $requestStack;
     }
 }
