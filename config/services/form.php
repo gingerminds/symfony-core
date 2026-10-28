@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Symfony\Component\DependencyInjection\Loader\Configurator;
 
+use Gingerminds\CoreBundle\Form\Autocomplete\ResourceAutocompleter;
 use Gingerminds\CoreBundle\Form\Extension\DisplayTimezoneTypeExtension;
 use Gingerminds\CoreBundle\Form\Extension\InputGroupTypeExtension;
 use Gingerminds\CoreBundle\Form\Extension\SizeTypeExtension;
@@ -40,6 +41,11 @@ return static function (ContainerConfigurator $container): void {
             ->args([service('gingerminds_core.resource_registry')])
             ->tag('form.type');
     }
+
+    // One child per resource, aliased by its name (ResourceRegistryPass).
+    $services->set('gingerminds_core.form.autocompleter', ResourceAutocompleter::class)
+        ->abstract()
+        ->args([abstract_arg('resource name'), service('gingerminds_core.resource_registry'), service('gingerminds_core.api.filter_parameters')]);
 
     $services->set('gingerminds_core.form.type.resource_autocomplete', ResourceAutocompleteType::class)
         ->args([service('gingerminds_core.resource_registry'), service('router')])

@@ -9,6 +9,7 @@ use Gingerminds\CoreBundle\Entity\Permission\Permission;
 use Gingerminds\CoreBundle\Entity\Role\Role;
 use Gingerminds\CoreBundle\Entity\User\Contributor;
 use Gingerminds\CoreBundle\Entity\User\User;
+use Gingerminds\CoreBundle\Form\Autocomplete\ResourceAutocompleter;
 use Gingerminds\CoreBundle\Form\User\UserType;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
@@ -634,9 +635,31 @@ final class AdminTest extends ApiTestCase
         $this->client->request('GET', '/admin/_autocomplete/role?query=a');
         self::assertResponseStatusCodeSame(403);
 
-        // ResourceDefinitionValueResolver, before #[IsGranted]: an unknown resource is a 404.
+        // No autocompleter for an unknown resource: a 404, not a 403.
         $this->client->request('GET', '/admin/_autocomplete/unknown?query=a');
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testAutocompleteEndpointPaginates(): void
+    {
+        $this->client->loginUser($this->fixtures->user('autocomplete-pages@example.com', ['view categories']), 'admin');
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+
+        foreach (range(1, ResourceAutocompleter::MAX_RESULTS + 1) as $i) {
+            $entityManager->persist(new Category(\sprintf('Page %02d', $i)));
+        }
+
+        $entityManager->flush();
+
+        $this->client->request('GET', '/admin/_autocomplete/category?query=page');
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertCount(ResourceAutocompleter::MAX_RESULTS, $data['results']);
+        self::assertSame('/admin/_autocomplete/category?query=page&page=2', $data['next_page']);
+
+        $this->client->request('GET', $data['next_page']);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true, flags: \JSON_THROW_ON_ERROR);
+        self::assertSame([\sprintf('Page %02d', ResourceAutocompleter::MAX_RESULTS + 1)], array_column($data['results'], 'text'));
+        self::assertNull($data['next_page']);
     }
 
     public function testSuperAdminRoleCannotBeDeletedFromTheAdmin(): void

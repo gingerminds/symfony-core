@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** Autocomplete: the `gingerminds_core_autocomplete` endpoint
+  (`/_autocomplete/{alias}` under the admin prefix) is UX Autocomplete's controller. Each
+  registered resource gets a `ResourceAutocompleter` (`EntityAutocompleterInterface`, alias: the
+  resource name, declared by `ResourceRegistryPass`): the `search` filter of the lists on the list
+  query without its eager loads (`createScopedQueryBuilder()`, now public and part of
+  `RepositoryInterface`), 20 results a page, the VIEW permission of the resource. The route
+  parameter is `alias` (was `resource`); the project's own `#[AsEntityAutocompleteField]` types
+  are served by the same endpoint, behind the admin firewall. `AutocompleteController` and
+  `ResourceDefinitionValueResolver` (its only user) are removed.
 - **BC break** Computed filters: `InjectComputedFiltersListener` (which decoded and re-encoded every
   collection response) is replaced by `ComputedFiltersCollectionNormalizer`, a decorator of the
   Hydra collection normalizer adding the `ComputedFilterStore` entries as `filters` while the
@@ -110,8 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   passed to `render()` as `FormInterface` (422 on an invalid submission by `AbstractController`).
   The bundle controllers are service subscribers (`container.service_subscriber`,
   `setContainer()`); `ProfileController` takes Doctrine and the translator, `AuthController` no
-  longer takes `Security`. `AutocompleteController` only takes Doctrine: its resource is resolved
-  by `ResourceDefinitionValueResolver` (404 for an unknown resource, before the access check).
+  longer takes `Security`.
 - **BC break** Security: one `ResourceVoter` for every registered resource replaces
   `AbstractResourceVoter` and its `UserVoter`, `ContributorVoter`, `RoleVoter`, `PermissionVoter`
   (and the voter each resource had to declare). It reads the resource registry (name, configured

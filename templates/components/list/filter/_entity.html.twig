@@ -22,7 +22,7 @@
     <select id="filter-{{ property }}" class="form-select" name="{{ property }}{{ multiple ? '[]' }}"
             {% if multiple %}multiple{% endif %}
             data-controller="symfony--ux-autocomplete--autocomplete"
-            {% if resource_name %}data-symfony--ux-autocomplete--autocomplete-url-value="{{ path('gingerminds_core_autocomplete', {resource: resource_name}) }}"{% endif %}
+            {% if resource_name %}data-symfony--ux-autocomplete--autocomplete-url-value="{{ path('gingerminds_core_autocomplete', {alias: resource_name}) }}"{% endif %}
             data-symfony--ux-autocomplete--autocomplete-no-results-found-text-value="{{ 'list.no_result'|trans }}"
             data-symfony--ux-autocomplete--autocomplete-loading-more-text-value="{{ 'common.loading'|trans }}"
             data-symfony--ux-autocomplete--autocomplete-no-more-results-text-value="{{ 'list.no_more_results'|trans }}">

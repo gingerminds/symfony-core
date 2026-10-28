@@ -35,6 +35,11 @@ interface RepositoryInterface
     public function createListQueryBuilder(): QueryBuilder;
 
     /**
+     * The list query without its eager loads, context scope only (counts, facets, autocomplete).
+     */
+    public function createScopedQueryBuilder(): QueryBuilder;
+
+    /**
      * Applies the valued list parameters (FilterParameters) to a query of the entity.
      */
     public function applyParameters(QueryBuilder $qb, Parameters $parameters): void;

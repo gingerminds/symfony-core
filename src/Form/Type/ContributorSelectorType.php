@@ -38,7 +38,7 @@ final class ContributorSelectorType extends AbstractType
             ),
             'choice_translation_domain' => false,
             'autocomplete' => true,
-            'autocomplete_url' => fn (Options $options): string => $this->urlGenerator->generate('gingerminds_core_autocomplete', ['resource' => 'contributor']),
+            'autocomplete_url' => fn (Options $options): string => $this->urlGenerator->generate('gingerminds_core_autocomplete', ['alias' => 'contributor']),
         ]);
     }
 

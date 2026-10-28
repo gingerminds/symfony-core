@@ -47,7 +47,7 @@ gingerminds_core:
 
 `admin_prefix` prefixes every admin route of the bundle (login, dashboard, profile, CRUD
 routes, autocomplete): `#[Route]` attributes on the bundle controllers, imported under the prefix
-by `@GingermindsCoreBundle/config/routes.php`; the CRUD routes by the `gingerminds_crud` loader
+by `@GingermindsCoreBundle/config/routes.php` (the autocomplete is UX Autocomplete's controller); the CRUD routes by the `gingerminds_crud` loader
 (`resources.*.path` / `route_prefix` for each resource). Protection itself is your firewall's `access_control` (see
 [Authentication](Authentication.md)): keep both in sync.
 

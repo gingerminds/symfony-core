@@ -6,6 +6,7 @@ namespace Gingerminds\CoreBundle\DependencyInjection\Compiler;
 
 use Gingerminds\CoreBundle\GingermindsCoreBundle;
 use Gingerminds\CoreBundle\Resource\RedirectTarget;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Exception\InvalidArgumentException;
@@ -18,6 +19,8 @@ final class ResourceRegistryPass implements CompilerPassInterface
     public const string CRUD_CONTROLLER_TAG = 'gingerminds_core.crud_controller';
     private const string REGISTRY_ID = 'gingerminds_core.resource_registry';
     private const string ROUTING_CONTROLLER_TAG = 'routing.controller';
+    private const string AUTOCOMPLETER_ID = 'gingerminds_core.form.autocompleter';
+    private const string UX_AUTOCOMPLETER_TAG = 'ux.entity_autocompleter';
 
     public function process(ContainerBuilder $container): void
     {
@@ -73,6 +76,26 @@ final class ResourceRegistryPass implements CompilerPassInterface
 
         $container->getDefinition(self::REGISTRY_ID)->setArgument('$resources', $resources);
         $this->excludeFromRoutingControllers($container, $resources);
+        $this->registerAutocompleters($container, array_keys($resources));
+    }
+
+    /**
+     * A UX Autocomplete source per resource, aliased by its name. This pass runs before
+     * AutocompleteFormTypePass, which collects the tag.
+     *
+     * @param list<int|string> $names
+     */
+    private function registerAutocompleters(ContainerBuilder $container, array $names): void
+    {
+        if (!$container->hasDefinition(self::AUTOCOMPLETER_ID)) {
+            return;
+        }
+
+        foreach ($names as $name) {
+            $container->setDefinition(self::AUTOCOMPLETER_ID . '.' . $name, new ChildDefinition(self::AUTOCOMPLETER_ID))
+                ->replaceArgument(0, (string) $name)
+                ->addTag(self::UX_AUTOCOMPLETER_TAG, ['alias' => (string) $name]);
+        }
     }
 
     /**

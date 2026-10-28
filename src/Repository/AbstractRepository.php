@@ -120,10 +120,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
         return $qb;
     }
 
-    /**
-     * The list query without its eager loads: context scope only (counts, facets).
-     */
-    protected function createScopedQueryBuilder(): QueryBuilder
+    public function createScopedQueryBuilder(): QueryBuilder
     {
         return $this->buildListQueryBuilder(eagerCollections: null);
     }
