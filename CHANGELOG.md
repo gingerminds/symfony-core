@@ -233,6 +233,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- Admin filters panel: the choices of a select filter are translated in the domain of the resource,
+  as its label (they fell back to `messages`: raw keys for a bundle resource).
 - The list parameters (`#[Filter]`, `#[Sortable]`, `#[Searchable]`) of a bundle API resource
   inherited by a project entity are read from the project entity, its own attributes included
   (`OverriddenEntityResourceMetadataCollectionFactory` now decorates below the filter parameters).

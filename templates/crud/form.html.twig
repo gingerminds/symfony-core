@@ -43,7 +43,7 @@
         {label: resource.translationKey('name_p')|trans({}, domain), url: index_url},
         {label: page_title},
     ] %}
-    {% set form_id = form_id ?? resource.name ~ '-form' %}
+    {% set form_id = form_id ?? (resource.name ~ '-form') %}
 {% endif %}
 {% set page_title = page_title ?? '' %}
 {% set index_url = index_url ?? null %}

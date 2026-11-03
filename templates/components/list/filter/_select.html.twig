@@ -1,13 +1,14 @@
 {#
  # Select filter (`exact` with choices, `enum`): `config.choices` is
  # value => label (translation key). Single: `<property>`, the empty option
- # clears the filter; multiple: `<property>[]`, enhanced with Tom Select.
- # Vars: property, config, value, label, error?
+ # clears the filter; multiple: `<property>[]`, enhanced with Tom Select. The labels are translated
+ # in the domain of the resource (`domain`), as the field label.
+ # Vars: property, config, value, label, domain?, error?
  #}
 {% trans_default_domain 'GingermindsCore' %}
 {% set multiple = config.multiple ?? false %}
 {% set selected = (value is iterable ? value : (value is null ? [] : [value]))|map(v => v ~ '') %}
-{% set choice_domain = config.choice_translation_domain ?? config.translation_domain ?? null %}
+{% set choice_domain = config.choice_translation_domain ?? config.translation_domain ?? domain ?? null %}
 <div class="col-md-4">
     <label for="filter-{{ property }}" class="form-label">{{ label }}</label>
     <select id="filter-{{ property }}" class="form-select{{ (error ?? null) ? ' is-invalid' }}" name="{{ property }}{{ multiple ? '[]' }}"

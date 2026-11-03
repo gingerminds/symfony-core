@@ -19,6 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Nested resource (AdminTest): the products of a category, `/admin/categories/{categoryId}/products`.
+ * Its translation domain is not `messages`: the filter choices are translated in it (ListFiltersTest).
  */
 #[AsCrudController(
     resource: 'category_product',
@@ -26,6 +27,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
     form: CategoryProductType::class,
     path: 'categories/{categoryId}/products',
     permission: 'products',
+    translationDomain: 'catalog',
     templatePrefix: 'admin/category_product',
 )]
 final class CategoryProductController extends AbstractCrudController
