@@ -99,6 +99,8 @@ final class ListFiltersTest extends ApiTestCase
         // `#[Filter(admin: false)]`: API only.
         self::assertNotContains('name', $names);
         self::assertSame('draft', $form->filter('select[name="status[]"] option[selected]')->attr('value'));
+        // The choices are translated in the domain of the resource (catalog), as the label.
+        self::assertSame(['Brouillon', 'Publié', 'Archivé'], $form->filter('select[name="status[]"] option')->each(static fn (Crawler $option): string => $option->text()));
         self::assertSame('desc', $form->filter('input[name="order[name]"]')->attr('value'));
     }
 

@@ -71,7 +71,7 @@ class Product implements ResourceInterface, TimestampableInterface, \Stringable
     #[Groups(['product:list'])]
     #[Filter(
         label: 'product.field.status',
-        choices: ['draft' => 'Draft', 'published' => 'Published', 'archived' => 'Archived'],
+        choices: ['draft' => 'product.status.draft', 'published' => 'product.status.published', 'archived' => 'product.status.archived'],
         multiple: true,
     )]
     private ProductStatus $status = ProductStatus::Draft;

@@ -101,6 +101,9 @@ parameter: `type` (`select`, `text`, `number`, `date`, `boolean`, `entity`), `la
 `multiple`, `entity` (target class of a relation), `resource`, `template`), `filters` (the active
 values by parameter) and `list_parameters` (the valued `Parameters`). A controller changes a field
 by overriding `getCommonParameters()` (`$parameters['filter_configs']['status']['choices'] = ...`).
+The `label` and the `choices` labels are translation keys of the resource domain
+(`translation_domain`; a field config may set its own `translation_domain`, or
+`choice_translation_domain`, `false` to show the choices as they are).
 The panel fields are named after the parameters (`status[]`, `publishedAt[after]`...), the current
 sort and page size are kept as hidden fields. `templates/components/list/filter/_<type>.html.twig`
 render them; `template` replaces one.
