@@ -60,6 +60,7 @@
                                         value: filters[property] ?? null,
                                         error: filter_errors[property] ?? null,
                                         label: (config.label ?? null) is not null ? config.label|trans({}, config.translation_domain ?? domain) : property|humanize,
+                                        domain: config.translation_domain ?? domain,
                                     } only %}
                                 {% endfor %}
                             {% endif %}

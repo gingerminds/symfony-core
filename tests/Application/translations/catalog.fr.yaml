@@ -1,0 +1,6 @@
+# Labels of the category_product test resource (its translation domain: catalog).
+product:
+    status:
+        draft: Brouillon
+        published: Publié
+        archived: Archivé
