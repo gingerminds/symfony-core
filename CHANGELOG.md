@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- Admin headings: the page title is an `<h1 class="h4">` and the card titles `<h2 class="card-title h5">`
+  (were `<h4>` / `<h5>`), same look; a project override of these templates or of
+  `.page-title-box h4` may need the new elements.
+- Admin colors darkened to reach the WCAG AA contrast (4.5:1): `$blue` (`$primary`) `#4b6ad7`,
+  `$green` (`$success`) `#28863a`, `$gray-600` `#686c7f`, header and footer text `#606f85`.
+- `gm-sortable-tree` imports `sortablejs` on connect: it is no longer preloaded on every admin page.
+
 - **BC break** API tokens expire after 24 hours by default (`gingerminds_core.api.token_ttl`:
   `86400`, `null` for the former tokens without expiration): each API login issues a token.
 - API collections: the `#[EagerLoad]` collections of a core repository's entity are loaded after
@@ -248,6 +255,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   cache key holds no user). `ApiResponseCacheListener` takes the token storage.
 
 ### Fixed
+
+- Admin accessibility: the role and contributor badges use the `-emphasis` text colors; a
+  UX Autocomplete `<select>` keeps the accessible name of its label (`aria-labelledby`), Tom Select
+  moving the label to its own control.
 
 - Admin filters panel: the choices of a select filter are translated in the domain of the resource,
   as its label (they fell back to `messages`: raw keys for a bundle resource).

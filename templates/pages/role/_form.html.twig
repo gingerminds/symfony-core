@@ -11,7 +11,7 @@
     {% block main %}
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex align-items-center justify-content-between py-3">
-                <h5 class="card-title mb-0"><i class="bi bi-shield-lock me-1 text-primary"></i> {{ 'role.name_s'|trans }}</h5>
+                <h2 class="card-title h5 mb-0"><i class="bi bi-shield-lock me-1 text-primary"></i> {{ 'role.name_s'|trans }}</h2>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
@@ -28,7 +28,7 @@
 
         <div class="card shadow-sm mb-4" data-controller="gm-check-all">
             <div class="card-header d-flex align-items-center justify-content-between py-3">
-                <h5 class="card-title mb-0"><i class="bi bi-lock me-1 text-primary"></i> {{ 'role.field.permissions'|trans }}</h5>
+                <h2 class="card-title h5 mb-0"><i class="bi bi-lock me-1 text-primary"></i> {{ 'role.field.permissions'|trans }}</h2>
                 <div class="form-check form-switch form-check-right mb-0">
                     <input class="form-check-input" type="checkbox" id="gm-check-all-permissions"
                            data-gm-check-all-target="all" data-action="change->gm-check-all#toggleAll">

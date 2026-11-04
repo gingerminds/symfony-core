@@ -68,10 +68,10 @@
     <div class="card shadow-sm">
         <div class="card-header py-3">
             <div class="d-flex align-items-center gap-3">
-                <h5 class="card-title mb-0">
+                <h2 class="card-title h5 mb-0">
                     <i class="bi bi-diagram-3 me-1 text-primary"></i>
                     {% block list_title %}{{ list_title }}{% endblock %}
-                </h5>
+                </h2>
                 {% block list_actions %}
                     {% if is_granted('CREATE', resource.name) %}
                         {{ gm.create_button(path(resource.route('new'), route_parameters)) }}

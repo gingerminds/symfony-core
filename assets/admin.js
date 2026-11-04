@@ -27,6 +27,17 @@ import SortableTreeController from './controllers/sortable_tree_controller.js';
 
 window.bootstrap = bootstrap;
 
+// Tom Select moves the <label> to its own control (id `<select id>-ts-label`) and leaves the
+// original, visually hidden <select> without accessible name: point it back to the label.
+document.addEventListener('autocomplete:connect', ({ detail }) => {
+    const select = detail?.tomSelect?.input;
+    const label = select?.id ? document.getElementById(`${select.id}-ts-label`) : null;
+
+    if (label) {
+        select.setAttribute('aria-labelledby', label.id);
+    }
+});
+
 const app = startStimulusApp();
 
 app.register('gm-check-all', CheckAllController);

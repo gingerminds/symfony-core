@@ -10,7 +10,7 @@
     {% block main %}
         <div class="card shadow-sm mb-4">
             <div class="card-header d-flex align-items-center py-3">
-                <h5 class="card-title mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'user.name_s'|trans }}</h5>
+                <h2 class="card-title h5 mb-0"><i class="bi bi-person-gear me-1 text-primary"></i> {{ 'user.name_s'|trans }}</h2>
             </div>
             <div class="card-body">
                 <div class="row g-3">
@@ -28,7 +28,7 @@
         {% if form.roles is defined %}
             <div class="card shadow-sm mb-4">
                 <div class="card-header d-flex align-items-center py-3">
-                    <h5 class="card-title mb-0"><i class="bi bi-shield-check me-1 text-primary"></i> {{ 'user.field.roles'|trans }}</h5>
+                    <h2 class="card-title h5 mb-0"><i class="bi bi-shield-check me-1 text-primary"></i> {{ 'user.field.roles'|trans }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">{{ form_row(form.roles, {size_columns: 12}) }}</div>
@@ -38,7 +38,7 @@
 
         <div class="card shadow-sm mb-4" data-controller="gm-contributor-fields">
             <div class="card-header d-flex align-items-center py-3">
-                <h5 class="card-title mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'user.field.contributor'|trans }}</h5>
+                <h2 class="card-title h5 mb-0"><i class="bi bi-person-badge me-1 text-primary"></i> {{ 'user.field.contributor'|trans }}</h2>
             </div>
             <div class="card-body">
                 {% if form.contributorId is defined %}

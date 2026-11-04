@@ -1,5 +1,4 @@
 import { Controller } from '@hotwired/stimulus';
-import Sortable from 'sortablejs';
 
 /*
  * Drag & drop reordering of a tree (crud/list_tree.html.twig).
@@ -27,7 +26,15 @@ export default class extends Controller {
         handle: { type: String, default: '.drag-handle' },
     };
 
-    connect() {
+    async connect() {
+        // Lazy import: AssetMapper only preloads static imports, so sortablejs is
+        // downloaded on the tree pages only, not on every admin page.
+        const { default: Sortable } = await import('sortablejs');
+
+        if (!this.element.isConnected) {
+            return;
+        }
+
         this.sortables = [...this.element.querySelectorAll('.sortable-level')].map((level) => Sortable.create(level, {
             animation: 150,
             handle: this.handleValue || undefined,
