@@ -82,12 +82,14 @@ Content-Type: application/json
 ```
 
 ```json
-{"token": "gm_4f1c...", "token_type": "Bearer", "expires_at": null}
+{"token": "gm_4f1c...", "token_type": "Bearer", "expires_at": "2026-11-05T09:30:00+00:00"}
 ```
 
 Then `Authorization: Bearer gm_4f1c...` on every call. Tokens are random, stored as a SHA-256
-hash (`api_tokens` table), optionally expiring (`gingerminds_core.api.token_ttl`), and
-revocable:
+hash (`api_tokens` table), expiring after `gingerminds_core.api.token_ttl` (24 hours by
+default, `null`: never) and revocable. Each login issues a new token: the expired ones are deleted
+by `gingerminds:api-token:purge`, a daily task of the `default` schedule when
+`symfony/scheduler` is installed (otherwise, a cron):
 
 ```http
 POST /api/logout                      # revokes the current token

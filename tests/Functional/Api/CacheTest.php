@@ -8,6 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Category;
 use Gingerminds\CoreBundle\Tests\Application\Entity\Product;
 use Gingerminds\CoreBundle\Tests\Functional\ApiTestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * API response cache of the #[Cacheable] resources.
@@ -53,6 +54,50 @@ final class CacheTest extends ApiTestCase
         $this->api('GET', '/api/products?page=1&itemsPerPage=5');
 
         self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function differentDeclaredParameters(): iterable
+    {
+        yield 'sort direction' => ['order[name]=asc', 'order[name]=desc'];
+        yield 'nested filter key' => ['publishedAt[after]=2024-01-01', 'publishedAt[before]=2024-01-01'];
+        yield 'list filter' => ['status[]=draft', 'status[]=draft&status[]=published'];
+        yield 'search' => ['search=first', 'search=second'];
+        yield 'pagination' => ['page=1', 'page=2'];
+    }
+
+    #[DataProvider('differentDeclaredParameters')]
+    public function testCacheKeyDependsOnTheDeclaredParameters(string $first, string $second): void
+    {
+        $this->createProduct('First');
+
+        $this->api('GET', '/api/products?' . $first);
+        $this->api('GET', '/api/products?' . $second);
+
+        self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function unknownParameters(): iterable
+    {
+        yield 'cache buster on a collection' => ['/api/products?page=1', '/api/products?page=1&_=1793782103'];
+        yield 'unknown key of a declared parameter' => ['/api/products?order[name]=asc', '/api/products?order[name]=asc&order[unknown]=desc'];
+        yield 'any parameter on an item' => ['/api/products/{id}', '/api/products/{id}?page=2&_=1'];
+    }
+
+    #[DataProvider('unknownParameters')]
+    public function testUnknownQueryParametersShareTheCachedResponse(string $first, string $second): void
+    {
+        $id = (string) $this->createProduct('First')->getId();
+
+        $this->api('GET', str_replace('{id}', $id, $first));
+        self::assertSame('MISS', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
+        $this->api('GET', str_replace('{id}', $id, $second));
+        self::assertSame('HIT', $this->client->getResponse()->headers->get('X-Gingerminds-Cache'));
     }
 
     public function testItemIsInvalidatedOnRemoval(): void

@@ -28,11 +28,26 @@ interface RepositoryInterface
     public function paginate(Parameters $parameters, int $page = 1, ?int $itemsPerPage = null): Paginator;
 
     /**
-     * The query every read starts from (admin lists and edit pages, API collections and items
-     * through the Doctrine state options `repositoryMethod`): the context scope and the
-     * `#[EagerLoad]` associations, root alias `o`.
+     * The query every read of an entity starts from (admin edit pages, API items through the
+     * Doctrine state options `repositoryMethod`): the context scope and the `#[EagerLoad]`
+     * associations, root alias `o`. Pages start from createCollectionQueryBuilder().
      */
     public function createListQueryBuilder(): QueryBuilder;
+
+    /**
+     * The list query of a page (API collections): the to-one `#[EagerLoad]` paths only, the
+     * ones going through a collection are loaded after the page by loadEagerCollections(). A
+     * joined collection would turn the page and its count into DISTINCT queries over the joins.
+     */
+    public function createCollectionQueryBuilder(): QueryBuilder;
+
+    /**
+     * Loads the `#[EagerLoad]` paths going through a collection for a fetched page, one query
+     * per path (WHERE IN).
+     *
+     * @param list<T> $items
+     */
+    public function loadEagerCollections(array $items): void;
 
     /**
      * The list query without its eager loads, context scope only (counts, facets, autocomplete).

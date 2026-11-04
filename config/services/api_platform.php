@@ -13,15 +13,18 @@ use Gingerminds\CoreBundle\ApiPlatform\Filter\NullableBooleanFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\RelationFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Filter\SearchableFilter;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\CoreResourceNameCollectionFactory;
+use Gingerminds\CoreBundle\ApiPlatform\Metadata\EagerCollectionPropertyMetadataFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\FilterParametersResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Metadata\OverriddenEntityResourceMetadataCollectionFactory;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\ComputedFiltersCollectionNormalizer;
 use Gingerminds\CoreBundle\ApiPlatform\Serializer\RelationIdDenormalizer;
+use Gingerminds\CoreBundle\ApiPlatform\State\EagerCollectionProvider;
 use Gingerminds\CoreBundle\ApiPlatform\State\RepositoryProcessor;
 
 /*
  * API Platform list filters and parameters, write processors, relation denormalizer, metadata
- * decorators and computed filters. Reads use the native Doctrine providers.
+ * decorators and computed filters. Reads use the native Doctrine providers (collections: their
+ * `#[EagerLoad]` collections loaded after the page).
  */
 return static function (ContainerConfigurator $container): void {
     $services = $container->services();
@@ -65,6 +68,16 @@ return static function (ContainerConfigurator $container): void {
             ->decorate('api_platform.doctrine.orm.state.' . $write . '_processor')
             ->args([service('.inner'), service('doctrine')]);
     }
+
+    // Collections: the `#[EagerLoad]` collections loaded after the page, not joined into it,
+    // neither by the core list query nor by the API Platform eager loading.
+    $services->set('gingerminds_core.api.provider.eager_collection', EagerCollectionProvider::class)
+        ->decorate('api_platform.doctrine.orm.state.collection_provider')
+        ->args([service('.inner'), service('doctrine')]);
+
+    $services->set('gingerminds_core.api.metadata.eager_collection_properties', EagerCollectionPropertyMetadataFactory::class)
+        ->decorate('api_platform.metadata.property.metadata_factory', null, 15)
+        ->args([service('.inner'), service('doctrine')]);
 
     // Relations written by id as well as by IRI, before the API Platform item denormalizers.
     $services->set('gingerminds_core.api.relation_id_denormalizer', RelationIdDenormalizer::class)

@@ -48,7 +48,8 @@
         "symfony/yaml": "^8.1"
     },
     "suggest": {
-        "symfony/maker-bundle": "Required for the make:gm:* generators"
+        "symfony/maker-bundle": "Required for the make:gm:* generators",
+        "symfony/scheduler": "Daily purge of the expired API tokens (schedule `default`), instead of a cron"
     },
     "autoload": {
         "psr-4": {

@@ -236,6 +236,33 @@ final class ListTest extends ApiTestCase
         self::assertSame($few, $this->queryCount('/api/users'));
     }
 
+    public function testCollectionPageDoesNotJoinItsEagerCollections(): void
+    {
+        $this->fixtures->user('editor@example.com', ['view more']);
+        $this->client->disableReboot();
+        // The first request of the token records its use.
+        $this->queryCount('/api/users');
+
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
+        $queries = self::getContainer()->get('doctrine.debug_data_holder');
+        $queries->reset();
+        $data = $this->api('GET', '/api/users?itemsPerPage=1&order[email]=asc', $this->token);
+        $sql = array_column($queries->getData()['default'] ?? [], 'sql');
+
+        // The page (no DISTINCT id subquery) and its count don't join the roles: they are loaded
+        // after the page, for its users only (WHERE IN).
+        $page = array_values(array_filter($sql, static fn (string $query): bool => str_contains($query, 'FROM users') && !str_contains($query, ' IN (')));
+        self::assertNotEmpty($page);
+
+        foreach ($page as $query) {
+            self::assertStringNotContainsString('user_roles', $query);
+            self::assertStringNotContainsString('SELECT DISTINCT', $query);
+        }
+        self::assertSame(2, $data['totalItems']);
+        self::assertSame('editor@example.com', $data['member'][0]['email']);
+        self::assertCount(1, $data['member'][0]['roles']);
+    }
+
     public function testItemReadKeepsFetchJoinedRelations(): void
     {
         $products = $this->api('GET', '/api/products?order[name]=asc', $this->token);

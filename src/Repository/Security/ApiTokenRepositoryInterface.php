@@ -25,4 +25,9 @@ interface ApiTokenRepositoryInterface
     public function revoke(string $plainToken): void;
 
     public function revokeAll(UserInterface $user): void;
+
+    /**
+     * Deletes the tokens expired at $now, returns how many.
+     */
+    public function deleteExpired(\DateTimeImmutable $now): int;
 }

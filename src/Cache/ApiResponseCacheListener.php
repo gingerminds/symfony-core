@@ -6,6 +6,7 @@ namespace Gingerminds\CoreBundle\Cache;
 
 use ApiPlatform\Metadata\CollectionOperationInterface;
 use ApiPlatform\Metadata\HttpOperation;
+use ApiPlatform\Metadata\QueryParameterInterface;
 use ApiPlatform\Metadata\Resource\Factory\ResourceMetadataCollectionFactoryInterface;
 use ApiPlatform\Metadata\ResourceAccessCheckerInterface;
 use Gingerminds\CoreBundle\Model\Cacheable;
@@ -22,6 +23,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * Caches the API responses of the `#[Cacheable]` resources for the anonymous requests only: the
  * key holds no user, an authenticated request (or one carrying an `Authorization` header) always
  * reaches the application, whatever its response depends on.
+ *
+ * The key only holds the query parameters the operation declares (its parameters, plus the
+ * pagination ones on a collection): an unknown one (`?_=<timestamp>`) neither misses the cache
+ * nor adds a key. An operation with legacy `#[ApiFilter]` filters keeps every query parameter.
  */
 final readonly class ApiResponseCacheListener
 {
@@ -37,6 +42,8 @@ final readonly class ApiResponseCacheListener
         private ?TokenStorageInterface $tokenStorage,
         private bool $enabled,
         private int $defaultTtl,
+        /** @var list<string> the API Platform pagination query parameters */
+        private array $paginationParameters = [],
     ) {
     }
 
@@ -51,7 +58,7 @@ final readonly class ApiResponseCacheListener
         [$attribute, $operation] = $cacheable;
         $request = $event->getRequest();
         $resourceTag = $attribute->key;
-        $key = $this->keyBuilder->responseKey($resourceTag, $request);
+        $key = $this->keyBuilder->responseKey($resourceTag, $request, $this->queryParameterTree($operation));
         $item = $this->cache->getItem($key);
         $cached = $item->isHit() ? $item->get() : null;
 
@@ -100,6 +107,29 @@ final readonly class ApiResponseCacheListener
         $this->cache->save($item);
 
         $response->headers->set('X-Gingerminds-Cache', 'MISS');
+    }
+
+    /**
+     * The query parameters the response depends on (CacheKeyBuilder::queryParameterTree()), null
+     * for all of them.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function queryParameterTree(HttpOperation $operation): ?array
+    {
+        if ([] !== ($operation->getFilters() ?? [])) {
+            return null;
+        }
+
+        $keys = $operation instanceof CollectionOperationInterface ? $this->paginationParameters : [];
+
+        foreach ($operation->getParameters() ?? [] as $parameter) {
+            if ($parameter instanceof QueryParameterInterface && null !== $parameter->getKey()) {
+                $keys[] = $parameter->getKey();
+            }
+        }
+
+        return CacheKeyBuilder::queryParameterTree($keys);
     }
 
     /**

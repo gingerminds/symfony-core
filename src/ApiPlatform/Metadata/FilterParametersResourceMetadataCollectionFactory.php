@@ -24,13 +24,17 @@ use Gingerminds\CoreBundle\Repository\RepositoryInterface;
  *   of the same key: one declaration for the API and the admin. Runs before the API
  *   Platform parameter factories, which describe them (OpenAPI, Hydra, validation);
  * - the reads of an entity whose repository is a core one (RepositoryInterface) start from its
- *   list query (the `repositoryMethod` of their Doctrine state options, `createListQueryBuilder`:
- *   context scope of configureListQueryBuilder(), `#[EagerLoad]` associations), unless the
- *   operation names its own repository method.
+ *   list query (the `repositoryMethod` of their Doctrine state options: context scope of
+ *   configureListQueryBuilder(), `#[EagerLoad]` associations), unless the operation names its
+ *   own repository method. A collection starts from `createCollectionQueryBuilder` (to-one eager
+ *   loads only, the collections are loaded after the page by EagerCollectionProvider), an item
+ *   from `createListQueryBuilder`.
  */
 final readonly class FilterParametersResourceMetadataCollectionFactory implements ResourceMetadataCollectionFactoryInterface
 {
     public const string REPOSITORY_METHOD = 'createListQueryBuilder';
+
+    public const string COLLECTION_REPOSITORY_METHOD = 'createCollectionQueryBuilder';
 
     public function __construct(
         private ResourceMetadataCollectionFactoryInterface $decorated,
@@ -122,7 +126,9 @@ final readonly class FilterParametersResourceMetadataCollectionFactory implement
             && null !== $repositoryClass
             && is_a($repositoryClass, RepositoryInterface::class, true)
         ) {
-            return $operation->withStateOptions($stateOptions->withRepositoryMethod(self::REPOSITORY_METHOD));
+            return $operation->withStateOptions($stateOptions->withRepositoryMethod(
+                $operation instanceof CollectionOperationInterface ? self::COLLECTION_REPOSITORY_METHOD : self::REPOSITORY_METHOD,
+            ));
         }
 
         return $operation;
