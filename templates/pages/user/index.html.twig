@@ -25,7 +25,7 @@
         {% if item.roleEntities is not empty %}
             <div class="d-flex flex-wrap gap-1">
                 {% for role in item.roleEntities %}
-                    <span class="badge bg-primary-subtle text-primary fs-11">{{ role.name }}</span>
+                    <span class="badge bg-primary-subtle text-primary-emphasis fs-11">{{ role.name }}</span>
                 {% endfor %}
             </div>
         {% else %}

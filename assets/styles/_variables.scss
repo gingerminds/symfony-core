@@ -15,7 +15,7 @@ $gray-200: #eff2f7 !default;
 $gray-300: #f6f6f6 !default;
 $gray-400: #ced4da !default;
 $gray-500: #adb5bd !default;
-$gray-600: #74788d !default;
+$gray-600: #686c7f !default; // WCAG AA (4.5:1) on $gray-200 and $body-bg
 $gray-700: #495057 !default;
 $gray-800: #343a40 !default;
 $gray-900: #212529 !default;
@@ -39,14 +39,14 @@ $grays: (
 // fusv-enable
 
 // scss-docs-start color-variables
-$blue: #4f70e2 !default; // Indigo-blue EasyAdmin style primary
+$blue: #4b6ad7 !default; // Indigo-blue primary, WCAG AA with white text
 $indigo:  #4c6ef5 !default; // Lighter indigo
 $purple:  #7950f2 !default; // Purple accent
 $pink:    #e64980 !default; // Pink
 $red:     #e03131 !default; // Red danger
 $orange:  #f76707 !default; // Orange warning
 $yellow:  #f59f00 !default; // Yellow info
-$green:   #2f9e44 !default; // Green success
+$green:   #28863a !default; // Green success, WCAG AA with white text
 $teal:    #0c8599 !default; // Teal
 $cyan:    #1098ad !default; // Cyan
 $wasabi-main:   #74c0fc !default; // kept for compat, remapped to light blue
@@ -1782,7 +1782,7 @@ $sidebar-menu-card-bg:                                tint-color($sidebar-dark-b
 // Topbar - Default Light
 $header-height:                                       64px !default;
 $header-bg:                                           $white !default;
-$header-item-color:                                   #64748b !default;
+$header-item-color:                                   #606f85 !default;
 
 // Topbar - Dark
 $header-dark-bg:                                      #1e2a3a !default;
@@ -1794,7 +1794,7 @@ $topbar-search-bg:                                    #f3f3f9 !default;
 // Footer
 $footer-height:                                       56px !default;
 $footer-bg:                                           #f1f5f9 !default;
-$footer-color:                                        #64748b !default;
+$footer-color:                                        #606f85 !default;
 
 // Horizontal nav
 $topnav-bg:                                           $white !default;

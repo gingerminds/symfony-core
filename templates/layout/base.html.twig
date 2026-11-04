@@ -44,7 +44,7 @@
             <div class="flex-grow-1 p-4">
                 {% block page_header %}
                     <div class="page-title-box d-sm-flex align-items-center justify-content-between mb-4 gap-3">
-                        <h4 class="mb-sm-0 fs-18">{% block page_title %}{{ page_title ?? block('title') }}{% endblock %}</h4>
+                        <h1 class="h4 mb-sm-0 fs-18">{% block page_title %}{{ page_title ?? block('title') }}{% endblock %}</h1>
                         <div class="page-title-right d-flex align-items-center gap-3">
                             {% block breadcrumb %}
                                 {% include '@GingermindsCore/components/_breadcrumb.html.twig' with {items: breadcrumb ?? []} only %}
