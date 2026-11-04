@@ -94,9 +94,17 @@ final readonly class CacheKeyBuilder
         $node = $tree[$segment] ?? [];
 
         // A leaf already keeps the whole value of its key.
-        if (true !== $node) {
-            $tree[$segment] = [] === $segments ? true : self::addPath(\is_array($node) ? $node : [], $segments);
+        if (true === $node) {
+            return $tree;
         }
+
+        if ([] === $segments) {
+            $tree[$segment] = true;
+
+            return $tree;
+        }
+
+        $tree[$segment] = self::addPath(\is_array($node) ? $node : [], $segments);
 
         return $tree;
     }
