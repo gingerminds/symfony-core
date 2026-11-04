@@ -34,6 +34,12 @@ return static function (ContainerConfigurator $container): void {
             service('security.token_storage')->nullOnInvalid(),
             param('gingerminds_core.cache.enabled'),
             param('gingerminds_core.cache.default_ttl'),
+            [
+                param('api_platform.collection.pagination.page_parameter_name'),
+                param('api_platform.collection.pagination.items_per_page_parameter_name'),
+                param('api_platform.collection.pagination.enabled_parameter_name'),
+                param('api_platform.collection.pagination.partial_parameter_name'),
+            ],
         ])
         // After the firewall (8), before API Platform's read listener (4).
         ->tag('kernel.event_listener', ['event' => KernelEvents::REQUEST, 'method' => 'onKernelRequest', 'priority' => 5])

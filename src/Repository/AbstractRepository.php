@@ -72,7 +72,7 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
 
         /** @var list<T> $items */
         $items = iterator_to_array($doctrinePaginator->getIterator(), false);
-        $this->createEagerLoader()->loadCollections($items, self::ALIAS);
+        $this->loadEagerCollections($items);
 
         // A partial page gives the total without counting (not for an empty page past the end).
         $total = [] !== $items && \count($items) < $itemsPerPage
@@ -85,6 +85,16 @@ abstract class AbstractRepository extends ServiceEntityRepository implements Rep
     public function createListQueryBuilder(): QueryBuilder
     {
         return $this->buildListQueryBuilder(eagerCollections: true);
+    }
+
+    public function createCollectionQueryBuilder(): QueryBuilder
+    {
+        return $this->buildListQueryBuilder(eagerCollections: false);
+    }
+
+    public function loadEagerCollections(array $items): void
+    {
+        $this->createEagerLoader()->loadCollections($items, self::ALIAS);
     }
 
     public function applyParameters(QueryBuilder $qb, Parameters $parameters): void

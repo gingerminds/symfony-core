@@ -129,7 +129,8 @@ final class AuthTest extends ApiTestCase
 
         $this->assertStatus(200);
         self::assertSame(['token', 'token_type', 'expires_at', 'email'], array_keys($data));
-        self::assertNull($data['expires_at']);
+        // `token_ttl`: 24 hours by default.
+        self::assertEqualsWithDelta(time() + 86400, new \DateTimeImmutable($data['expires_at'])->getTimestamp(), 60);
         // TestLoginResponseEnricher (LoginResponseEnricherInterface).
         self::assertSame('event@example.com', $data['email']);
         // The API rate limit still applies to the login, answered by the firewall.

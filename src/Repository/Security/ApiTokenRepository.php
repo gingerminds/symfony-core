@@ -65,4 +65,16 @@ class ApiTokenRepository extends ServiceEntityRepository implements ApiTokenRepo
             ->getQuery()
             ->execute();
     }
+
+    public function deleteExpired(\DateTimeImmutable $now): int
+    {
+        $deleted = $this->createQueryBuilder('t')
+            ->delete()
+            ->andWhere('t.expiresAt <= :now')
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->execute();
+
+        return \is_int($deleted) ? $deleted : 0;
+    }
 }

@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `gingerminds:api-token:purge` deletes the expired API tokens: a daily task of the `default`
+  schedule when `symfony/scheduler` is installed.
+- `RepositoryInterface::createCollectionQueryBuilder()` (the list query with the to-one
+  `#[EagerLoad]` paths only) and `loadEagerCollections()` (the paths going through a collection,
+  loaded for a fetched page).
 - `PermissionInterface::ACCESS_ADMIN`, `VIEW_DASHBOARD`, `VIEW_SETTINGS` and `MANAGE_ROLES`: the
   core permission names.
 - `ResourceControllerTrait`: the services of a resource controller (`getSubscribedServices()`,
@@ -24,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Changed
 
+- **BC break** API tokens expire after 24 hours by default (`gingerminds_core.api.token_ttl`:
+  `86400`, `null` for the former tokens without expiration): each API login issues a token.
+- API collections: the `#[EagerLoad]` collections of a core repository's entity are loaded after
+  the page (`EagerCollectionProvider`, one query per path), no longer fetch-joined into it by the
+  core list query nor by the API Platform eager loading (`fetchEager: false`,
+  `EagerCollectionPropertyMetadataFactory`). The page and its count are no longer DISTINCT
+  queries over every joined row (`/api/users`: the roles).
+- API response cache: the key only holds the query parameters the operation declares (its
+  parameters, plus the pagination ones on a collection). An unknown parameter (`?_=<timestamp>`)
+  neither misses the cache nor adds a key; an operation with legacy `#[ApiFilter]` filters keeps
+  every query parameter. A `#[Cacheable]` response must only depend on declared parameters.
 - **BC break** Bundles: `AbstractResourceBundle` holds what each bundle class repeated (resources
   and overridable entities, `<alias>.resource.<name>.entity` parameters, `OverriddenEntityPass`,
   Doctrine mappings, `resolve_target_entities`, `resolveConfig()`) and

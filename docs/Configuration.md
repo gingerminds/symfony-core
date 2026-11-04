@@ -19,7 +19,7 @@ gingerminds_core:
 
     api:
         prefix: api                  # prefix of /api/login and /api/logout
-        token_ttl: null              # API token lifetime in seconds, null = no expiration
+        token_ttl: 86400             # API token lifetime in seconds (24 hours), null = no expiration
         login_throttling:            # API login (firewall login_throttling.limiter: gingerminds_core.security.api_login_rate_limiter)
             max_attempts: 5
             interval: '5 minutes'
